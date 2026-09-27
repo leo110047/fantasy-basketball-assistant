@@ -1,0 +1,422 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:fantasy-assistant:season:1",
+  "title": "season",
+  "type": "object",
+  "properties": {
+    "format_version": {
+      "const": 1
+    },
+    "season_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "starts_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "ends_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "snapshot_as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "previous_season_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "roster_import": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "enum": [
+            "csv",
+            "yahoo_export"
+          ]
+        },
+        "encoding": {
+          "type": "string",
+          "minLength": 1
+        },
+        "delimiter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "columns": {
+          "type": "object",
+          "properties": {
+            "player_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "positions": {
+              "type": "string",
+              "minLength": 1
+            },
+            "rank": {
+              "type": "string",
+              "minLength": 1
+            },
+            "projected_price": {
+              "type": "string",
+              "minLength": 1
+            },
+            "average_price": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "player_id",
+            "name",
+            "positions",
+            "rank",
+            "projected_price",
+            "average_price"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "path",
+        "format",
+        "encoding",
+        "delimiter",
+        "columns"
+      ],
+      "additionalProperties": false
+    },
+    "identity_map_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "manual_adjustments_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "projections",
+              "game_logs",
+              "schedule",
+              "rosters",
+              "official_schedule_counts",
+              "historical_projections"
+            ]
+          },
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "season_code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "available_as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "delivery": {
+            "enum": [
+              "fetch",
+              "manual"
+            ]
+          },
+          "manual_file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "adapter",
+          "url",
+          "season_code",
+          "available_as_of",
+          "delivery",
+          "manual_file"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "stat_definitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unit": {
+            "enum": [
+              "count",
+              "minutes",
+              "games"
+            ]
+          },
+          "definition": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "observed"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "linear"
+                  },
+                  "terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "stat_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "coefficient": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "stat_id",
+                        "coefficient"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "terms"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "threshold_count"
+                  },
+                  "stat_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
+                  "threshold": {
+                    "type": "number"
+                  },
+                  "minimum_hits": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "stat_ids",
+                  "threshold",
+                  "minimum_hits"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "unit",
+          "definition"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "basketball": {
+      "type": "object",
+      "properties": {
+        "regulation_minutes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "players_on_court": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expected_games_source_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "regulation_minutes",
+        "players_on_court",
+        "expected_games_source_id"
+      ],
+      "additionalProperties": false
+    },
+    "backtest": {
+      "type": "object",
+      "properties": {
+        "evaluation_season_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preseason_as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "training_season_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "training_as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evaluation_source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "training_source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "evaluation_season_id",
+        "preseason_as_of",
+        "training_season_id",
+        "training_as_of",
+        "evaluation_source_ids",
+        "training_source_ids"
+      ],
+      "additionalProperties": false
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "Assumption",
+                  "source",
+                  "backtest"
+                ]
+              },
+              "reference": {
+                "type": "string",
+                "minLength": 1
+              },
+              "as_of": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "reference",
+              "as_of",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "field_path",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format_version",
+    "season_id",
+    "starts_on",
+    "ends_on",
+    "snapshot_as_of",
+    "previous_season_id",
+    "roster_import",
+    "identity_map_path",
+    "manual_adjustments_path",
+    "sources",
+    "stat_definitions",
+    "basketball",
+    "backtest",
+    "assumptions"
+  ],
+  "additionalProperties": false,
+  "$defs": {}
+}

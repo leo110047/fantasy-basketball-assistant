@@ -1,0 +1,541 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:fantasy-assistant:league:1",
+  "title": "league",
+  "type": "object",
+  "properties": {
+    "format_version": {
+      "const": 1
+    },
+    "league_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "teams": {
+      "type": "integer",
+      "minimum": 2
+    },
+    "budget": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "minimum_bid": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bid_increment": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    },
+    "positions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "starter_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "eligible_positions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "eligible_positions"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "bench_slots": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "injury_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eligible_statuses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "count",
+          "eligible_statuses"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "formula": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "linear"
+                  },
+                  "terms": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "stat_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "coefficient": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "stat_id",
+                        "coefficient"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "terms"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "ratio"
+                  },
+                  "numerator": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "stat_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "coefficient": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "stat_id",
+                        "coefficient"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  },
+                  "denominator": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "stat_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "coefficient": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "stat_id",
+                        "coefficient"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  },
+                  "zero_denominator": {
+                    "enum": [
+                      "error",
+                      "zero",
+                      "numerator"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "numerator",
+                  "denominator",
+                  "zero_denominator"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "direction": {
+            "enum": [
+              "higher",
+              "lower"
+            ]
+          },
+          "comparison_decimals": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tie_value": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "formula",
+          "direction",
+          "comparison_decimals",
+          "tie_value"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "scoring": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "h2h_one_win"
+          ]
+        },
+        "week_tie": {
+          "enum": [
+            "tie",
+            "half_win",
+            "loss"
+          ]
+        },
+        "category_ties": {
+          "enum": [
+            "exclude",
+            "use_tie_value"
+          ]
+        }
+      },
+      "required": [
+        "mode",
+        "week_tie",
+        "category_ties"
+      ],
+      "additionalProperties": false
+    },
+    "transactions": {
+      "type": "object",
+      "properties": {
+        "adds_per_period": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "add_periods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "id",
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "effective": {
+          "enum": [
+            "same_day",
+            "next_day"
+          ]
+        },
+        "cutoff_local_time": {
+          "type": "string",
+          "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+        },
+        "waiver_days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "adds_per_period",
+        "add_periods",
+        "effective",
+        "cutoff_local_time",
+        "waiver_days"
+      ],
+      "additionalProperties": false
+    },
+    "lineup": {
+      "type": "object",
+      "properties": {
+        "lock_mode": {
+          "enum": [
+            "daily",
+            "weekly"
+          ]
+        },
+        "lock_at": {
+          "enum": [
+            "period_start",
+            "first_game",
+            "player_game"
+          ]
+        },
+        "lock_local_time": {
+          "type": "string",
+          "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+        }
+      },
+      "required": [
+        "lock_mode",
+        "lock_at",
+        "lock_local_time"
+      ],
+      "additionalProperties": false
+    },
+    "matchups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
+          },
+          "phase": {
+            "enum": [
+              "regular",
+              "playoff",
+              "postseason"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "start",
+          "end",
+          "phase"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "playoffs": {
+      "type": "object",
+      "properties": {
+        "team_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "week_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "seeding": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "record",
+              "head_to_head",
+              "category_record",
+              "seed"
+            ]
+          },
+          "minItems": 1
+        },
+        "byes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reseed": {
+          "type": "boolean"
+        },
+        "matchup_tie": {
+          "enum": [
+            "higher_seed",
+            "category_record"
+          ]
+        }
+      },
+      "required": [
+        "team_count",
+        "week_ids",
+        "seeding",
+        "byes",
+        "reseed",
+        "matchup_tie"
+      ],
+      "additionalProperties": false
+    },
+    "trade_deadline": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "Assumption",
+                  "source",
+                  "backtest"
+                ]
+              },
+              "reference": {
+                "type": "string",
+                "minLength": 1
+              },
+              "as_of": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "reference",
+              "as_of",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "field_path",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format_version",
+    "league_id",
+    "teams",
+    "budget",
+    "minimum_bid",
+    "bid_increment",
+    "timezone",
+    "positions",
+    "starter_slots",
+    "bench_slots",
+    "injury_slots",
+    "categories",
+    "scoring",
+    "transactions",
+    "lineup",
+    "matchups",
+    "playoffs",
+    "trade_deadline",
+    "assumptions"
+  ],
+  "additionalProperties": false,
+  "$defs": {}
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:fantasy-assistant:identity-map:1",
+  "title": "identity-map",
+  "type": "object",
+  "properties": {
+    "format_version": {
+      "const": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provider_player_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "method": {
+            "enum": [
+              "exported_id",
+              "explicit_mapping"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "player_id",
+          "provider",
+          "provider_player_id",
+          "method",
+          "source",
+          "confirmed_at"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format_version",
+    "entries"
+  ],
+  "additionalProperties": false,
+  "$defs": {}
+}

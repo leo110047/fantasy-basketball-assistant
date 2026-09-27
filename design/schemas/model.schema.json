@@ -1,0 +1,923 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:fantasy-assistant:model:1",
+  "title": "model",
+  "type": "object",
+  "properties": {
+    "format_version": {
+      "const": 1
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projection": {
+      "type": "object",
+      "properties": {
+        "source_weights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "evidence": {
+                "$ref": "#/$defs/provenance"
+              }
+            },
+            "required": [
+              "source_id",
+              "weight",
+              "evidence"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "missing_source": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "enum": [
+                "error",
+                "use_available_marked"
+              ]
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "availability": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "enum": [
+                "reference",
+                "fit_previous_season"
+              ]
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "minute_method": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "enum": [
+                "reference_resources",
+                "unchanged"
+              ]
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "history_min_games": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "replacement": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "object",
+              "properties": {
+                "band_size": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "minimum_games": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "band_size",
+                "minimum_games"
+              ],
+              "additionalProperties": false
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "valuation_iterations": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "source_weights",
+        "missing_source",
+        "availability",
+        "minute_method",
+        "history_min_games",
+        "replacement",
+        "valuation_iterations"
+      ],
+      "additionalProperties": false
+    },
+    "market": {
+      "type": "object",
+      "properties": {
+        "volatility": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "draws": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "shift_draws": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "wealth_bounds": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "object",
+              "properties": {
+                "lower": {
+                  "type": "number"
+                },
+                "upper": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "lower",
+                "upper"
+              ],
+              "additionalProperties": false
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "minimum_bid_nomination": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "boolean"
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "volatility",
+        "draws",
+        "shift_draws",
+        "wealth_bounds",
+        "minimum_bid_nomination"
+      ],
+      "additionalProperties": false
+    },
+    "management": {
+      "type": "object",
+      "properties": {
+        "health_paths": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "stream_paths": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "mean_absence_games": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "reserve_injury_adds": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "short_horizon_days": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "long_horizon_days": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "candidate_limit": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "maximum_stream_slots": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "health_paths",
+        "stream_paths",
+        "mean_absence_games",
+        "reserve_injury_adds",
+        "short_horizon_days",
+        "long_horizon_days",
+        "candidate_limit",
+        "maximum_stream_slots"
+      ],
+      "additionalProperties": false
+    },
+    "fit": {
+      "type": "object",
+      "properties": {
+        "draws": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "paired_groups": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "steps": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "improvement_floor": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number"
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "bandwidth": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "gradient_relative_step": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "gradient_absolute_floor": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "category_scale_floors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "floor": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "evidence": {
+                "$ref": "#/$defs/provenance"
+              }
+            },
+            "required": [
+              "category_id",
+              "floor",
+              "evidence"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "seed_sensitivity_cap": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "draws",
+        "paired_groups",
+        "steps",
+        "improvement_floor",
+        "bandwidth",
+        "gradient_relative_step",
+        "gradient_absolute_floor",
+        "category_scale_floors",
+        "seed_sensitivity_cap"
+      ],
+      "additionalProperties": false
+    },
+    "randomness": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "market_seed": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "health_seed": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "fit_seed": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "opponent_seed": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "algorithm",
+        "market_seed",
+        "health_seed",
+        "fit_seed",
+        "opponent_seed"
+      ],
+      "additionalProperties": false
+    },
+    "solver": {
+      "type": "object",
+      "properties": {
+        "time_limit_seconds": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "threads": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "optimality_gap": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "const": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "pruning": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "boolean"
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "tie_policy": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "enum": [
+                "lexicographic_player_id"
+              ]
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "time_limit_seconds",
+        "threads",
+        "optimality_gap",
+        "pruning",
+        "tie_policy"
+      ],
+      "additionalProperties": false
+    },
+    "numeric": {
+      "type": "object",
+      "properties": {
+        "output_decimal_places": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "objective_tolerance": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "reduction_order": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "enum": [
+                "player_id"
+              ]
+            },
+            "evidence": {
+              "$ref": "#/$defs/provenance"
+            }
+          },
+          "required": [
+            "value",
+            "evidence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "output_decimal_places",
+        "objective_tolerance",
+        "reduction_order"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "format_version",
+    "model_id",
+    "projection",
+    "market",
+    "management",
+    "fit",
+    "randomness",
+    "solver",
+    "numeric"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "Assumption",
+            "source",
+            "backtest"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "reference",
+        "as_of",
+        "reason"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
