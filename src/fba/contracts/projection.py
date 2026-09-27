@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field
 
@@ -65,10 +65,48 @@ class ProjectionInput(FrozenCalculationInput):
     teams: tuple[ProjectionTeam, ...]
 
 
-class CalibratedInput(ProjectionInput):
-    format_version: Annotated[int, Field(ge=3, le=3)]
+class CalibratedData(FrozenCalculationInput):
     calibration: Calibration
     calibration_snapshot: Text
+    teams: tuple[ProjectionTeam, ...]
+
+
+class CalibratedInput(CalibratedData):
+    format_version: Annotated[int, Field(ge=3, le=3)]
+    players: tuple[ProjectionPlayer, ...]
+
+
+class PreparedPlayer(ProjectionPlayer):
+    expected_games_override: Nonnegative | None
+    history_pool_id: Text | None
+
+
+class HistoryPool(Record):
+    id: Text
+    history: tuple[tuple[Nonnegative, ...], ...]
+
+
+class PreparationNote(Record):
+    player_id: Text
+    kind: Literal["source", "derived", "Assumption", "unavailable", "manual"]
+    detail: Text
+
+
+class PreparedPopulation(Record):
+    players: tuple[PreparedPlayer, ...]
+    teams: tuple[ProjectionTeam, ...]
+    notes: tuple[PreparationNote, ...]
+    history_pools: tuple[HistoryPool, ...]
+
+
+class PreparedInput(CalibratedData):
+    format_version: Annotated[int, Field(ge=4, le=4)]
+    players: tuple[PreparedPlayer, ...]
+    notes: tuple[PreparationNote, ...]
+    history_pools: tuple[HistoryPool, ...]
+
+
+type ProductionInput = CalibratedInput | PreparedInput
 
 
 class Projected(Record):

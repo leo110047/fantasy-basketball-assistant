@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 from fba.adapters.acquisition import Acquired, acquire
@@ -8,6 +9,7 @@ from fba.adapters.calculation import calculate_file, evaluate_file
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.migration import migrate_projection
+from fba.adapters.preparation import project
 from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot, publish
 from fba.apps.build import assemble
 from fba.contracts.base import ConfigError, DataError, IdentityError
@@ -90,10 +92,18 @@ def rebuild(root: Path, output: Path) -> Path:
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="fba")
     commands = root.add_subparsers(dest="command", required=True)
-    build_parser = commands.add_parser("build", help="Acquire and freeze a validated data snapshot")
-    for name in ("league", "season", "model", "output"):
-        build_parser.add_argument(f"--{name}", required=True, type=Path)
-    build_parser.add_argument("--version", required=True, type=int)
+    for action in ("build", "annual"):
+        build_parser = commands.add_parser(action, help="Acquire a snapshot; annual also values it")
+        for name in ("league", "season", "model", "output"):
+            build_parser.add_argument(f"--{name}", required=True, type=Path)
+        build_parser.add_argument("--version", required=True, type=int)
+        if action == "annual":
+            build_parser.add_argument("--previous", type=Path)
+    projection = commands.add_parser("project", help="Prepare and value a frozen data snapshot")
+    projection.add_argument("snapshot", type=Path)
+    projection.add_argument("--model", required=True, type=Path)
+    projection.add_argument("--output", required=True, type=Path)
+    projection.add_argument("--previous", type=Path)
     migration = commands.add_parser(
         "migrate-projection", help="Upgrade a resource input using an explicit new model"
     )
@@ -116,6 +126,17 @@ def parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = parser().parse_args()
     try:
+        if args.command in ("project", "annual"):
+            if args.command == "annual":
+                with tempfile.TemporaryDirectory(prefix="fba-annual-") as folder:
+                    snapshot = build(
+                        args.league, args.season, args.model, Path(folder), args.version
+                    )
+                    path = project(snapshot, args.model, args.output, args.previous)
+            else:
+                path = project(args.snapshot, args.model, args.output, args.previous)
+            print(json.dumps({"projection": str(path)}))
+            return 0
         if args.command == "migrate-projection":
             path = migrate_projection(
                 args.input, args.model, args.calibration_snapshot, args.output

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from fba.contracts.config import CalculationModel, Category, LeagueRules, Linear, Term
+from fba.contracts.config import Category, LeagueRules, Linear, PreparationModel, Term
 from fba.contracts.projection import Projected
 from fba.core.valuation import fit_ruler, value
 
@@ -24,7 +24,7 @@ def frozen():
         if r["fair"] is not None
     )
     league = LeagueRules.model_validate_json((root / "examples/2026-27/league.json").read_bytes())
-    model = CalculationModel.model_validate_json(
+    model = PreparationModel.model_validate_json(
         (root / "examples/2026-27/model.json").read_bytes()
     )
     return data, rows, league, model

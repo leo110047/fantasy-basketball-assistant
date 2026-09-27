@@ -279,7 +279,38 @@ class CalculationModel(Record):
     valuation: ValuationParameters
 
 
-class ModelDocument(RootModel[ModelConfig | ResourceModel | CalculationModel]):
+class PositionPool(Record):
+    id: Text
+    any_positions: tuple[Text, ...]
+    exact_positions: tuple[Text, ...]
+
+
+class HistoryShare(Record):
+    stat_id: Text
+    parent_stat: Text
+
+
+class PreparationParameters(Record):
+    minutes_stat: Text
+    forecast_prior_id: Text
+    historical_prior_id: Text
+    minimum_player_history: PositiveInt
+    donor_minimum_history: PositiveInt
+    donor_minutes_lower: Nonnegative
+    donor_minutes_upper: Nonnegative
+    position_pools: Annotated[tuple[PositionPool, ...], Field(min_length=1)]
+    history_shares: tuple[HistoryShare, ...]
+    historical_games_lower: Nonnegative
+    historical_games_upper: Nonnegative
+    evidence: Evidence
+
+
+class PreparationModel(CalculationModel):
+    format_version: Annotated[int, Field(ge=4, le=4)]
+    preparation: PreparationParameters
+
+
+class ModelDocument(RootModel[ModelConfig | ResourceModel | CalculationModel | PreparationModel]):
     pass
 
 
@@ -298,5 +329,5 @@ class ConfigBundle(Record):
 class ValidatedConfig(Record):
     league: LeagueRules
     season: SeasonConfig
-    model: ModelConfig | ResourceModel | CalculationModel
+    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel
     refs: ConfigBundle

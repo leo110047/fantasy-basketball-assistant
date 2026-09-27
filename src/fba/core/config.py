@@ -9,6 +9,7 @@ from fba.contracts.config import (
     Linear,
     ModelConfig,
     Period,
+    PreparationModel,
     ResourceModel,
     SeasonConfig,
     ThresholdCount,
@@ -181,7 +182,7 @@ def validate_sources(season: SeasonConfig) -> None:
 def validate_config(
     league: LeagueRules,
     season: SeasonConfig,
-    model: ModelConfig | ResourceModel | CalculationModel,
+    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel,
     refs: ConfigBundle,
 ) -> ValidatedConfig:
     if season.starts_on > season.ends_on:
@@ -195,7 +196,45 @@ def validate_config(
         raise ConfigError("model.calibration.evidence.as_of: after snapshot cutoff")
     if isinstance(model, (ResourceModel, CalculationModel)):
         validate_calculation_model(league, season, model)
+    if isinstance(model, PreparationModel):
+        validate_preparation_model(league, season, model)
     return ValidatedConfig(league=league, season=season, model=model, refs=refs)
+
+
+def validate_preparation_model(
+    league: LeagueRules, season: SeasonConfig, model: PreparationModel
+) -> None:
+    p = model.preparation
+    path = "model.preparation"
+    ids = (p.forecast_prior_id, p.historical_prior_id)
+    unique(ids, f"{path}.prior_ids")
+    if set(ids) != {w.id for w in model.projection.prior_weights}:
+        raise ConfigError(f"{path}.prior_ids: must match configured forecast and historical priors")
+    if (
+        p.donor_minutes_lower > p.donor_minutes_upper
+        or p.historical_games_lower > p.historical_games_upper
+        or p.minimum_player_history > p.donor_minimum_history
+    ):
+        raise ConfigError(f"{path}: reversed bounds or donor sample smaller than player minimum")
+    definitions = {s.id: s for s in season.stat_definitions}
+    if p.minutes_stat not in definitions or definitions[p.minutes_stat].unit != "minutes":
+        raise ConfigError(f"{path}.minutes_stat: requires a minutes statistic")
+    unique(tuple(g.id for g in p.position_pools), f"{path}.position_pools")
+    covered: set[str] = set()
+    for group in p.position_pools:
+        positions = (*group.any_positions, *group.exact_positions)
+        if not positions:
+            raise ConfigError(f"{path}.position_pools.{group.id}: empty positions")
+        require_members(positions, set(league.positions), f"{path}.position_pools.{group.id}")
+        covered.update(positions)
+    if covered != set(league.positions):
+        raise ConfigError(f"{path}.position_pools: must cover league positions")
+    unique(tuple(r.stat_id for r in p.history_shares), f"{path}.history_shares")
+    pairs = {(r.child, r.parent) for r in model.projection.nested_counts}
+    if any((r.stat_id, r.parent_stat) not in pairs for r in p.history_shares):
+        raise ConfigError(f"{path}.history_shares: must refer to nested count relationships")
+    if p.evidence.as_of > season.snapshot_as_of:
+        raise ConfigError(f"{path}.evidence.as_of: after snapshot cutoff")
 
 
 def validate_calculation_model(

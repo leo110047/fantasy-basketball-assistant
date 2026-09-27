@@ -1,5 +1,5 @@
 {
-  "format_version": 3,
+  "format_version": 4,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -117,6 +117,56 @@
       "reference": "Locked auction-desk projection.py, projection_moments.py, valuation.py (2026-09-27)",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Reference per-game scales and replacement band. Healthy-games eligibility is evaluated before availability calibration, as approved for R07; auction utility uses calibrated GP."
+    }
+  },
+  "preparation": {
+    "minutes_stat": "MIN",
+    "forecast_prior_id": "b",
+    "historical_prior_id": "a",
+    "minimum_player_history": 10,
+    "donor_minimum_history": 30,
+    "donor_minutes_lower": 20.0,
+    "donor_minutes_upper": 34.0,
+    "position_pools": [
+      {
+        "id": "big",
+        "any_positions": [
+          "C"
+        ],
+        "exact_positions": []
+      },
+      {
+        "id": "guard",
+        "any_positions": [
+          "PG"
+        ],
+        "exact_positions": [
+          "SG"
+        ]
+      },
+      {
+        "id": "wing",
+        "any_positions": [
+          "SF",
+          "PF",
+          "SG"
+        ],
+        "exact_positions": []
+      }
+    ],
+    "history_shares": [
+      {
+        "stat_id": "OREB",
+        "parent_stat": "REB"
+      }
+    ],
+    "historical_games_lower": 40.0,
+    "historical_games_upper": 76.0,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Locked v2 data_v2.py, bank.py and projections.py; annual source preparation",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Missing OREB uses individual historical share, or a configured position pool when history is insufficient. Scoring components can be derived from the exact scoring identity. Historical-only priors use previous-season means and bounded GP; older-season role overrides are not inferred. Pooling is an explicit assumption for rookies and veterans alike. Missing usable priors remain unavailable."
     }
   }
 }

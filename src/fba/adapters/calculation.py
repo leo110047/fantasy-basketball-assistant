@@ -2,11 +2,18 @@ import os
 import tempfile
 from pathlib import Path
 
-from fba.adapters.codec import canonical, decode, digest, read_bytes
+from pydantic import TypeAdapter, ValidationError
+
+from fba.adapters.codec import canonical, checked_json, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.snapshots import checked_path, load_snapshot
 from fba.contracts.base import DataError, Record
-from fba.contracts.projection import CalibratedInput, EvaluationInput, FrozenCalculationInput
+from fba.contracts.projection import (
+    CalibratedData,
+    EvaluationInput,
+    FrozenCalculationInput,
+    ProductionInput,
+)
 from fba.core.calculation import calculate
 from fba.core.evaluation import evaluate
 
@@ -14,6 +21,23 @@ from fba.core.evaluation import evaluate
 def load_calculation_input[T: FrozenCalculationInput](path: Path, model: type[T]) -> tuple[T, str]:
     data = read_bytes(path)
     inputs = decode(model, data, str(path))
+    verify_calculation_input(inputs, path)
+    return inputs, digest(data)
+
+
+def load_projection(path: Path) -> tuple[ProductionInput, str]:
+    data = read_bytes(path)
+    try:
+        inputs = TypeAdapter[ProductionInput](ProductionInput).validate_json(
+            checked_json(data, str(path))
+        )
+    except ValidationError as exc:
+        raise DataError(f"{path}: {exc}") from exc
+    verify_calculation_input(inputs, path)
+    return inputs, digest(data)
+
+
+def verify_calculation_input(inputs: FrozenCalculationInput, path: Path) -> None:
     paths = tuple(a.path for a in inputs.artifacts)
     if len(set(paths)) != len(paths):
         raise DataError("projection.artifacts: duplicate paths")
@@ -36,12 +60,11 @@ def load_calculation_input[T: FrozenCalculationInput](path: Path, model: type[T]
     )
     if effective != inputs.config:
         raise DataError("projection.config: frozen hashes or values disagree")
-    if isinstance(inputs, CalibratedInput):
+    if isinstance(inputs, CalibratedData):
         validate_calibration_snapshot(inputs, path.parent)
-    return inputs, digest(data)
 
 
-def validate_calibration_snapshot(inputs: CalibratedInput, root: Path) -> None:
+def validate_calibration_snapshot(inputs: CalibratedData, root: Path) -> None:
     snapshot = load_snapshot(checked_path(root, inputs.calibration_snapshot))
     required = {
         f"{inputs.calibration_snapshot}/{p}"
@@ -59,7 +82,7 @@ def validate_calibration_snapshot(inputs: CalibratedInput, root: Path) -> None:
 
 
 def calculate_file(path: Path, output: Path) -> Path:
-    inputs, input_hash = load_calculation_input(path, CalibratedInput)
+    inputs, input_hash = load_projection(path)
     return publish_result(calculate(inputs, input_hash), output, "calculation")
 
 

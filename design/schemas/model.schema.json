@@ -84,6 +84,27 @@
       "title": "Evidence",
       "type": "object"
     },
+    "HistoryShare": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_id": {
+          "minLength": 1,
+          "title": "Stat Id",
+          "type": "string"
+        },
+        "parent_stat": {
+          "minLength": 1,
+          "title": "Parent Stat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stat_id",
+        "parent_stat"
+      ],
+      "title": "HistoryShare",
+      "type": "object"
+    },
     "ModelConfig": {
       "additionalProperties": false,
       "description": "Stage 1 accepts only settings consumed by snapshot construction.",
@@ -124,6 +145,155 @@
         "parent"
       ],
       "title": "NestedCount",
+      "type": "object"
+    },
+    "PositionPool": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "any_positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Any Positions",
+          "type": "array"
+        },
+        "exact_positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Exact Positions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "any_positions",
+        "exact_positions"
+      ],
+      "title": "PositionPool",
+      "type": "object"
+    },
+    "PreparationModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 4,
+          "minimum": 4,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation"
+      ],
+      "title": "PreparationModel",
+      "type": "object"
+    },
+    "PreparationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "minutes_stat": {
+          "minLength": 1,
+          "title": "Minutes Stat",
+          "type": "string"
+        },
+        "forecast_prior_id": {
+          "minLength": 1,
+          "title": "Forecast Prior Id",
+          "type": "string"
+        },
+        "historical_prior_id": {
+          "minLength": 1,
+          "title": "Historical Prior Id",
+          "type": "string"
+        },
+        "minimum_player_history": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Player History",
+          "type": "integer"
+        },
+        "donor_minimum_history": {
+          "exclusiveMinimum": 0,
+          "title": "Donor Minimum History",
+          "type": "integer"
+        },
+        "donor_minutes_lower": {
+          "minimum": 0,
+          "title": "Donor Minutes Lower",
+          "type": "number"
+        },
+        "donor_minutes_upper": {
+          "minimum": 0,
+          "title": "Donor Minutes Upper",
+          "type": "number"
+        },
+        "position_pools": {
+          "items": {
+            "$ref": "#/$defs/PositionPool"
+          },
+          "minItems": 1,
+          "title": "Position Pools",
+          "type": "array"
+        },
+        "history_shares": {
+          "items": {
+            "$ref": "#/$defs/HistoryShare"
+          },
+          "title": "History Shares",
+          "type": "array"
+        },
+        "historical_games_lower": {
+          "minimum": 0,
+          "title": "Historical Games Lower",
+          "type": "number"
+        },
+        "historical_games_upper": {
+          "minimum": 0,
+          "title": "Historical Games Upper",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "minutes_stat",
+        "forecast_prior_id",
+        "historical_prior_id",
+        "minimum_player_history",
+        "donor_minimum_history",
+        "donor_minutes_lower",
+        "donor_minutes_upper",
+        "position_pools",
+        "history_shares",
+        "historical_games_lower",
+        "historical_games_upper",
+        "evidence"
+      ],
+      "title": "PreparationParameters",
       "type": "object"
     },
     "PriorWeight": {
@@ -494,6 +664,9 @@
     },
     {
       "$ref": "#/$defs/CalculationModel"
+    },
+    {
+      "$ref": "#/$defs/PreparationModel"
     }
   ],
   "title": "ModelDocument"

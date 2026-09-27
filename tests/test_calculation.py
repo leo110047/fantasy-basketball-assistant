@@ -13,7 +13,7 @@ from fba.adapters.config import load_config
 from fba.adapters.migration import migrate_projection
 from fba.adapters.snapshots import artifact, publish
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import CalculationModel
+from fba.contracts.config import PreparationModel
 from fba.contracts.data import CalibrationPair, ManualAdjustments, Snapshot
 from fba.contracts.projection import CalibratedInput
 from fba.core.data import fit_availability
@@ -162,7 +162,7 @@ def test_calculation_settings_are_required_and_invalid_groups_fail_early(project
             altered = json.loads(json.dumps(value))
             del altered[group][field]
             with pytest.raises(ValidationError):
-                CalculationModel.model_validate_json(json.dumps(altered))
+                PreparationModel.model_validate_json(json.dumps(altered))
     value["projection"]["rounding_groups"][0].append("AST")
     path.write_text(json.dumps(value))
     with pytest.raises(ConfigError, match="rounding_groups"):

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from fba.contracts.base import DataError
-from fba.contracts.config import CalculationModel, PriorWeight, SeasonConfig
+from fba.contracts.config import PreparationModel, PriorWeight, SeasonConfig
 from fba.contracts.projection import Prior, ProjectionPlayer
 from fba.core.distribution import moments
 from fba.core.projection import prior
@@ -13,7 +13,7 @@ from fba.core.projection import prior
 
 @pytest.fixture
 def model():
-    return CalculationModel.model_validate_json(
+    return PreparationModel.model_validate_json(
         (Path(__file__).parents[1] / "examples/2026-27/model.json").read_bytes()
     )
 

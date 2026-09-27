@@ -1,12 +1,18 @@
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import CalculationModel, ThresholdCount
-from fba.contracts.projection import CalculationResult, CalibratedInput, Projected
+from fba.contracts.projection import (
+    CalculationResult,
+    PreparedInput,
+    PreparedPlayer,
+    ProductionInput,
+    Projected,
+)
 from fba.core.distribution import moments
 from fba.core.projection import calibrate_availability, prior, validate_availability
 from fba.core.valuation import fit_ruler, value
 
 
-def calculate(inputs: CalibratedInput, input_sha256: str) -> CalculationResult:
+def calculate(inputs: ProductionInput, input_sha256: str) -> CalculationResult:
     model = inputs.config.model
     if not isinstance(model, CalculationModel):
         raise ConfigError(
@@ -37,24 +43,7 @@ def calculate(inputs: CalibratedInput, input_sha256: str) -> CalculationResult:
     )
     if not isinstance(threshold, ThresholdCount):
         raise ConfigError("model.projection.threshold_stat: requires a threshold_count statistic")
-    projected: list[Projected] = []
-    for player in sorted(inputs.players, key=lambda p: p.id):
-        if player.team_id is None or not player.priors:
-            continue
-        games, minutes, stats = prior(player, model.projection)
-        validate_availability(player, games, teams[player.team_id])
-        projected.append(
-            moments(
-                player,
-                games,
-                minutes,
-                stats,
-                model.projection,
-                threshold,
-                model.valuation.result_decimals,
-            )
-        )
-    raw = tuple(projected)
+    raw = project_population(inputs, model, threshold)
     axes = (*model.projection.stat_ids, model.projection.threshold_stat)
     # Replacement eligibility stays on the original GP scale, before availability calibration.
     ruler = fit_ruler(raw, axes, inputs.config.league, model.valuation)
@@ -62,6 +51,15 @@ def calculate(inputs: CalibratedInput, input_sha256: str) -> CalculationResult:
         raw, inputs.calibration, next(iter(season_games)), model.valuation.result_decimals
     )
     by_id = {p.id: p for p in inputs.players}
+    adjusted: list[Projected] = []
+    for projection in projections:
+        player = by_id[projection.id]
+        if isinstance(player, PreparedPlayer) and player.expected_games_override is not None:
+            projection = projection.model_copy(
+                update={"expected_games": player.expected_games_override}
+            )
+        adjusted.append(projection)
+    projections = tuple(adjusted)
     for projection in projections:
         player = by_id[projection.id]
         if player.team_id is not None:
@@ -84,3 +82,36 @@ def calculate(inputs: CalibratedInput, input_sha256: str) -> CalculationResult:
             ruler,
         ),
     )
+
+
+def project_population(
+    inputs: ProductionInput, model: CalculationModel, threshold: ThresholdCount
+) -> tuple[Projected, ...]:
+    teams = {t.id: t for t in inputs.teams}
+    projected: list[Projected] = []
+    pools = (
+        {p.id: p.history for p in inputs.history_pools} if isinstance(inputs, PreparedInput) else {}
+    )
+    if isinstance(inputs, PreparedInput) and len(pools) != len(inputs.history_pools):
+        raise DataError("projection.history_pools: duplicate IDs")
+    for player in sorted(inputs.players, key=lambda p: p.id):
+        if player.team_id is None or not player.priors:
+            continue
+        games, minutes, stats = prior(player, model.projection)
+        validate_availability(player, games, teams[player.team_id])
+        if isinstance(player, PreparedPlayer) and player.history_pool_id is not None:
+            if player.history or player.history_pool_id not in pools:
+                raise DataError(f"projection.{player.id}: missing or conflicting history pool")
+            player = player.model_copy(update={"history": pools[player.history_pool_id]})
+        projected.append(
+            moments(
+                player,
+                games,
+                minutes,
+                stats,
+                model.projection,
+                threshold,
+                model.valuation.result_decimals,
+            )
+        )
+    return tuple(projected)
