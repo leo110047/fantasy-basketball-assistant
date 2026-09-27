@@ -1,11 +1,12 @@
 import json
 import shutil
 import tempfile
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 
 from fba.adapters.acquisition import Acquired
 from fba.adapters.codec import canonical, decode, digest, read_bytes
-from fba.contracts.base import DataError, VersionError
+from fba.contracts.base import DataError, Record, VersionError
 from fba.contracts.config import ValidatedConfig
 from fba.contracts.data import Artifact, Snapshot
 
@@ -31,25 +32,39 @@ def checked_path(root: Path, relative: str) -> Path:
 
 def publish(snapshot: Snapshot, files: dict[str, bytes], output: Path) -> Path:
     """Publish only a fully verified tree; existing versions are never overwritten."""
-    payload = canonical(snapshot)
-    name = f"snapshot-{digest(payload)}"
-    output.mkdir(parents=True, exist_ok=True)
+    return publish_bundle(snapshot, snapshot.artifacts, snapshot.as_of, files, output, "snapshot")
+
+
+def publish_bundle(
+    record: Record,
+    artifacts: tuple[Artifact, ...],
+    as_of: datetime,
+    files: dict[str, bytes],
+    output: Path,
+    prefix: str,
+) -> Path:
+    payload = canonical(record)
+    name = f"{prefix}-{digest(payload)}"
+    try:
+        output.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise DataError(f"{output}: publication directory failed: {exc}") from exc
     destination = output / name
     if destination.exists():
         raise DataError(f"{destination}: snapshot already exists")
-    if set(files) != {a.path for a in snapshot.artifacts}:
-        raise DataError("snapshot.artifacts: file inventory mismatch")
+    if set(files) != {a.path for a in artifacts}:
+        raise DataError("artifacts: file inventory mismatch")
     temporary = Path(tempfile.mkdtemp(prefix=".building-", dir=output))
     try:
-        for entry in snapshot.artifacts:
+        for entry in artifacts:
             data = files[entry.path]
             if len(data) != entry.size or digest(data) != entry.sha256:
-                raise DataError(f"snapshot.artifacts.{entry.path}: bytes do not match manifest")
+                raise DataError(f"artifacts.{entry.path}: bytes do not match manifest")
             path = checked_path(temporary, entry.path)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
-        (temporary / "snapshot.json").write_bytes(payload)
-        verify_files(temporary, snapshot)
+        (temporary / f"{prefix}.json").write_bytes(payload)
+        verify_artifacts(temporary, artifacts, as_of, f"{prefix}.json")
         # macOS and Linux reject replacing a nonempty snapshot directory.
         temporary.rename(destination)
     except (OSError, DataError) as exc:
@@ -61,20 +76,26 @@ def publish(snapshot: Snapshot, files: dict[str, bytes], output: Path) -> Path:
 
 
 def verify_files(root: Path, snapshot: Snapshot) -> None:
-    paths = tuple(a.path for a in snapshot.artifacts)
-    if len(paths) != len(set(paths)) or "snapshot.json" in paths:
-        raise DataError("snapshot.artifacts: duplicate or reserved path")
-    for entry in snapshot.artifacts:
+    verify_artifacts(root, snapshot.artifacts, snapshot.as_of, "snapshot.json")
+
+
+def verify_artifacts(
+    root: Path, artifacts: tuple[Artifact, ...], as_of: datetime, manifest_name: str
+) -> None:
+    paths = tuple(a.path for a in artifacts)
+    if len(paths) != len(set(paths)) or manifest_name in paths:
+        raise DataError("artifacts: duplicate or reserved path")
+    for entry in artifacts:
         data = read_bytes(checked_path(root, entry.path))
         if digest(data) != entry.sha256 or len(data) != entry.size:
-            raise DataError(f"snapshot.artifacts.{entry.path}: SHA-256 or size mismatch")
+            raise DataError(f"artifacts.{entry.path}: SHA-256 or size mismatch")
         provenance = entry.provenance
         if provenance is not None and (
             provenance.raw_sha256 != entry.sha256
-            or provenance.available_as_of > snapshot.as_of
-            or provenance.retrieved_at > snapshot.as_of
+            or provenance.available_as_of > as_of
+            or provenance.retrieved_at > as_of
         ):
-            raise DataError(f"snapshot.artifacts.{entry.path}: invalid provenance")
+            raise DataError(f"artifacts.{entry.path}: invalid provenance")
 
 
 def load_snapshot(root: Path) -> Snapshot:

@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from math import fsum
 
 from fba.contracts.base import ConfigError
 from fba.contracts.config import (
@@ -8,6 +9,7 @@ from fba.contracts.config import (
     Linear,
     ModelConfig,
     Period,
+    ResourceModel,
     SeasonConfig,
     ThresholdCount,
     ValidatedConfig,
@@ -179,7 +181,7 @@ def validate_sources(season: SeasonConfig) -> None:
 def validate_config(
     league: LeagueRules,
     season: SeasonConfig,
-    model: ModelConfig | CalculationModel,
+    model: ModelConfig | ResourceModel | CalculationModel,
     refs: ConfigBundle,
 ) -> ValidatedConfig:
     if season.starts_on > season.ends_on:
@@ -191,13 +193,13 @@ def validate_config(
     validate_sources(season)
     if model.calibration.evidence.as_of > season.snapshot_as_of:
         raise ConfigError("model.calibration.evidence.as_of: after snapshot cutoff")
-    if isinstance(model, CalculationModel):
+    if isinstance(model, (ResourceModel, CalculationModel)):
         validate_calculation_model(league, season, model)
     return ValidatedConfig(league=league, season=season, model=model, refs=refs)
 
 
 def validate_calculation_model(
-    league: LeagueRules, season: SeasonConfig, model: CalculationModel
+    league: LeagueRules, season: SeasonConfig, model: ResourceModel | CalculationModel
 ) -> None:
     p = model.projection
     fields = set(p.stat_ids)
@@ -212,8 +214,17 @@ def validate_calculation_model(
         raise ConfigError("model.projection.rounding_groups: must partition primitive axes")
     if not p.scoring_terms or any(t.stat_id == p.scoring_stat for t in p.scoring_terms):
         raise ConfigError("model.projection.scoring_terms: missing or cyclic formula")
-    used = {p.scoring_stat, p.second_chance_stat, p.assist_stat, p.made_stat, *p.offense_stats}
-    used.update(t.stat_id for t in (*p.scoring_terms, *p.possession_terms))
+    used = {p.scoring_stat, *(t.stat_id for t in p.scoring_terms)}
+    if isinstance(model, ResourceModel):
+        used.update(
+            (
+                model.projection.second_chance_stat,
+                model.projection.assist_stat,
+                model.projection.made_stat,
+                *model.projection.offense_stats,
+            )
+        )
+        used.update(t.stat_id for t in model.projection.possession_terms)
     if not used <= fields or p.threshold_stat in fields:
         raise ConfigError("model.projection: unknown or duplicate statistic reference")
     definitions = {s.id: s.definition for s in season.stat_definitions}
@@ -224,8 +235,6 @@ def validate_calculation_model(
         raise ConfigError("model.projection.threshold_stat: requires projected threshold inputs")
     if (
         min(
-            p.minimum_cost_scale,
-            p.minimum_usage_scale,
             p.count_pseudocount,
             p.attempt_pseudocount,
             p.feasibility_tolerance,
@@ -234,7 +243,18 @@ def validate_calculation_model(
     ):
         raise ConfigError("model.projection: numerical scales and tolerances must be positive")
     validate_nested_counts(model)
-    validate_offense(model)
+    if isinstance(model, ResourceModel):
+        validate_offense(model)
+    else:
+        unique(
+            tuple(w.id for w in model.projection.prior_weights), "model.projection.prior_weights"
+        )
+        if (
+            not model.projection.prior_weights
+            or abs(fsum(w.weight for w in model.projection.prior_weights) - 1)
+            > p.feasibility_tolerance
+        ):
+            raise ConfigError("model.projection.prior_weights: weights must sum to one")
     for category in league.categories:
         terms = (
             category.formula.terms
@@ -248,7 +268,7 @@ def validate_calculation_model(
             raise ConfigError(f"model.{name}.evidence.as_of: after snapshot cutoff")
 
 
-def validate_nested_counts(model: CalculationModel) -> None:
+def validate_nested_counts(model: ResourceModel | CalculationModel) -> None:
     p = model.projection
     children = tuple(pair.child for pair in p.nested_counts)
     if len(children) != len(set(children)) or not set(children) <= set(p.stat_ids):
@@ -264,11 +284,12 @@ def validate_nested_counts(model: CalculationModel) -> None:
         available.add(pair.child)
 
 
-def validate_offense(model: CalculationModel) -> None:
+def validate_offense(model: ResourceModel) -> None:
     p = model.projection
     offense = set(p.offense_stats)
     if (
         len(offense) != len(p.offense_stats)
+        or min(p.minimum_cost_scale, p.minimum_usage_scale) <= 0
         or not p.possession_terms
         or any(t.coefficient <= 0 or t.stat_id not in offense for t in p.possession_terms)
         or p.second_chance_stat in offense

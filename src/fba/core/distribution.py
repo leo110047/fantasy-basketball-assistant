@@ -4,14 +4,14 @@ import numpy as np
 from numpy.typing import NDArray
 
 from fba.contracts.base import DataError
-from fba.contracts.config import ProjectionParameters, ThresholdCount
+from fba.contracts.config import DistributionParameters, ThresholdCount
 from fba.contracts.projection import Projected, ProjectionPlayer
 
 Floats = NDArray[np.float64]
 
 
 def bounded_mean(
-    capacity: Floats, weights: Floats, target: float, settings: ProjectionParameters
+    capacity: Floats, weights: Floats, target: float, settings: DistributionParameters
 ) -> Floats:
     maximum = float(capacity.mean())
     if target < 0 or target > maximum + settings.feasibility_tolerance:
@@ -34,7 +34,7 @@ def bounded_mean(
     return np.minimum(capacity, ((low + high) / 2) * weights)
 
 
-def calibrate(history: Floats, target: Floats, settings: ProjectionParameters) -> Floats:
+def calibrate(history: Floats, target: Floats, settings: DistributionParameters) -> Floats:
     if history.ndim != 2 or history.shape[0] == 0 or history.shape[1] != len(settings.stat_ids):
         raise DataError("projection.distribution: missing or incompatible game history")
     axes = settings.stat_ids
@@ -63,7 +63,7 @@ def calibrate(history: Floats, target: Floats, settings: ProjectionParameters) -
     return values
 
 
-def discrete_states(values: Floats, settings: ProjectionParameters) -> tuple[Floats, Floats]:
+def discrete_states(values: Floats, settings: DistributionParameters) -> tuple[Floats, Floats]:
     """Integrate independent group uniforms, shared within each nested-count group."""
     choices = tuple(product(*(range(len(group) + 1) for group in settings.rounding_groups)))
     states = np.zeros((len(values), len(choices), len(settings.stat_ids)))
@@ -93,7 +93,7 @@ def moments(
     games: float,
     minutes: float,
     target: tuple[float, ...],
-    settings: ProjectionParameters,
+    settings: DistributionParameters,
     threshold: ThresholdCount,
     decimals: int,
 ) -> Projected:

@@ -221,13 +221,22 @@ class NestedCount(Record):
     parent: Text
 
 
-class ProjectionParameters(Record):
+class DistributionParameters(Record):
     stat_ids: tuple[Text, ...]
     rounding_groups: tuple[tuple[Text, ...], ...]
     nested_counts: tuple[NestedCount, ...]
     scoring_stat: Text
     scoring_terms: tuple[Term, ...]
     threshold_stat: Text
+    count_pseudocount: Nonnegative
+    attempt_pseudocount: Nonnegative
+    search_iterations: PositiveInt
+    integration_batch_size: PositiveInt
+    feasibility_tolerance: Nonnegative
+    evidence: Evidence
+
+
+class ResourceParameters(DistributionParameters):
     offense_stats: tuple[Text, ...]
     possession_terms: tuple[Term, ...]
     second_chance_stat: Text
@@ -237,12 +246,15 @@ class ProjectionParameters(Record):
     players_on_court: PositiveInt
     minimum_cost_scale: Nonnegative
     minimum_usage_scale: Nonnegative
-    count_pseudocount: Nonnegative
-    attempt_pseudocount: Nonnegative
-    search_iterations: PositiveInt
-    integration_batch_size: PositiveInt
-    feasibility_tolerance: Nonnegative
-    evidence: Evidence
+
+
+class PriorWeight(Record):
+    id: Text
+    weight: Nonnegative
+
+
+class ProjectionParameters(DistributionParameters):
+    prior_weights: tuple[PriorWeight, ...]
 
 
 class ValuationParameters(Record):
@@ -253,14 +265,21 @@ class ValuationParameters(Record):
     evidence: Evidence
 
 
-class CalculationModel(Record):
+class ResourceModel(Record):
     format_version: Annotated[int, Field(ge=2, le=2)]
+    calibration: CalibrationMethod
+    projection: ResourceParameters
+    valuation: ValuationParameters
+
+
+class CalculationModel(Record):
+    format_version: Annotated[int, Field(ge=3, le=3)]
     calibration: CalibrationMethod
     projection: ProjectionParameters
     valuation: ValuationParameters
 
 
-class ModelDocument(RootModel[ModelConfig | CalculationModel]):
+class ModelDocument(RootModel[ModelConfig | ResourceModel | CalculationModel]):
     pass
 
 
@@ -279,5 +298,5 @@ class ConfigBundle(Record):
 class ValidatedConfig(Record):
     league: LeagueRules
     season: SeasonConfig
-    model: ModelConfig | CalculationModel
+    model: ModelConfig | ResourceModel | CalculationModel
     refs: ConfigBundle

@@ -1,5 +1,5 @@
 {
-  "format_version": 3,
+  "format_version": 2,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -85,6 +85,37 @@
       }
     ],
     "threshold_stat": "DD",
+    "offense_stats": [
+      "FGM",
+      "FGA",
+      "FTM",
+      "FTA",
+      "PTS",
+      "3PM",
+      "AST",
+      "TO"
+    ],
+    "possession_terms": [
+      {
+        "stat_id": "FGA",
+        "coefficient": 1
+      },
+      {
+        "stat_id": "FTA",
+        "coefficient": 0.44
+      },
+      {
+        "stat_id": "TO",
+        "coefficient": 1
+      }
+    ],
+    "second_chance_stat": "OREB",
+    "assist_stat": "AST",
+    "made_stat": "FGM",
+    "regulation_minutes": 48,
+    "players_on_court": 5,
+    "minimum_cost_scale": 1.0,
+    "minimum_usage_scale": 0.001,
     "count_pseudocount": 0.5,
     "attempt_pseudocount": 1.0,
     "search_iterations": 70,
@@ -94,18 +125,8 @@
       "kind": "source",
       "reference": "Locked auction-desk projection.py, projection_moments.py, valuation.py (2026-09-27)",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "R04: omit team resource reductions. Original 2025-26 paired reference evaluation improves when resource allocation is removed; blend stays equal until its separate change."
-    },
-    "prior_weights": [
-      {
-        "id": "a",
-        "weight": 0.5
-      },
-      {
-        "id": "b",
-        "weight": 0.5
-      }
-    ]
+      "reason": "Equivalent reference formulas. Source averaging, historical minute cost, population SD, replacement band, and numeric tolerances are carried explicitly; not a validated causal forecast."
+    }
   },
   "valuation": {
     "pool_iterations": 6,

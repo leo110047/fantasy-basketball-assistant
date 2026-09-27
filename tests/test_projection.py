@@ -1,16 +1,14 @@
 import json
-from datetime import date
 from pathlib import Path
 
 import numpy as np
 import pytest
-from scipy.optimize import minimize
 
 from fba.contracts.base import DataError
 from fba.contracts.config import CalculationModel, SeasonConfig
-from fba.contracts.projection import Prior, ProjectionPlayer, ProjectionTeam
+from fba.contracts.projection import Prior, ProjectionPlayer
 from fba.core.distribution import moments
-from fba.core.projection import reconcile_team, weighted_cap
+from fba.core.projection import prior
 
 
 @pytest.fixture
@@ -18,53 +16,6 @@ def model():
     return CalculationModel.model_validate_json(
         (Path(__file__).parents[1] / "examples/2026-27/model.json").read_bytes()
     )
-
-
-def independent_solution(target, scales, weights, limit):
-    return minimize(
-        lambda x: 0.5 * np.sum(((x - target) / scales) ** 2),
-        target * 0.5,
-        jac=lambda x: (x - target) / scales**2,
-        bounds=[(0, x) for x in target],
-        constraints=[
-            {"type": "ineq", "fun": lambda x: limit - weights @ x, "jac": lambda x: -weights}
-        ],
-        method="SLSQP",
-        options={"ftol": 1e-12, "maxiter": 1000},
-    )
-
-
-def test_allocation_matches_closed_form_and_independent_optimizer(model):
-    settings = model.projection
-    actual = weighted_cap((100.0, 100.0, 100.0), (1.0, 2.0, 3.0), (1.0, 1.0, 1.0), 240.0, settings)
-    np.testing.assert_allclose(actual, 100 - 60 * np.array([1, 4, 9]) / 14, atol=1e-10)
-    rng = np.random.default_rng(42)
-    for _ in range(20):
-        target = rng.uniform(5, 40, 8)
-        scales = rng.uniform(1, 5, 8)
-        weights = rng.uniform(0, 1, 8)
-        limit = float(weights @ target) * 0.7
-        result = weighted_cap(tuple(target), tuple(scales), tuple(weights), limit, settings)
-        oracle = independent_solution(target, scales, weights, limit)
-        assert oracle.success
-        np.testing.assert_allclose(result, oracle.x, atol=2e-5)
-        order = rng.permutation(len(target))
-        shuffled = weighted_cap(
-            tuple(target[order]), tuple(scales[order]), tuple(weights[order]), limit, settings
-        )
-        np.testing.assert_allclose(np.array(shuffled)[np.argsort(order)], result, atol=1e-12)
-
-
-def test_allocation_rejects_invalid_input_and_preserves_zero_exposure(model):
-    p = model.projection
-    assert weighted_cap((30.0, 20.0), (1.0, 1.0), (0.0, 1.0), 0.0, p) == (30.0, 0.0)
-    for target, scales, weights, limit in [
-        ((1.0,), (0.0,), (1.0,), 0.0),
-        ((1.0,), (1.0,), (1.0,), -1.0),
-        ((float("nan"),), (1.0,), (1.0,), 0.0),
-    ]:
-        with pytest.raises(DataError):
-            weighted_cap(target, scales, weights, limit, p)
 
 
 def test_distribution_has_independent_closed_form_threshold_moments(model):
@@ -79,11 +30,9 @@ def test_distribution_has_independent_closed_form_threshold_moments(model):
         id="x",
         name="x",
         team_id="a",
-        catalog=True,
         priors=(),
         games_cap=None,
         return_on=None,
-        minutes_sd=1.0,
         history=(stats,),
     )
     result = moments(player, 60.0, 30.0, stats, model.projection, threshold, 8)
@@ -109,11 +58,9 @@ def test_distribution_batching_preserves_known_answer(model):
         id="x",
         name="x",
         team_id="a",
-        catalog=True,
         priors=(),
         games_cap=None,
         return_on=None,
-        minutes_sd=1.0,
         history=(row,) * 257,
     )
     one = moments(player, 60.0, 30.0, row, model.projection, threshold, 8)
@@ -142,27 +89,27 @@ def test_covariance_rounding_boundary_is_platform_independent(model):
     assert result.covariance[i][j] == pytest.approx(data["independent_covariance"], abs=1.01e-8)
 
 
-def test_final_team_resources_obey_budget_and_reject_inconsistent_scaling(model):
+def test_priors_preserve_minutes_and_single_source(model):
     stats = (4.0, 8.0, 2.0, 3.0, 10.0, 0.0, 9.5, 2.0, 9.5, 1.0, 0.0, 0.0)
     player = ProjectionPlayer(
         id="x",
         name="x",
         team_id="a",
-        catalog=True,
-        priors=(Prior(id="source", expected_games=1.0, minutes=30.0, stats=stats),),
+        priors=(
+            Prior(id="a", expected_games=60.0, minutes=30.0, stats=stats),
+            Prior(id="b", expected_games=70.0, minutes=40.0, stats=stats),
+        ),
         games_cap=None,
         return_on=None,
-        minutes_sd=1.0,
         history=(stats,),
     )
-    team = ProjectionTeam(
-        id="a", dates=(date(2026, 10, 20),), full_season_games=1, possession_budget=0.0
+    games, minutes, _ = prior(player, model.projection)
+    assert games == 65.0
+    assert minutes == 35.0
+    solo = player.model_copy(update={"priors": player.priors[:1]})
+    assert prior(solo, model.projection) == (60.0, 30.0, stats)
+    unknown = player.model_copy(
+        update={"priors": (player.priors[0].model_copy(update={"id": "unknown"}),)}
     )
-    _, minutes, row = reconcile_team((player,), team, model.projection)[0]
-    assert minutes <= 240
-    assert row[1] + 0.44 * row[3] + row[9] <= row[7] + 1e-8
-    assert row[8] <= row[0] + 1e-8
-    # Even a caller bypassing configuration loading cannot publish a violated resource limit.
-    broken = model.projection.model_copy(update={"offense_stats": ()})
-    with pytest.raises(DataError, match="final resource postcondition"):
-        reconcile_team((player,), team, broken)
+    with pytest.raises(DataError, match="unconfigured"):
+        prior(unknown, model.projection)

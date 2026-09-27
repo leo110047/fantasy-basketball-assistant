@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from fba.adapters.calculation import calculate_file, load_calculation_input
 from fba.adapters.codec import canonical, digest
 from fba.adapters.config import load_config
+from fba.adapters.migration import migrate_projection
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import CalculationModel
 from fba.contracts.projection import ProjectionInput
@@ -61,25 +62,18 @@ def projection_bundle(tmp_path):
                 "id": str(i),
                 "name": str(i),
                 "team_id": "A" if i < 6 else "B",
-                "catalog": True,
-                "priors": [
-                    {"id": "provider", "expected_games": 3.0, "minutes": 15.0, "stats": stats}
-                ],
+                "priors": [{"id": "a", "expected_games": 3.0, "minutes": 15.0, "stats": stats}],
                 "games_cap": None,
                 "return_on": None,
-                "minutes_sd": 1.0,
                 "history": [stats],
             }
         )
     dates = [str(date(2026, 10, 20) + timedelta(days=i * 2)) for i in range(3)]
     data = {
-        "format_version": 1,
+        "format_version": 2,
         "config": effective.model_dump(mode="json"),
         "players": players,
-        "teams": [
-            {"id": team, "dates": dates, "full_season_games": 4, "possession_budget": 100.0}
-            for team in ("A", "B")
-        ],
+        "teams": [{"id": team, "dates": dates, "full_season_games": 4} for team in ("A", "B")],
         "artifacts": [
             {
                 "path": str(p.relative_to(tmp_path)),
@@ -142,9 +136,8 @@ def test_calculation_settings_are_required_and_invalid_groups_fail_early(project
         load_config(path.with_name("league.json"), path.with_name("season.json"), path)
 
 
-def test_invalid_reserve_prior_is_rejected_without_publishing(projection_bundle, tmp_path):
+def test_invalid_prior_is_rejected_without_publishing(projection_bundle, tmp_path):
     data = json.loads(projection_bundle.read_text())
-    data["players"][0]["catalog"] = False
     data["players"][0]["priors"][0]["stats"][0] = 100
     projection_bundle.write_text(json.dumps(data))
     with pytest.raises(DataError, match="nested count"):
@@ -188,10 +181,107 @@ def test_ragged_history_reports_data_error_through_cli(projection_bundle, tmp_pa
 
 
 @pytest.mark.parametrize("offense", [[], ["FTM", "FTA"], ["FGM", "FGA", "FTM", "FTA", "TO"]])
-def test_incomplete_offense_dependencies_fail_at_config_load(projection_bundle, offense):
-    path = projection_bundle.parent / "config/model.json"
+def test_incomplete_offense_dependencies_fail_at_config_load(legacy_projection_bundle, offense):
+    path = legacy_projection_bundle.parent / "config/model.json"
     data = json.loads(path.read_text())
     data["projection"]["offense_stats"] = offense
     path.write_text(json.dumps(data))
     with pytest.raises(ConfigError, match="offense_stats"):
         load_config(path.with_name("league.json"), path.with_name("season.json"), path)
+
+
+@pytest.fixture
+def legacy_projection_bundle(projection_bundle):
+    path = projection_bundle
+    data = json.loads(path.read_text())
+    config_dir = path.parent / "config"
+    model = json.loads((Path(__file__).parent / "fixtures/resource-model-v2.json").read_text())
+    model["valuation"].update(healthy_games=1, replacement_count=2)
+    (config_dir / "model.json").write_text(json.dumps(model))
+    config = load_config(*(config_dir / f"{name}.json" for name in ("league", "season", "model")))
+    data["format_version"] = 1
+    data["config"] = config.model_dump(mode="json")
+    for player in data["players"]:
+        player.update(catalog=True, minutes_sd=1.0)
+    for team in data["teams"]:
+        team["possession_budget"] = 100.0
+    data["artifacts"] = [
+        {
+            "path": str(p.relative_to(path.parent)),
+            "sha256": digest(p.read_bytes()),
+            "size": p.stat().st_size,
+            "provenance": None,
+        }
+        for p in config_dir.glob("*.json")
+    ]
+    path.write_text(json.dumps(data))
+    return path
+
+
+def test_team_totals_do_not_cut_individual_minutes(projection_bundle, tmp_path):
+    data = json.loads(projection_bundle.read_text())
+    for player in data["players"]:
+        player["team_id"] = "A"
+        player["priors"][0].update(expected_games=4.0, minutes=30.0)
+    projection_bundle.write_text(json.dumps(data))
+    result = json.loads(calculate_file(projection_bundle, tmp_path / "output").read_text())
+    assert all(p["minutes"] == 30.0 and p["expected_games"] == 4.0 for p in result["projections"])
+
+
+def test_explicit_migration_preserves_sources_and_removes_sd_dependency(
+    legacy_projection_bundle, tmp_path
+):
+    path = legacy_projection_bundle
+    source_bytes = path.read_bytes()
+    model = json.loads((Path(__file__).parents[1] / "examples/2026-27/model.json").read_text())
+    model["valuation"].update(healthy_games=1, replacement_count=2)
+    new_model = tmp_path / "new-model.json"
+    new_model.write_text(json.dumps(model))
+    with pytest.raises(DataError, match="format_version"):
+        calculate_file(path, tmp_path / "unconverted")
+    bundle = migrate_projection(path, new_model, tmp_path / "converted")
+    converted = bundle / "projection-input.json"
+    inputs, _ = load_calculation_input(converted, ProjectionInput)
+    assert inputs.format_version == 2
+    assert "minutes_sd" not in inputs.players[0].model_dump()
+    assert (bundle / "migration/input-v1.json").read_bytes() == source_bytes
+    assert path.read_bytes() == source_bytes
+    first = json.loads(calculate_file(converted, tmp_path / "first").read_text())
+    old = json.loads(source_bytes)
+    for player in old["players"]:
+        player["minutes_sd"] = 1000
+    path.write_text(json.dumps(old))
+    other = migrate_projection(path, new_model, tmp_path / "changed-sd")
+    second = json.loads(
+        calculate_file(other / "projection-input.json", tmp_path / "second").read_text()
+    )
+    assert first["projections"] == second["projections"]
+    assert first["valuation"] == second["valuation"]
+    with pytest.raises(DataError, match="already exists"):
+        migrate_projection(path, new_model, tmp_path / "changed-sd")
+    model["projection"]["stat_ids"].reverse()
+    new_model.write_text(json.dumps(model))
+    with pytest.raises(ConfigError, match="preserve the original axes"):
+        migrate_projection(path, new_model, tmp_path / "bad-axes")
+    assert not (tmp_path / "bad-axes").exists()
+
+
+def test_migration_rejects_source_changed_after_verification(
+    legacy_projection_bundle, tmp_path, monkeypatch
+):
+    from fba.adapters import migration
+
+    original = migration.load_calculation_input
+
+    def change_after_load(path, model):
+        checked = original(path, model)
+        artifact = path.parent / "config/model.json"
+        artifact.write_bytes(artifact.read_bytes() + b"\n")
+        return checked
+
+    monkeypatch.setattr(migration, "load_calculation_input", change_after_load)
+    model = Path(__file__).parents[1] / "examples/2026-27/model.json"
+    output = tmp_path / "changed-during-read"
+    with pytest.raises(DataError, match="changed during conversion"):
+        migrate_projection(legacy_projection_bundle, model, output)
+    assert not output.exists()

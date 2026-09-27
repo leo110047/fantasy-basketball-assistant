@@ -4,8 +4,8 @@
       "additionalProperties": false,
       "properties": {
         "format_version": {
-          "maximum": 2,
-          "minimum": 2,
+          "maximum": 3,
+          "minimum": 3,
           "title": "Format Version",
           "type": "integer"
         },
@@ -126,6 +126,27 @@
       "title": "NestedCount",
       "type": "object"
     },
+    "PriorWeight": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "weight": {
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "weight"
+      ],
+      "title": "PriorWeight",
+      "type": "object"
+    },
     "ProjectionParameters": {
       "additionalProperties": false,
       "properties": {
@@ -171,6 +192,162 @@
           "minLength": 1,
           "title": "Threshold Stat",
           "type": "string"
+        },
+        "count_pseudocount": {
+          "minimum": 0,
+          "title": "Count Pseudocount",
+          "type": "number"
+        },
+        "attempt_pseudocount": {
+          "minimum": 0,
+          "title": "Attempt Pseudocount",
+          "type": "number"
+        },
+        "search_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Search Iterations",
+          "type": "integer"
+        },
+        "integration_batch_size": {
+          "exclusiveMinimum": 0,
+          "title": "Integration Batch Size",
+          "type": "integer"
+        },
+        "feasibility_tolerance": {
+          "minimum": 0,
+          "title": "Feasibility Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "prior_weights": {
+          "items": {
+            "$ref": "#/$defs/PriorWeight"
+          },
+          "title": "Prior Weights",
+          "type": "array"
+        }
+      },
+      "required": [
+        "stat_ids",
+        "rounding_groups",
+        "nested_counts",
+        "scoring_stat",
+        "scoring_terms",
+        "threshold_stat",
+        "count_pseudocount",
+        "attempt_pseudocount",
+        "search_iterations",
+        "integration_batch_size",
+        "feasibility_tolerance",
+        "evidence",
+        "prior_weights"
+      ],
+      "title": "ProjectionParameters",
+      "type": "object"
+    },
+    "ResourceModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 2,
+          "minimum": 2,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ResourceParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation"
+      ],
+      "title": "ResourceModel",
+      "type": "object"
+    },
+    "ResourceParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Stat Ids",
+          "type": "array"
+        },
+        "rounding_groups": {
+          "items": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rounding Groups",
+          "type": "array"
+        },
+        "nested_counts": {
+          "items": {
+            "$ref": "#/$defs/NestedCount"
+          },
+          "title": "Nested Counts",
+          "type": "array"
+        },
+        "scoring_stat": {
+          "minLength": 1,
+          "title": "Scoring Stat",
+          "type": "string"
+        },
+        "scoring_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Scoring Terms",
+          "type": "array"
+        },
+        "threshold_stat": {
+          "minLength": 1,
+          "title": "Threshold Stat",
+          "type": "string"
+        },
+        "count_pseudocount": {
+          "minimum": 0,
+          "title": "Count Pseudocount",
+          "type": "number"
+        },
+        "attempt_pseudocount": {
+          "minimum": 0,
+          "title": "Attempt Pseudocount",
+          "type": "number"
+        },
+        "search_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Search Iterations",
+          "type": "integer"
+        },
+        "integration_batch_size": {
+          "exclusiveMinimum": 0,
+          "title": "Integration Batch Size",
+          "type": "integer"
+        },
+        "feasibility_tolerance": {
+          "minimum": 0,
+          "title": "Feasibility Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
         },
         "offense_stats": {
           "items": {
@@ -221,34 +398,6 @@
           "minimum": 0,
           "title": "Minimum Usage Scale",
           "type": "number"
-        },
-        "count_pseudocount": {
-          "minimum": 0,
-          "title": "Count Pseudocount",
-          "type": "number"
-        },
-        "attempt_pseudocount": {
-          "minimum": 0,
-          "title": "Attempt Pseudocount",
-          "type": "number"
-        },
-        "search_iterations": {
-          "exclusiveMinimum": 0,
-          "title": "Search Iterations",
-          "type": "integer"
-        },
-        "integration_batch_size": {
-          "exclusiveMinimum": 0,
-          "title": "Integration Batch Size",
-          "type": "integer"
-        },
-        "feasibility_tolerance": {
-          "minimum": 0,
-          "title": "Feasibility Tolerance",
-          "type": "number"
-        },
-        "evidence": {
-          "$ref": "#/$defs/Evidence"
         }
       },
       "required": [
@@ -258,6 +407,12 @@
         "scoring_stat",
         "scoring_terms",
         "threshold_stat",
+        "count_pseudocount",
+        "attempt_pseudocount",
+        "search_iterations",
+        "integration_batch_size",
+        "feasibility_tolerance",
+        "evidence",
         "offense_stats",
         "possession_terms",
         "second_chance_stat",
@@ -266,15 +421,9 @@
         "regulation_minutes",
         "players_on_court",
         "minimum_cost_scale",
-        "minimum_usage_scale",
-        "count_pseudocount",
-        "attempt_pseudocount",
-        "search_iterations",
-        "integration_batch_size",
-        "feasibility_tolerance",
-        "evidence"
+        "minimum_usage_scale"
       ],
-      "title": "ProjectionParameters",
+      "title": "ResourceParameters",
       "type": "object"
     },
     "Term": {
@@ -339,6 +488,9 @@
   "anyOf": [
     {
       "$ref": "#/$defs/ModelConfig"
+    },
+    {
+      "$ref": "#/$defs/ResourceModel"
     },
     {
       "$ref": "#/$defs/CalculationModel"

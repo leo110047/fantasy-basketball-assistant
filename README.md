@@ -28,4 +28,10 @@ uv run fba evaluate /path/evaluation-input.json --output /path/results
 
 兩個指令只讀本機輸入，結果記錄設定與輸入雜湊，拒絕覆寫。回測使用實際賽季資料建立固定評分尺度，以重現原始比較；這不代表輸入已有季前公開時間證明。
 
+目前模型不再按球隊總量砍個人分鐘。舊資源模型的計算輸入須先明確轉換；轉換會保留原檔，並移除舊分鐘波動與球隊資源欄位：
+
+```sh
+uv run fba migrate-projection /path/old-input.json --model /path/model.json --output /path/converted
+```
+
 交付報告、原始資料與快照放在 Git 外。選秀當天操作說明於選秀功能完成時提供。

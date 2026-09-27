@@ -1,7 +1,7 @@
 from math import fsum, sqrt
 
 from fba.contracts.base import DataError
-from fba.contracts.config import CalculationModel
+from fba.contracts.config import CalculationModel, ResourceModel
 from fba.contracts.projection import (
     EvaluationInput,
     EvaluationMetrics,
@@ -62,7 +62,7 @@ def compare(
     predicted: tuple[Projected, ...], inputs: EvaluationInput, ruler: ValuationRuler, label: str
 ) -> EvaluationMetrics:
     model = inputs.config.model
-    if not isinstance(model, CalculationModel):
+    if not isinstance(model, (CalculationModel, ResourceModel)):
         raise DataError("evaluation: calculation model required")
     pred = {p.id: p for p in predicted}
     actual = {p.id: p for p in inputs.actual}
@@ -114,7 +114,7 @@ def compare(
 
 
 def evaluate(inputs: EvaluationInput, input_sha256: str) -> EvaluationResult:
-    if not isinstance(inputs.config.model, CalculationModel):
+    if not isinstance(inputs.config.model, (CalculationModel, ResourceModel)):
         raise DataError("evaluation: calculation model required")
     if not inputs.predictions or len({p.id for p in inputs.predictions}) != len(inputs.predictions):
         raise DataError("evaluation: missing or duplicate variants")

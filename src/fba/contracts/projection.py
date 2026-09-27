@@ -1,4 +1,7 @@
 from datetime import date
+from typing import Annotated
+
+from pydantic import Field
 
 from fba.contracts.base import (
     Finite,
@@ -24,18 +27,24 @@ class ProjectionPlayer(Record):
     id: Text
     name: Text
     team_id: Text | None
-    catalog: bool
     priors: tuple[Prior, ...]
     games_cap: Nonnegative | None
     return_on: date | None
-    minutes_sd: Nonnegative
     history: tuple[tuple[Nonnegative, ...], ...]
+
+
+class ResourcePlayer(ProjectionPlayer):
+    catalog: bool
+    minutes_sd: Nonnegative
 
 
 class ProjectionTeam(Record):
     id: Text
     dates: tuple[date, ...]
     full_season_games: PositiveInt
+
+
+class ResourceTeam(ProjectionTeam):
     possession_budget: Nonnegative
 
 
@@ -45,7 +54,13 @@ class FrozenCalculationInput(Record):
     artifacts: tuple[Artifact, ...]
 
 
+class ResourceInput(FrozenCalculationInput):
+    players: tuple[ResourcePlayer, ...]
+    teams: tuple[ResourceTeam, ...]
+
+
 class ProjectionInput(FrozenCalculationInput):
+    format_version: Annotated[int, Field(ge=2, le=2)]
     players: tuple[ProjectionPlayer, ...]
     teams: tuple[ProjectionTeam, ...]
 

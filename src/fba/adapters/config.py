@@ -13,6 +13,7 @@ from fba.contracts.config import (
     LeagueRules,
     ModelConfig,
     ModelDocument,
+    ResourceModel,
     SeasonConfig,
     ValidatedConfig,
 )
@@ -55,7 +56,7 @@ def load_config(league: Path, season: Path, model: Path) -> ValidatedConfig:
     )
 
 
-def load_parameters(path: Path) -> tuple[ModelConfig | CalculationModel, ConfigRef]:
+def load_parameters(path: Path) -> tuple[ModelConfig | ResourceModel | CalculationModel, ConfigRef]:
     data = read_bytes(path)
     try:
         parameters = ModelDocument.model_validate_json(checked_json(data, str(path))).root

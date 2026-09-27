@@ -2,15 +2,17 @@ from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import CalculationModel, ThresholdCount
 from fba.contracts.projection import CalculationResult, Projected, ProjectionInput
 from fba.core.distribution import moments
-from fba.core.projection import reconcile_team
+from fba.core.projection import prior, validate_availability
 from fba.core.valuation import value
 
 
 def calculate(inputs: ProjectionInput, input_sha256: str) -> CalculationResult:
     model = inputs.config.model
     if not isinstance(model, CalculationModel):
-        raise ConfigError("model: projection calculation requires format_version 2")
-    ids = [p.id for p in inputs.players]
+        raise ConfigError(
+            "model: projection requires format_version 3; migrate the input explicitly"
+        )
+    ids = tuple(p.id for p in inputs.players)
     teams = {t.id: t for t in inputs.teams}
     if len(set(ids)) != len(ids) or len(teams) != len(inputs.teams):
         raise DataError("projection input: duplicate player or team IDs")
@@ -30,38 +32,32 @@ def calculate(inputs: ProjectionInput, input_sha256: str) -> CalculationResult:
     if not isinstance(threshold, ThresholdCount):
         raise ConfigError("model.projection.threshold_stat: requires a threshold_count statistic")
     projected: list[Projected] = []
-    for team in sorted(inputs.teams, key=lambda t: t.id):
-        players = tuple(
-            sorted(
-                (p for p in inputs.players if p.team_id == team.id and p.priors), key=lambda p: p.id
+    for player in sorted(inputs.players, key=lambda p: p.id):
+        if player.team_id is None or not player.priors:
+            continue
+        games, minutes, stats = prior(player, model.projection)
+        validate_availability(player, games, teams[player.team_id])
+        projected.append(
+            moments(
+                player,
+                games,
+                minutes,
+                stats,
+                model.projection,
+                threshold,
+                model.valuation.result_decimals,
             )
         )
-        if not players:
-            continue
-        reconciled = reconcile_team(players, team, model.projection)
-        for player, (games, minutes, stats) in zip(players, reconciled, strict=True):
-            if player.catalog:
-                projected.append(
-                    moments(
-                        player,
-                        games,
-                        minutes,
-                        stats,
-                        model.projection,
-                        threshold,
-                        model.valuation.result_decimals,
-                    )
-                )
-    projections = tuple(sorted(projected, key=lambda p: p.id))
+    projections = tuple(projected)
     return CalculationResult(
         format_version=1,
-        algorithm="configured-resource-projection-v1",
+        algorithm="configured-prior-projection-v2",
         input_sha256=input_sha256,
         config=inputs.config.refs,
         projections=projections,
         valuation=value(
             projections,
-            tuple(p.id for p in inputs.players if p.catalog),
+            ids,
             (*model.projection.stat_ids, model.projection.threshold_stat),
             inputs.config.league,
             model.valuation,

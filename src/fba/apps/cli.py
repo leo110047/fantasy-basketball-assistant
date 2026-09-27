@@ -7,6 +7,7 @@ from fba.adapters.acquisition import Acquired, acquire
 from fba.adapters.calculation import calculate_file, evaluate_file
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
+from fba.adapters.migration import migrate_projection
 from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot, publish
 from fba.apps.build import assemble
 from fba.contracts.base import ConfigError, DataError, IdentityError
@@ -93,6 +94,12 @@ def parser() -> argparse.ArgumentParser:
     for name in ("league", "season", "model", "output"):
         build_parser.add_argument(f"--{name}", required=True, type=Path)
     build_parser.add_argument("--version", required=True, type=int)
+    migration = commands.add_parser(
+        "migrate-projection", help="Upgrade a resource input using an explicit new model"
+    )
+    migration.add_argument("input", type=Path)
+    migration.add_argument("--model", required=True, type=Path)
+    migration.add_argument("--output", required=True, type=Path)
     for name in ("calculate", "evaluate"):
         calculation = commands.add_parser(name, help="Compute from a frozen calculation input")
         calculation.add_argument("input", type=Path)
@@ -108,6 +115,10 @@ def parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = parser().parse_args()
     try:
+        if args.command == "migrate-projection":
+            path = migrate_projection(args.input, args.model, args.output)
+            print(json.dumps({"input": str(path / "projection-input.json")}))
+            return 0
         if args.command in ("calculate", "evaluate"):
             operation = calculate_file if args.command == "calculate" else evaluate_file
             result = operation(args.input, args.output)
