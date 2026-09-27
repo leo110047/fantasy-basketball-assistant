@@ -1,0 +1,12 @@
+{
+  "format_version": 1,
+  "calibration": {
+    "value": "ordinary_least_squares",
+    "evidence": {
+      "kind": "source",
+      "reference": "Fantasy refactor specification section 4.6; reference backtest_improvements.py",
+      "as_of": "2026-09-27T11:15:43.799266+00:00",
+      "reason": "Fit previous season projected GP against actual season totals; absence of an actual season record means zero games, following the reference calibration."
+    }
+  }
+}

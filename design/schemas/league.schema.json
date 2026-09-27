@@ -1,364 +1,209 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:fantasy-assistant:league:1",
-  "title": "league",
-  "type": "object",
-  "properties": {
-    "format_version": {
-      "const": 1
-    },
-    "league_id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "teams": {
-      "type": "integer",
-      "minimum": 2
-    },
-    "budget": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "minimum_bid": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "bid_increment": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "timezone": {
-      "type": "string",
-      "minLength": 1
-    },
-    "positions": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      },
-      "minItems": 1
-    },
-    "starter_slots": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "label": {
-            "type": "string",
-            "minLength": 1
-          },
-          "eligible_positions": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "minItems": 1
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "eligible_positions"
-        ],
-        "additionalProperties": false
-      },
-      "minItems": 1
-    },
-    "bench_slots": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "injury_slots": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "label": {
-            "type": "string",
-            "minLength": 1
-          },
-          "count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "eligible_statuses": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "minItems": 1
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "count",
-          "eligible_statuses"
-        ],
-        "additionalProperties": false
-      },
-      "minItems": 0
-    },
-    "categories": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "label": {
-            "type": "string",
-            "minLength": 1
-          },
-          "formula": {
-            "oneOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "linear"
-                  },
-                  "terms": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "stat_id": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "coefficient": {
-                          "type": "number"
-                        }
-                      },
-                      "required": [
-                        "stat_id",
-                        "coefficient"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "minItems": 1
-                  }
-                },
-                "required": [
-                  "kind",
-                  "terms"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "ratio"
-                  },
-                  "numerator": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "stat_id": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "coefficient": {
-                          "type": "number"
-                        }
-                      },
-                      "required": [
-                        "stat_id",
-                        "coefficient"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "minItems": 1
-                  },
-                  "denominator": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "stat_id": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "coefficient": {
-                          "type": "number"
-                        }
-                      },
-                      "required": [
-                        "stat_id",
-                        "coefficient"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "minItems": 1
-                  },
-                  "zero_denominator": {
-                    "enum": [
-                      "error",
-                      "zero",
-                      "numerator"
-                    ]
-                  }
-                },
-                "required": [
-                  "kind",
-                  "numerator",
-                  "denominator",
-                  "zero_denominator"
-                ],
-                "additionalProperties": false
-              }
-            ]
-          },
-          "direction": {
-            "enum": [
-              "higher",
-              "lower"
-            ]
-          },
-          "comparison_decimals": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "tie_value": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "formula",
-          "direction",
-          "comparison_decimals",
-          "tie_value"
-        ],
-        "additionalProperties": false
-      },
-      "minItems": 1
-    },
-    "scoring": {
-      "type": "object",
+  "$defs": {
+    "Assumption": {
+      "additionalProperties": false,
       "properties": {
-        "mode": {
-          "enum": [
-            "h2h_one_win"
-          ]
+        "field_path": {
+          "minLength": 1,
+          "title": "Field Path",
+          "type": "string"
         },
-        "week_tie": {
-          "enum": [
-            "tie",
-            "half_win",
-            "loss"
-          ]
-        },
-        "category_ties": {
-          "enum": [
-            "exclude",
-            "use_tie_value"
-          ]
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
         }
       },
       "required": [
-        "mode",
-        "week_tie",
-        "category_ties"
+        "field_path",
+        "evidence"
       ],
-      "additionalProperties": false
+      "title": "Assumption",
+      "type": "object"
     },
-    "transactions": {
-      "type": "object",
+    "Category": {
+      "additionalProperties": false,
       "properties": {
-        "adds_per_period": {
-          "type": "integer",
-          "minimum": 0
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
         },
-        "add_periods": {
-          "type": "array",
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "formula": {
+          "discriminator": {
+            "mapping": {
+              "linear": "#/$defs/Linear",
+              "ratio": "#/$defs/Ratio"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Linear"
+            },
+            {
+              "$ref": "#/$defs/Ratio"
+            }
+          ],
+          "title": "Formula"
+        },
+        "direction": {
+          "enum": [
+            "higher",
+            "lower"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "comparison_decimals": {
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Comparison Decimals",
+          "type": "integer"
+        },
+        "tie_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Tie Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "formula",
+        "direction",
+        "comparison_decimals",
+        "tie_value"
+      ],
+      "title": "Category",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "Assumption",
+            "source",
+            "backtest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "reference": {
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "reference",
+        "as_of",
+        "reason"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "InjurySlot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "count": {
+          "exclusiveMinimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "eligible_statuses": {
           "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "minLength": 1
-              },
-              "start": {
-                "type": "string",
-                "format": "date"
-              },
-              "end": {
-                "type": "string",
-                "format": "date"
-              }
-            },
-            "required": [
-              "id",
-              "start",
-              "end"
-            ],
-            "additionalProperties": false
+            "minLength": 1,
+            "type": "string"
           },
-          "minItems": 1
-        },
-        "effective": {
-          "enum": [
-            "same_day",
-            "next_day"
-          ]
-        },
-        "cutoff_local_time": {
-          "type": "string",
-          "pattern": "^[0-2][0-9]:[0-5][0-9]$"
-        },
-        "waiver_days": {
-          "type": "integer",
-          "minimum": 0
+          "minItems": 1,
+          "title": "Eligible Statuses",
+          "type": "array"
         }
       },
       "required": [
-        "adds_per_period",
-        "add_periods",
-        "effective",
-        "cutoff_local_time",
-        "waiver_days"
+        "id",
+        "label",
+        "count",
+        "eligible_statuses"
       ],
-      "additionalProperties": false
+      "title": "InjurySlot",
+      "type": "object"
     },
-    "lineup": {
-      "type": "object",
+    "Linear": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "linear",
+          "title": "Kind",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Terms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "terms"
+      ],
+      "title": "Linear",
+      "type": "object"
+    },
+    "Lineup": {
+      "additionalProperties": false,
       "properties": {
         "lock_mode": {
           "enum": [
             "daily",
             "weekly"
-          ]
+          ],
+          "title": "Lock Mode",
+          "type": "string"
         },
         "lock_at": {
           "enum": [
             "period_start",
             "first_game",
             "player_game"
-          ]
+          ],
+          "title": "Lock At",
+          "type": "string"
         },
         "lock_local_time": {
-          "type": "string",
-          "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+          "format": "time",
+          "title": "Lock Local Time",
+          "type": "string"
         }
       },
       "required": [
@@ -366,82 +211,120 @@
         "lock_at",
         "lock_local_time"
       ],
-      "additionalProperties": false
+      "title": "Lineup",
+      "type": "object"
     },
-    "matchups": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "start": {
-            "type": "string",
-            "format": "date"
-          },
-          "end": {
-            "type": "string",
-            "format": "date"
-          },
-          "phase": {
-            "enum": [
-              "regular",
-              "playoff",
-              "postseason"
-            ]
-          }
+    "Matchup": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
         },
-        "required": [
-          "id",
-          "start",
-          "end",
-          "phase"
-        ],
-        "additionalProperties": false
+        "start": {
+          "format": "date",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date",
+          "title": "End",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "regular",
+            "playoff",
+            "postseason"
+          ],
+          "title": "Phase",
+          "type": "string"
+        }
       },
-      "minItems": 1
+      "required": [
+        "id",
+        "start",
+        "end",
+        "phase"
+      ],
+      "title": "Matchup",
+      "type": "object"
     },
-    "playoffs": {
-      "type": "object",
+    "Period": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "start": {
+          "format": "date",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "start",
+        "end"
+      ],
+      "title": "Period",
+      "type": "object"
+    },
+    "Playoffs": {
+      "additionalProperties": false,
       "properties": {
         "team_count": {
-          "type": "integer",
-          "minimum": 0
+          "exclusiveMinimum": 0,
+          "title": "Team Count",
+          "type": "integer"
         },
         "week_ids": {
-          "type": "array",
           "items": {
-            "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "type": "string"
           },
-          "minItems": 0
+          "minItems": 1,
+          "title": "Week Ids",
+          "type": "array"
         },
         "seeding": {
-          "type": "array",
           "items": {
             "enum": [
               "record",
               "head_to_head",
               "category_record",
               "seed"
-            ]
+            ],
+            "type": "string"
           },
-          "minItems": 1
+          "minItems": 1,
+          "title": "Seeding",
+          "type": "array"
         },
         "byes": {
-          "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "title": "Byes",
+          "type": "integer"
         },
         "reseed": {
+          "title": "Reseed",
           "type": "boolean"
         },
         "matchup_tie": {
           "enum": [
             "higher_seed",
             "category_record"
-          ]
+          ],
+          "title": "Matchup Tie",
+          "type": "string"
         }
       },
       "required": [
@@ -452,67 +335,296 @@
         "reseed",
         "matchup_tie"
       ],
-      "additionalProperties": false
+      "title": "Playoffs",
+      "type": "object"
+    },
+    "Ratio": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "ratio",
+          "title": "Kind",
+          "type": "string"
+        },
+        "numerator": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Numerator",
+          "type": "array"
+        },
+        "denominator": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Denominator",
+          "type": "array"
+        },
+        "zero_denominator": {
+          "enum": [
+            "error",
+            "zero",
+            "numerator"
+          ],
+          "title": "Zero Denominator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "numerator",
+        "denominator",
+        "zero_denominator"
+      ],
+      "title": "Ratio",
+      "type": "object"
+    },
+    "Scoring": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "h2h_one_win",
+          "title": "Mode",
+          "type": "string"
+        },
+        "week_tie": {
+          "enum": [
+            "tie",
+            "half_win",
+            "loss"
+          ],
+          "title": "Week Tie",
+          "type": "string"
+        },
+        "category_ties": {
+          "enum": [
+            "exclude",
+            "use_tie_value"
+          ],
+          "title": "Category Ties",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "week_tie",
+        "category_ties"
+      ],
+      "title": "Scoring",
+      "type": "object"
+    },
+    "StarterSlot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "eligible_positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Eligible Positions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "eligible_positions"
+      ],
+      "title": "StarterSlot",
+      "type": "object"
+    },
+    "Term": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_id": {
+          "minLength": 1,
+          "title": "Stat Id",
+          "type": "string"
+        },
+        "coefficient": {
+          "title": "Coefficient",
+          "type": "number"
+        }
+      },
+      "required": [
+        "stat_id",
+        "coefficient"
+      ],
+      "title": "Term",
+      "type": "object"
+    },
+    "Transactions": {
+      "additionalProperties": false,
+      "properties": {
+        "adds_per_period": {
+          "minimum": 0,
+          "title": "Adds Per Period",
+          "type": "integer"
+        },
+        "add_periods": {
+          "items": {
+            "$ref": "#/$defs/Period"
+          },
+          "minItems": 1,
+          "title": "Add Periods",
+          "type": "array"
+        },
+        "effective": {
+          "enum": [
+            "same_day",
+            "next_day"
+          ],
+          "title": "Effective",
+          "type": "string"
+        },
+        "cutoff_local_time": {
+          "format": "time",
+          "title": "Cutoff Local Time",
+          "type": "string"
+        },
+        "waiver_days": {
+          "minimum": 0,
+          "title": "Waiver Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "adds_per_period",
+        "add_periods",
+        "effective",
+        "cutoff_local_time",
+        "waiver_days"
+      ],
+      "title": "Transactions",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "maximum": 1,
+      "minimum": 1,
+      "title": "Format Version",
+      "type": "integer"
+    },
+    "league_id": {
+      "minLength": 1,
+      "title": "League Id",
+      "type": "string"
+    },
+    "teams": {
+      "minimum": 2,
+      "title": "Teams",
+      "type": "integer"
+    },
+    "budget": {
+      "exclusiveMinimum": 0,
+      "title": "Budget",
+      "type": "integer"
+    },
+    "minimum_bid": {
+      "exclusiveMinimum": 0,
+      "title": "Minimum Bid",
+      "type": "integer"
+    },
+    "bid_increment": {
+      "exclusiveMinimum": 0,
+      "title": "Bid Increment",
+      "type": "integer"
+    },
+    "timezone": {
+      "minLength": 1,
+      "title": "Timezone",
+      "type": "string"
+    },
+    "positions": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Positions",
+      "type": "array"
+    },
+    "starter_slots": {
+      "items": {
+        "$ref": "#/$defs/StarterSlot"
+      },
+      "minItems": 1,
+      "title": "Starter Slots",
+      "type": "array"
+    },
+    "bench_slots": {
+      "minimum": 0,
+      "title": "Bench Slots",
+      "type": "integer"
+    },
+    "injury_slots": {
+      "items": {
+        "$ref": "#/$defs/InjurySlot"
+      },
+      "title": "Injury Slots",
+      "type": "array"
+    },
+    "categories": {
+      "items": {
+        "$ref": "#/$defs/Category"
+      },
+      "minItems": 1,
+      "title": "Categories",
+      "type": "array"
+    },
+    "scoring": {
+      "$ref": "#/$defs/Scoring"
+    },
+    "transactions": {
+      "$ref": "#/$defs/Transactions"
+    },
+    "lineup": {
+      "$ref": "#/$defs/Lineup"
+    },
+    "matchups": {
+      "items": {
+        "$ref": "#/$defs/Matchup"
+      },
+      "minItems": 1,
+      "title": "Matchups",
+      "type": "array"
+    },
+    "playoffs": {
+      "$ref": "#/$defs/Playoffs"
     },
     "trade_deadline": {
       "anyOf": [
         {
-          "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "type": "string"
         },
         {
           "type": "null"
         }
-      ]
+      ],
+      "title": "Trade Deadline"
     },
     "assumptions": {
-      "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "field_path": {
-            "type": "string",
-            "minLength": 1
-          },
-          "evidence": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "enum": [
-                  "Assumption",
-                  "source",
-                  "backtest"
-                ]
-              },
-              "reference": {
-                "type": "string",
-                "minLength": 1
-              },
-              "as_of": {
-                "type": "string",
-                "format": "date-time"
-              },
-              "reason": {
-                "type": "string",
-                "minLength": 1
-              }
-            },
-            "required": [
-              "kind",
-              "reference",
-              "as_of",
-              "reason"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "field_path",
-          "evidence"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/Assumption"
       },
-      "minItems": 0
+      "title": "Assumptions",
+      "type": "array"
     }
   },
   "required": [
@@ -536,6 +648,6 @@
     "trade_deadline",
     "assumptions"
   ],
-  "additionalProperties": false,
-  "$defs": {}
+  "title": "LeagueRules",
+  "type": "object"
 }

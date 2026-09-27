@@ -1,0 +1,1 @@
+"""Immutable, validated domain objects."""

@@ -1,124 +1,168 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:fantasy-assistant:manual-adjustments:1",
-  "title": "manual-adjustments",
-  "type": "object",
+  "$defs": {
+    "Adjustment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "published_at": {
+          "format": "date-time",
+          "title": "Published At",
+          "type": "string"
+        },
+        "effective_from": {
+          "format": "date-time",
+          "title": "Effective From",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "assumption": {
+          "title": "Assumption",
+          "type": "boolean"
+        },
+        "operation": {
+          "discriminator": {
+            "mapping": {
+              "expected_games": "#/$defs/ExpectedGames",
+              "multiply": "#/$defs/Multiply",
+              "return_at": "#/$defs/ReturnAt"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Multiply"
+            },
+            {
+              "$ref": "#/$defs/ExpectedGames"
+            },
+            {
+              "$ref": "#/$defs/ReturnAt"
+            }
+          ],
+          "title": "Operation"
+        }
+      },
+      "required": [
+        "id",
+        "player_id",
+        "published_at",
+        "effective_from",
+        "reason",
+        "source",
+        "assumption",
+        "operation"
+      ],
+      "title": "Adjustment",
+      "type": "object"
+    },
+    "ExpectedGames": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "expected_games",
+          "title": "Kind",
+          "type": "string"
+        },
+        "games": {
+          "minimum": 0,
+          "title": "Games",
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "games"
+      ],
+      "title": "ExpectedGames",
+      "type": "object"
+    },
+    "Multiply": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "multiply",
+          "title": "Kind",
+          "type": "string"
+        },
+        "stat_id": {
+          "minLength": 1,
+          "title": "Stat Id",
+          "type": "string"
+        },
+        "factor": {
+          "minimum": 0,
+          "title": "Factor",
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "stat_id",
+        "factor"
+      ],
+      "title": "Multiply",
+      "type": "object"
+    },
+    "ReturnAt": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "return_at",
+          "title": "Kind",
+          "type": "string"
+        },
+        "return_at": {
+          "format": "date-time",
+          "title": "Return At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "return_at"
+      ],
+      "title": "ReturnAt",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
   "properties": {
     "format_version": {
-      "const": 1
+      "maximum": 1,
+      "minimum": 1,
+      "title": "Format Version",
+      "type": "integer"
     },
     "adjustments": {
-      "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "player_id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "published_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "effective_from": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "reason": {
-            "type": "string",
-            "minLength": 1
-          },
-          "source": {
-            "type": "string",
-            "minLength": 1
-          },
-          "assumption": {
-            "type": "boolean"
-          },
-          "operation": {
-            "oneOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "multiply"
-                  },
-                  "stat_id": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "factor": {
-                    "type": "number",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "kind",
-                  "stat_id",
-                  "factor"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "expected_games"
-                  },
-                  "games": {
-                    "type": "number",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "kind",
-                  "games"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "return_at"
-                  },
-                  "return_at": {
-                    "type": "string",
-                    "format": "date-time"
-                  }
-                },
-                "required": [
-                  "kind",
-                  "return_at"
-                ],
-                "additionalProperties": false
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "player_id",
-          "published_at",
-          "effective_from",
-          "reason",
-          "source",
-          "assumption",
-          "operation"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/Adjustment"
       },
-      "minItems": 0
+      "title": "Adjustments",
+      "type": "array"
     }
   },
   "required": [
     "format_version",
     "adjustments"
   ],
-  "additionalProperties": false,
-  "$defs": {}
+  "title": "ManualAdjustments",
+  "type": "object"
 }

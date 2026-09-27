@@ -1,0 +1,193 @@
+from datetime import date, timedelta
+
+from fba.contracts.base import ConfigError
+from fba.contracts.config import (
+    ConfigBundle,
+    LeagueRules,
+    Linear,
+    ModelConfig,
+    Period,
+    SeasonConfig,
+    ThresholdCount,
+    ValidatedConfig,
+)
+
+
+def unique(values: tuple[str, ...], path: str) -> None:
+    if len(values) != len(set(values)):
+        raise ConfigError(f"{path}: duplicate values")
+
+
+def require_members(values: tuple[str, ...], allowed: set[str], path: str) -> None:
+    missing = sorted(set(values) - allowed)
+    if missing:
+        raise ConfigError(f"{path}: unknown references {missing}")
+
+
+def validate_periods(periods: tuple[Period, ...], start: date, end: date, path: str) -> None:
+    unique(tuple(p.id for p in periods), path)
+    next_day = start
+    for period in sorted(periods, key=lambda p: (p.start, p.id)):
+        if period.start != next_day or period.end < period.start:
+            raise ConfigError(f"{path}.{period.id}: overlap, gap, or reversed dates")
+        next_day = period.end + timedelta(days=1)
+    if next_day != end + timedelta(days=1):
+        raise ConfigError(f"{path}: must cover {start} through {end}")
+
+
+def validate_stats(league: LeagueRules, season: SeasonConfig) -> None:
+    definitions = {s.id: s for s in season.stat_definitions}
+    unique(tuple(s.id for s in season.stat_definitions), "season.stat_definitions")
+    graph: dict[str, tuple[str, ...]] = {}
+    for stat in season.stat_definitions:
+        definition = stat.definition
+        dependencies: tuple[str, ...] = ()
+        if isinstance(definition, Linear):
+            dependencies = tuple(t.stat_id for t in definition.terms)
+        elif isinstance(definition, ThresholdCount):
+            dependencies = definition.stat_ids
+            if definition.minimum_hits > len(dependencies):
+                raise ConfigError(f"season.stat_definitions.{stat.id}: impossible minimum_hits")
+        require_members(dependencies, set(definitions), f"season.stat_definitions.{stat.id}")
+        unique(dependencies, f"season.stat_definitions.{stat.id}")
+        if any(definitions[d].unit != stat.unit for d in dependencies):
+            raise ConfigError(f"season.stat_definitions.{stat.id}: incompatible units")
+        graph[stat.id] = dependencies
+    remaining = set(graph)
+    while remaining:
+        ready = {s for s in remaining if not (set(graph[s]) & remaining)}
+        if not ready:
+            raise ConfigError(f"season.stat_definitions: dependency cycle {sorted(remaining)}")
+        remaining -= ready
+    for category in league.categories:
+        formula = category.formula
+        terms = (
+            formula.terms
+            if isinstance(formula, Linear)
+            else (formula.numerator + formula.denominator)
+        )
+        require_members(
+            tuple(t.stat_id for t in terms),
+            set(definitions),
+            f"league.categories.{category.id}.formula",
+        )
+
+
+def validate_league(league: LeagueRules, season: SeasonConfig) -> None:
+    unique(league.positions, "league.positions")
+    unique(tuple(s.id for s in league.starter_slots + league.injury_slots), "league.slots")
+    unique(tuple(c.id for c in league.categories), "league.categories")
+    for slot in league.starter_slots:
+        unique(slot.eligible_positions, f"league.starter_slots.{slot.id}")
+        require_members(
+            slot.eligible_positions,
+            set(league.positions),
+            f"league.starter_slots.{slot.id}",
+        )
+    for injury in league.injury_slots:
+        unique(injury.eligible_statuses, f"league.injury_slots.{injury.id}")
+    capacity = len(league.starter_slots) + league.bench_slots
+    if league.budget < capacity * league.minimum_bid:
+        raise ConfigError("league.budget: cannot pay minimum_bid for every roster slot")
+    if any(n % league.bid_increment for n in (league.budget, league.minimum_bid)):
+        raise ConfigError("league.bid_increment: budget and minimum_bid must be multiples")
+    if league.lineup.lock_mode == "weekly" and league.lineup.lock_at == "player_game":
+        raise ConfigError("league.lineup.lock_at: player_game conflicts with weekly lock")
+    if any(
+        t.tzinfo is not None
+        for t in (
+            league.lineup.lock_local_time,
+            league.transactions.cutoff_local_time,
+        )
+    ):
+        raise ConfigError("league: local times must use league.timezone, without an offset")
+    validate_periods(league.matchups, season.starts_on, season.ends_on, "league.matchups")
+    validate_periods(
+        league.transactions.add_periods,
+        season.starts_on,
+        season.ends_on,
+        "league.transactions.add_periods",
+    )
+    validate_playoffs(league)
+
+
+def validate_playoffs(league: LeagueRules) -> None:
+    playoffs = league.playoffs
+    unique(playoffs.week_ids, "league.playoffs.week_ids")
+    unique(playoffs.seeding, "league.playoffs.seeding")
+    playoff_weeks = tuple(w.id for w in league.matchups if w.phase == "playoff")
+    if playoff_weeks != playoffs.week_ids:
+        raise ConfigError("league.playoffs.week_ids: must equal playoff matchups in date order")
+    if playoffs.team_count > league.teams or playoffs.byes >= playoffs.team_count:
+        raise ConfigError("league.playoffs: invalid team_count or byes")
+    first_round = playoffs.team_count - playoffs.byes
+    if first_round % 2:
+        raise ConfigError("league.playoffs.byes: first round must pair all non-bye teams")
+    remaining = first_round // 2 + playoffs.byes
+    for _ in playoffs.week_ids[1:]:
+        if remaining < 2 or remaining % 2:
+            raise ConfigError("league.playoffs.week_ids: rounds do not form a bracket")
+        remaining //= 2
+    if remaining != 1:
+        raise ConfigError("league.playoffs.week_ids: bracket must produce one winner")
+
+
+def validate_sources(season: SeasonConfig) -> None:
+    unique(tuple(s.id for s in season.sources), "season.sources")
+    required_roles = {
+        "projections",
+        "game_logs",
+        "schedule",
+        "rosters",
+        "official_schedule_counts",
+        "historical_projections",
+    }
+    roles = {s.role for s in season.sources}
+    if required_roles - roles:
+        raise ConfigError(f"season.sources: missing roles {sorted(required_roles - roles)}")
+    for role in required_roles - {"rosters"}:
+        if sum(s.role == role for s in season.sources) != 1:
+            raise ConfigError(f"season.sources: this data format requires one {role} source")
+    for source in season.sources:
+        expected_season = (
+            season.previous_season_id
+            if source.role
+            in (
+                "historical_projections",
+                "game_logs",
+            )
+            else season.season_id
+        )
+        if source.season_id != expected_season:
+            raise ConfigError(f"season.sources.{source.id}.season_id: expected {expected_season}")
+        if not source.url.startswith("https://"):
+            raise ConfigError(f"season.sources.{source.id}.url: requires https")
+        if (source.delivery == "manual") != (source.manual_file is not None):
+            raise ConfigError(f"season.sources.{source.id}.manual_file: conflicts with delivery")
+        if (source.delivery == "manual") != (source.manual_capture is not None):
+            raise ConfigError(f"season.sources.{source.id}.manual_capture: conflicts with delivery")
+        if (
+            source.manual_capture is not None
+            and source.manual_capture.retrieved_at > season.snapshot_as_of
+        ):
+            raise ConfigError(f"season.sources.{source.id}.manual_capture: after snapshot cutoff")
+        if source.available_as_of > season.snapshot_as_of:
+            raise ConfigError(f"season.sources.{source.id}.available_as_of: after snapshot cutoff")
+
+
+def validate_config(
+    league: LeagueRules,
+    season: SeasonConfig,
+    model: ModelConfig,
+    refs: ConfigBundle,
+) -> ValidatedConfig:
+    if season.starts_on > season.ends_on:
+        raise ConfigError("season.ends_on: before starts_on")
+    if season.previous_season_id == season.season_id:
+        raise ConfigError("season.previous_season_id: must differ from season_id")
+    validate_league(league, season)
+    validate_stats(league, season)
+    validate_sources(season)
+    if model.calibration.evidence.as_of > season.snapshot_as_of:
+        raise ConfigError("model.calibration.evidence.as_of: after snapshot cutoff")
+    return ValidatedConfig(league=league, season=season, model=model, refs=refs)

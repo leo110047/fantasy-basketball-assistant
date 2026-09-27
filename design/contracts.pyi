@@ -23,8 +23,8 @@ class ConfigBundle:
     season: ConfigRef
     model: ConfigRef
 
-# Runtime config types will be generated from the three authoritative schemas.
-# These names denote schema-generated immutable instances, never JSON dicts.
+# Runtime config models own the generated schemas in stage 1.
+# These names denote immutable instances, never JSON dicts.
 class LeagueRules: ...
 class SeasonConfig: ...
 class ModelConfig: ...

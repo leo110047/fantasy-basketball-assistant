@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+uv sync --locked
+uv run --locked python scripts/verify.py

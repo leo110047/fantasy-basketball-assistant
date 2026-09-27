@@ -1,0 +1,578 @@
+{
+  "format_version": 1,
+  "season_id": "2026-27",
+  "starts_on": "2026-10-19",
+  "ends_on": "2027-04-11",
+  "snapshot_as_of": "2026-09-27T23:59:59Z",
+  "previous_season_id": "2025-26",
+  "roster_import": {
+    "path": "roster.csv",
+    "format": "csv",
+    "encoding": "utf-8",
+    "delimiter": ",",
+    "columns": {
+      "player_id": "player_id",
+      "name": "name",
+      "positions": "positions",
+      "rank": "rank",
+      "projected_price": "projected_price",
+      "average_price": "average_price"
+    }
+  },
+  "identity_map_path": "identities.json",
+  "manual_adjustments_path": "adjustments.json",
+  "sources": [
+    {
+      "id": "forecast",
+      "role": "projections",
+      "adapter": "espn_players",
+      "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/players?view=kona_player_info",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "history",
+      "role": "game_logs",
+      "adapter": "espn_players",
+      "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2026/players?view=kona_player_info",
+      "season_id": "2025-26",
+      "season_code": "2026",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "training",
+      "role": "historical_projections",
+      "adapter": "espn_players",
+      "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2026/players?view=kona_player_info",
+      "season_id": "2025-26",
+      "season_code": "2026",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "schedule",
+      "role": "schedule",
+      "adapter": "espn_schedule",
+      "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027?view=proTeamSchedules",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-atl",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/atl/atlanta-hawks",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-bos",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/bos/boston-celtics",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-bkn",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/bkn/brooklyn-nets",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-cha",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/cha/charlotte-hornets",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-chi",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/chi/chicago-bulls",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-cle",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/cle/cleveland-cavaliers",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-dal",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/dal/dallas-mavericks",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-den",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/den/denver-nuggets",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-det",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/det/detroit-pistons",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-gs",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/gs/golden-state-warriors",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-hou",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/hou/houston-rockets",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-ind",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/ind/indiana-pacers",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-lac",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/lac/la-clippers",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-lal",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/lal/los-angeles-lakers",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-mem",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/mem/memphis-grizzlies",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-mia",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/mia/miami-heat",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-mil",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/mil/milwaukee-bucks",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-min",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/min/minnesota-timberwolves",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-no",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/no/new-orleans-pelicans",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-ny",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/ny/new-york-knicks",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-okc",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/okc/oklahoma-city-thunder",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-orl",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/orl/orlando-magic",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-phi",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/phi/philadelphia-76ers",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-phx",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/phx/phoenix-suns",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-por",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/por/portland-trail-blazers",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-sac",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/sac/sacramento-kings",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-sa",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/sa/san-antonio-spurs",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-tor",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/tor/toronto-raptors",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-utah",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/utah/utah-jazz",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "roster-wsh",
+      "role": "rosters",
+      "adapter": "espn_roster_page",
+      "url": "https://www.espn.com/nba/team/roster/_/name/wsh/washington-wizards",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    },
+    {
+      "id": "official",
+      "role": "official_schedule_counts",
+      "adapter": "nba_release",
+      "url": "https://pr.nba.com/2026-27-nba-regular-season-schedule/",
+      "season_id": "2026-27",
+      "season_code": "2027",
+      "available_as_of": "2026-09-27T00:00:00Z",
+      "delivery": "fetch",
+      "manual_file": null,
+      "manual_capture": null
+    }
+  ],
+  "stat_definitions": [
+    {
+      "id": "FGM",
+      "label": "FGM",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "FGA",
+      "label": "FGA",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "FTM",
+      "label": "FTM",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "FTA",
+      "label": "FTA",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "PTS",
+      "label": "PTS",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "3PM",
+      "label": "3PM",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "REB",
+      "label": "REB",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "OREB",
+      "label": "OREB",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "AST",
+      "label": "AST",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "TO",
+      "label": "TO",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "STL",
+      "label": "STL",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "BLK",
+      "label": "BLK",
+      "unit": "count",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "MIN",
+      "label": "MIN",
+      "unit": "minutes",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "GP",
+      "label": "GP",
+      "unit": "games",
+      "definition": {
+        "kind": "observed"
+      }
+    },
+    {
+      "id": "DD",
+      "label": "DD",
+      "unit": "count",
+      "definition": {
+        "kind": "threshold_count",
+        "stat_ids": [
+          "PTS",
+          "REB",
+          "AST",
+          "STL",
+          "BLK"
+        ],
+        "threshold": 10.0,
+        "minimum_hits": 2
+      }
+    }
+  ],
+  "assumptions": []
+}

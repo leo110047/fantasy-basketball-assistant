@@ -1,0 +1,671 @@
+{
+  "format_version": 1,
+  "league_id": "yahoo-2026-27-example",
+  "teams": 14,
+  "budget": 200,
+  "minimum_bid": 1,
+  "bid_increment": 1,
+  "timezone": "America/New_York",
+  "positions": [
+    "PG",
+    "SG",
+    "SF",
+    "PF",
+    "C"
+  ],
+  "starter_slots": [
+    {
+      "id": "pg",
+      "label": "PG",
+      "eligible_positions": [
+        "PG"
+      ]
+    },
+    {
+      "id": "sg",
+      "label": "SG",
+      "eligible_positions": [
+        "SG"
+      ]
+    },
+    {
+      "id": "g",
+      "label": "G",
+      "eligible_positions": [
+        "PG",
+        "SG"
+      ]
+    },
+    {
+      "id": "sf",
+      "label": "SF",
+      "eligible_positions": [
+        "SF"
+      ]
+    },
+    {
+      "id": "pf",
+      "label": "PF",
+      "eligible_positions": [
+        "PF"
+      ]
+    },
+    {
+      "id": "f",
+      "label": "F",
+      "eligible_positions": [
+        "SF",
+        "PF"
+      ]
+    },
+    {
+      "id": "c1",
+      "label": "C1",
+      "eligible_positions": [
+        "C"
+      ]
+    },
+    {
+      "id": "c2",
+      "label": "C2",
+      "eligible_positions": [
+        "C"
+      ]
+    }
+  ],
+  "bench_slots": 2,
+  "injury_slots": [
+    {
+      "id": "il",
+      "label": "IL",
+      "count": 2,
+      "eligible_statuses": [
+        "INJ",
+        "O"
+      ]
+    },
+    {
+      "id": "il_plus",
+      "label": "IL+",
+      "count": 1,
+      "eligible_statuses": [
+        "INJ",
+        "O",
+        "GTD"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "REB",
+      "label": "REB",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "REB",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "OREB",
+      "label": "OREB",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "OREB",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "FG%",
+      "label": "FG%",
+      "formula": {
+        "kind": "ratio",
+        "numerator": [
+          {
+            "stat_id": "FGM",
+            "coefficient": 1.0
+          }
+        ],
+        "denominator": [
+          {
+            "stat_id": "FGA",
+            "coefficient": 1.0
+          }
+        ],
+        "zero_denominator": "zero"
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "FT%",
+      "label": "FT%",
+      "formula": {
+        "kind": "ratio",
+        "numerator": [
+          {
+            "stat_id": "FTM",
+            "coefficient": 1.0
+          }
+        ],
+        "denominator": [
+          {
+            "stat_id": "FTA",
+            "coefficient": 1.0
+          }
+        ],
+        "zero_denominator": "zero"
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "AST",
+      "label": "AST",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "AST",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "A/T",
+      "label": "A/T",
+      "formula": {
+        "kind": "ratio",
+        "numerator": [
+          {
+            "stat_id": "AST",
+            "coefficient": 1.0
+          }
+        ],
+        "denominator": [
+          {
+            "stat_id": "TO",
+            "coefficient": 1.0
+          }
+        ],
+        "zero_denominator": "zero"
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "PTS",
+      "label": "PTS",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "PTS",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "3PM",
+      "label": "3PM",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "3PM",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "STL",
+      "label": "STL",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "STL",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "BLK",
+      "label": "BLK",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "BLK",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    {
+      "id": "DD",
+      "label": "DD",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "DD",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    }
+  ],
+  "scoring": {
+    "mode": "h2h_one_win",
+    "week_tie": "tie",
+    "category_ties": "exclude"
+  },
+  "transactions": {
+    "adds_per_period": 4,
+    "add_periods": [
+      {
+        "id": "w1",
+        "start": "2026-10-19",
+        "end": "2026-10-25"
+      },
+      {
+        "id": "w2",
+        "start": "2026-10-26",
+        "end": "2026-11-01"
+      },
+      {
+        "id": "w3",
+        "start": "2026-11-02",
+        "end": "2026-11-08"
+      },
+      {
+        "id": "w4",
+        "start": "2026-11-09",
+        "end": "2026-11-15"
+      },
+      {
+        "id": "w5",
+        "start": "2026-11-16",
+        "end": "2026-11-22"
+      },
+      {
+        "id": "w6",
+        "start": "2026-11-23",
+        "end": "2026-11-29"
+      },
+      {
+        "id": "w7",
+        "start": "2026-11-30",
+        "end": "2026-12-13"
+      },
+      {
+        "id": "w8",
+        "start": "2026-12-14",
+        "end": "2026-12-20"
+      },
+      {
+        "id": "w9",
+        "start": "2026-12-21",
+        "end": "2026-12-27"
+      },
+      {
+        "id": "w10",
+        "start": "2026-12-28",
+        "end": "2027-01-03"
+      },
+      {
+        "id": "w11",
+        "start": "2027-01-04",
+        "end": "2027-01-10"
+      },
+      {
+        "id": "w12",
+        "start": "2027-01-11",
+        "end": "2027-01-17"
+      },
+      {
+        "id": "w13",
+        "start": "2027-01-18",
+        "end": "2027-01-24"
+      },
+      {
+        "id": "w14",
+        "start": "2027-01-25",
+        "end": "2027-01-31"
+      },
+      {
+        "id": "w15",
+        "start": "2027-02-01",
+        "end": "2027-02-07"
+      },
+      {
+        "id": "w16",
+        "start": "2027-02-08",
+        "end": "2027-02-14"
+      },
+      {
+        "id": "w17",
+        "start": "2027-02-15",
+        "end": "2027-02-28"
+      },
+      {
+        "id": "w18",
+        "start": "2027-03-01",
+        "end": "2027-03-07"
+      },
+      {
+        "id": "w19",
+        "start": "2027-03-08",
+        "end": "2027-03-14"
+      },
+      {
+        "id": "w20",
+        "start": "2027-03-15",
+        "end": "2027-03-21"
+      },
+      {
+        "id": "w21",
+        "start": "2027-03-22",
+        "end": "2027-03-28"
+      },
+      {
+        "id": "w22",
+        "start": "2027-03-29",
+        "end": "2027-04-04"
+      },
+      {
+        "id": "w23",
+        "start": "2027-04-05",
+        "end": "2027-04-11"
+      }
+    ],
+    "effective": "same_day",
+    "cutoff_local_time": "00:00:00",
+    "waiver_days": 2
+  },
+  "lineup": {
+    "lock_mode": "daily",
+    "lock_at": "player_game",
+    "lock_local_time": "00:00:00"
+  },
+  "matchups": [
+    {
+      "id": "w1",
+      "start": "2026-10-19",
+      "end": "2026-10-25",
+      "phase": "regular"
+    },
+    {
+      "id": "w2",
+      "start": "2026-10-26",
+      "end": "2026-11-01",
+      "phase": "regular"
+    },
+    {
+      "id": "w3",
+      "start": "2026-11-02",
+      "end": "2026-11-08",
+      "phase": "regular"
+    },
+    {
+      "id": "w4",
+      "start": "2026-11-09",
+      "end": "2026-11-15",
+      "phase": "regular"
+    },
+    {
+      "id": "w5",
+      "start": "2026-11-16",
+      "end": "2026-11-22",
+      "phase": "regular"
+    },
+    {
+      "id": "w6",
+      "start": "2026-11-23",
+      "end": "2026-11-29",
+      "phase": "regular"
+    },
+    {
+      "id": "w7",
+      "start": "2026-11-30",
+      "end": "2026-12-13",
+      "phase": "regular"
+    },
+    {
+      "id": "w8",
+      "start": "2026-12-14",
+      "end": "2026-12-20",
+      "phase": "regular"
+    },
+    {
+      "id": "w9",
+      "start": "2026-12-21",
+      "end": "2026-12-27",
+      "phase": "regular"
+    },
+    {
+      "id": "w10",
+      "start": "2026-12-28",
+      "end": "2027-01-03",
+      "phase": "regular"
+    },
+    {
+      "id": "w11",
+      "start": "2027-01-04",
+      "end": "2027-01-10",
+      "phase": "regular"
+    },
+    {
+      "id": "w12",
+      "start": "2027-01-11",
+      "end": "2027-01-17",
+      "phase": "regular"
+    },
+    {
+      "id": "w13",
+      "start": "2027-01-18",
+      "end": "2027-01-24",
+      "phase": "regular"
+    },
+    {
+      "id": "w14",
+      "start": "2027-01-25",
+      "end": "2027-01-31",
+      "phase": "regular"
+    },
+    {
+      "id": "w15",
+      "start": "2027-02-01",
+      "end": "2027-02-07",
+      "phase": "regular"
+    },
+    {
+      "id": "w16",
+      "start": "2027-02-08",
+      "end": "2027-02-14",
+      "phase": "regular"
+    },
+    {
+      "id": "w17",
+      "start": "2027-02-15",
+      "end": "2027-02-28",
+      "phase": "regular"
+    },
+    {
+      "id": "w18",
+      "start": "2027-03-01",
+      "end": "2027-03-07",
+      "phase": "regular"
+    },
+    {
+      "id": "w19",
+      "start": "2027-03-08",
+      "end": "2027-03-14",
+      "phase": "regular"
+    },
+    {
+      "id": "w20",
+      "start": "2027-03-15",
+      "end": "2027-03-21",
+      "phase": "playoff"
+    },
+    {
+      "id": "w21",
+      "start": "2027-03-22",
+      "end": "2027-03-28",
+      "phase": "playoff"
+    },
+    {
+      "id": "w22",
+      "start": "2027-03-29",
+      "end": "2027-04-04",
+      "phase": "playoff"
+    },
+    {
+      "id": "w23",
+      "start": "2027-04-05",
+      "end": "2027-04-11",
+      "phase": "postseason"
+    }
+  ],
+  "playoffs": {
+    "team_count": 6,
+    "week_ids": [
+      "w20",
+      "w21",
+      "w22"
+    ],
+    "seeding": [
+      "record",
+      "head_to_head",
+      "category_record",
+      "seed"
+    ],
+    "byes": 2,
+    "reseed": false,
+    "matchup_tie": "higher_seed"
+  },
+  "trade_deadline": null,
+  "assumptions": [
+    {
+      "field_path": "/injury_slots",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/transactions",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/playoffs",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/trade_deadline",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/lineup",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/scoring",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/categories",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/timezone",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    },
+    {
+      "field_path": "/matchups",
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "Fantasy refactor specification sections 3 and 4",
+        "as_of": "2026-09-27T11:15:43.799266+00:00",
+        "reason": "Provisional league rule; verify against current Yahoo league settings before use."
+      }
+    }
+  ]
+}
