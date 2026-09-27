@@ -154,11 +154,11 @@ def value(
     league: LeagueRules,
     parameters: ValuationParameters,
     season_games: int,
+    ruler: ValuationRuler,
 ) -> Valuation:
     players = tuple(sorted(projections, key=lambda p: p.id))
     if len(set(catalog_ids)) != len(catalog_ids) or season_games <= 0:
         raise DataError("valuation: duplicate catalog IDs or invalid season games")
-    ruler = fit_ruler(players, axes, league, parameters)
     z = standardized_scores(players, axes, league.categories, ruler.categories)
     utility = tuple(
         (fsum(col[i] for col in z) - ruler.replacement_score) * p.expected_games / season_games

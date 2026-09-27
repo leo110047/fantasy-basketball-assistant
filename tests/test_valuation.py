@@ -5,7 +5,7 @@ import pytest
 
 from fba.contracts.config import CalculationModel, Category, LeagueRules, Linear, Term
 from fba.contracts.projection import Projected
-from fba.core.valuation import value
+from fba.core.valuation import fit_ruler, value
 
 
 @pytest.fixture
@@ -34,7 +34,8 @@ def test_all_locked_reference_fair_values_and_shuffle(frozen):
     data, players, league, model = frozen
     ids = tuple(r["id"] for r in data["rows"])
     axes = (*model.projection.stat_ids, model.projection.threshold_stat)
-    actual = value(players, ids, axes, league, model.valuation, 82)
+    ruler = fit_ruler(players, axes, league, model.valuation)
+    actual = value(players, ids, axes, league, model.valuation, 82, ruler)
     expected = {r["id"]: r["fair"] for r in data["rows"]}
     assert len(actual.players) == 439
     for row in actual.players:
@@ -43,7 +44,9 @@ def test_all_locked_reference_fair_values_and_shuffle(frozen):
         else:
             assert abs(row.fair - expected[row.id]) <= 0.01
     assert (
-        value(tuple(reversed(players)), tuple(reversed(ids)), axes, league, model.valuation, 82)
+        value(
+            tuple(reversed(players)), tuple(reversed(ids)), axes, league, model.valuation, 82, ruler
+        )
         == actual
     )
     total = sum(sorted((p.fair or 0 for p in actual.players), reverse=True)[:140])
@@ -72,6 +75,12 @@ def test_team_and_category_changes_use_configuration(frozen, teams):
         rules,
         model.valuation,
         82,
+        fit_ruler(
+            players,
+            (*model.projection.stat_ids, model.projection.threshold_stat),
+            rules,
+            model.valuation,
+        ),
     )
     count = teams * (len(rules.starter_slots) + rules.bench_slots)
     total = sum(sorted((r.fair or 0 for r in result.players), reverse=True)[:count])

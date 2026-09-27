@@ -2,7 +2,8 @@ from math import fsum
 
 from fba.contracts.base import DataError
 from fba.contracts.config import ProjectionParameters
-from fba.contracts.projection import ProjectionPlayer, ProjectionTeam
+from fba.contracts.data import Calibration
+from fba.contracts.projection import Projected, ProjectionPlayer, ProjectionTeam
 
 
 def prior(
@@ -53,3 +54,22 @@ def validate_availability(player: ProjectionPlayer, games: float, team: Projecti
     )
     if games > capacity:
         raise DataError(f"projection.{player.id}: expected games exceed eligible schedule")
+
+
+def calibrate_availability(
+    players: tuple[Projected, ...], calibration: Calibration, season_games: int, decimals: int
+) -> tuple[Projected, ...]:
+    return tuple(
+        p.model_copy(
+            update={
+                "expected_games": round(
+                    min(
+                        season_games,
+                        max(0, calibration.intercept + calibration.slope * p.expected_games),
+                    ),
+                    decimals,
+                )
+            }
+        )
+        for p in players
+    )

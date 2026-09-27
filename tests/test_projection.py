@@ -115,3 +115,28 @@ def test_priors_preserve_minutes_and_single_source(model):
     )
     with pytest.raises(DataError, match="unconfigured"):
         prior(unknown, model.projection)
+
+
+def test_gp_calibration_clips_availability_and_preserves_per_game_moments():
+    from fba.contracts.data import Calibration
+    from fba.contracts.projection import Projected
+    from fba.core.projection import calibrate_availability
+
+    fit = Calibration(
+        training_season_id="previous",
+        method="ordinary_least_squares",
+        intercept=-2.0,
+        slope=0.8,
+        sample_size=10,
+        inputs_sha256=("0" * 64,),
+    )
+    players = tuple(
+        Projected(id=str(g), expected_games=g, minutes=20.0, stats=(10.0,), covariance=((2.0,),))
+        for g in (0.0, 10.0, 100.0)
+    )
+    result = calibrate_availability(players, fit, 60, 8)
+    assert tuple(p.expected_games for p in result) == (0.0, 6.0, 60.0)
+    assert all(
+        p.stats == q.stats and p.minutes == q.minutes and p.covariance == q.covariance
+        for p, q in zip(players, result, strict=True)
+    )

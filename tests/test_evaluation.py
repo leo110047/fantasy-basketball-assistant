@@ -95,3 +95,25 @@ def test_selected_source_weights_improve_the_same_reference_population(frozen_ev
     assert after.top_draft_hits >= before.top_draft_hits
     assert after.median_dollar_error <= before.median_dollar_error
     assert after.model_dump() == next(p for p in data["expected"] if p["id"] == after.id)
+
+
+def test_previous_season_gp_fit_reproduces_approved_tradeoff(frozen_evaluation):
+    from fba.contracts.data import Calibration
+    from fba.core.projection import calibrate_availability
+
+    inputs, _ = frozen_evaluation
+    data = json.loads((Path(__file__).parent / "fixtures/evaluation-gp.json").read_text())
+    fit = Calibration.model_validate_json(json.dumps(data["calibration"]))
+    raw = inputs.predictions[0]
+    calibrated = PredictionVariant(
+        id=data["expected"]["id"],
+        players=calibrate_availability(raw.players, fit, inputs.season_games, 8),
+    )
+    result = evaluate(inputs.model_copy(update={"predictions": (raw, calibrated)}), "0" * 64)
+    before, after = result.variants
+    assert after.model_dump() == data["expected"]
+    assert after.rank_correlation > before.rank_correlation
+    assert after.median_dollar_error < before.median_dollar_error
+    assert after.games_mae < before.games_mae
+    # User approved this one-player loss together with the other improvements.
+    assert after.top_draft_hits == before.top_draft_hits - 1

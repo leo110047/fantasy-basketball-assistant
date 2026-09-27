@@ -1,0 +1,20 @@
+{
+  "source": "Locked backtest_projection.py 2025-26 paired evaluation; retrospective, not a proven preseason replay",
+  "calibration": {
+    "training_season_id": "2024-25",
+    "method": "ordinary_least_squares",
+    "intercept": -25.91481177995047,
+    "slope": 1.1800458597971182,
+    "sample_size": 374,
+    "inputs_sha256": []
+  },
+  "expected": {
+    "common_players": 324,
+    "games_mae": 15.43915086,
+    "id": "weight_B=1.0 + gp_calibrated",
+    "median_dollar_error": 7.92943956,
+    "predicted_players": 460,
+    "rank_correlation": 0.7609955,
+    "top_draft_hits": 103
+  }
+}

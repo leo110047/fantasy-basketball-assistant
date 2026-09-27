@@ -99,6 +99,7 @@ def parser() -> argparse.ArgumentParser:
     )
     migration.add_argument("input", type=Path)
     migration.add_argument("--model", required=True, type=Path)
+    migration.add_argument("--calibration-snapshot", required=True, type=Path)
     migration.add_argument("--output", required=True, type=Path)
     for name in ("calculate", "evaluate"):
         calculation = commands.add_parser(name, help="Compute from a frozen calculation input")
@@ -116,7 +117,9 @@ def main() -> int:
     args = parser().parse_args()
     try:
         if args.command == "migrate-projection":
-            path = migrate_projection(args.input, args.model, args.output)
+            path = migrate_projection(
+                args.input, args.model, args.calibration_snapshot, args.output
+            )
             print(json.dumps({"input": str(path / "projection-input.json")}))
             return 0
         if args.command in ("calculate", "evaluate"):

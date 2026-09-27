@@ -13,7 +13,7 @@ from fba.contracts.base import (
     Text,
 )
 from fba.contracts.config import ConfigBundle, ValidatedConfig
-from fba.contracts.data import Artifact, Digest
+from fba.contracts.data import Artifact, Calibration, Digest
 
 
 class Prior(Record):
@@ -63,6 +63,12 @@ class ProjectionInput(FrozenCalculationInput):
     format_version: Annotated[int, Field(ge=2, le=2)]
     players: tuple[ProjectionPlayer, ...]
     teams: tuple[ProjectionTeam, ...]
+
+
+class CalibratedInput(ProjectionInput):
+    format_version: Annotated[int, Field(ge=3, le=3)]
+    calibration: Calibration
+    calibration_snapshot: Text
 
 
 class Projected(Record):

@@ -4,9 +4,9 @@ from pathlib import Path
 
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
-from fba.adapters.snapshots import checked_path
+from fba.adapters.snapshots import checked_path, load_snapshot
 from fba.contracts.base import DataError, Record
-from fba.contracts.projection import EvaluationInput, FrozenCalculationInput, ProjectionInput
+from fba.contracts.projection import CalibratedInput, EvaluationInput, FrozenCalculationInput
 from fba.core.calculation import calculate
 from fba.core.evaluation import evaluate
 
@@ -36,11 +36,30 @@ def load_calculation_input[T: FrozenCalculationInput](path: Path, model: type[T]
     )
     if effective != inputs.config:
         raise DataError("projection.config: frozen hashes or values disagree")
+    if isinstance(inputs, CalibratedInput):
+        validate_calibration_snapshot(inputs, path.parent)
     return inputs, digest(data)
 
 
+def validate_calibration_snapshot(inputs: CalibratedInput, root: Path) -> None:
+    snapshot = load_snapshot(checked_path(root, inputs.calibration_snapshot))
+    required = {
+        f"{inputs.calibration_snapshot}/{p}"
+        for p in ("snapshot.json", *(a.path for a in snapshot.artifacts))
+    }
+    if not required <= {a.path for a in inputs.artifacts}:
+        raise DataError("calibration_snapshot: incomplete frozen artifact inventory")
+    if (
+        snapshot.calibration != inputs.calibration
+        or snapshot.season_id != inputs.config.season.season_id
+        or snapshot.as_of > inputs.config.season.snapshot_as_of
+        or not set(inputs.calibration.inputs_sha256) <= {a.sha256 for a in snapshot.artifacts}
+    ):
+        raise DataError("calibration_snapshot: mismatched fit, season, or future information")
+
+
 def calculate_file(path: Path, output: Path) -> Path:
-    inputs, input_hash = load_calculation_input(path, ProjectionInput)
+    inputs, input_hash = load_calculation_input(path, CalibratedInput)
     return publish_result(calculate(inputs, input_hash), output, "calculation")
 
 
