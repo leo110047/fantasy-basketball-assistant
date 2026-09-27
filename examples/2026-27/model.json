@@ -91,19 +91,19 @@
     "integration_batch_size": 128,
     "feasibility_tolerance": 1e-08,
     "evidence": {
-      "kind": "source",
-      "reference": "Locked auction-desk projection.py, projection_moments.py, valuation.py (2026-09-27)",
+      "kind": "backtest",
+      "reference": "Locked projection/distribution formulas plus 2025-26 backtest_improvements.json and backtest_projection.py",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "R04: omit team resource reductions. Original 2025-26 paired reference evaluation improves when resource allocation is removed; blend stays equal until its separate change."
+      "reason": "No team resource cuts (R04). ESPN weight 1, historical weight 0 (R06); preserve a sole available source. Paired reference metrics: rank 0.747456 to 0.759534, hits 102 to 104, median dollar error 8.565195 to 8.044120. GP MAE worsens 17.202160 to 17.737654; GP calibration is a separate decision."
     },
     "prior_weights": [
       {
         "id": "a",
-        "weight": 0.5
+        "weight": 0.0
       },
       {
         "id": "b",
-        "weight": 0.5
+        "weight": 1.0
       }
     ]
   },

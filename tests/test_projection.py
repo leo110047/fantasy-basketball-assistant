@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from fba.contracts.base import DataError
-from fba.contracts.config import CalculationModel, SeasonConfig
+from fba.contracts.config import CalculationModel, PriorWeight, SeasonConfig
 from fba.contracts.projection import Prior, ProjectionPlayer
 from fba.core.distribution import moments
 from fba.core.projection import prior
@@ -103,9 +103,11 @@ def test_priors_preserve_minutes_and_single_source(model):
         return_on=None,
         history=(stats,),
     )
-    games, minutes, _ = prior(player, model.projection)
-    assert games == 65.0
-    assert minutes == 35.0
+    equal = model.projection.model_copy(
+        update={"prior_weights": (PriorWeight(id="a", weight=0.5), PriorWeight(id="b", weight=0.5))}
+    )
+    assert prior(player, equal)[:2] == (65.0, 35.0)
+    assert prior(player, model.projection)[:2] == (70.0, 40.0)
     solo = player.model_copy(update={"priors": player.priors[:1]})
     assert prior(solo, model.projection) == (60.0, 30.0, stats)
     unknown = player.model_copy(

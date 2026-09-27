@@ -7,7 +7,7 @@ from scipy.stats import spearmanr
 
 from fba.adapters.config import load_config
 from fba.contracts.base import DataError
-from fba.contracts.projection import EvaluationInput
+from fba.contracts.projection import EvaluationInput, PredictionVariant
 from fba.core.evaluation import correlation, evaluate
 
 
@@ -78,3 +78,20 @@ def test_evaluation_rejects_malformed_prediction_axes(frozen_evaluation):
         evaluate(
             inputs.model_copy(update={"stat_ids": ("unknown", *inputs.stat_ids[1:])}), "0" * 64
         )
+
+
+def test_selected_source_weights_improve_the_same_reference_population(frozen_evaluation):
+    inputs, _ = frozen_evaluation
+    weights = {p.id: p.weight for p in inputs.config.model.projection.prior_weights}
+    assert weights == {"a": 0.0, "b": 1.0}
+    data = json.loads((Path(__file__).parent / "fixtures/evaluation-weights.json").read_text())
+    variants = tuple(
+        PredictionVariant.model_validate_json(json.dumps(p)) for p in data["predictions"]
+    )
+    result = evaluate(inputs.model_copy(update={"predictions": variants}), "0" * 64)
+    by_id = {p.id: p for p in result.variants}
+    before, after = by_id["weight_B=0.5"], by_id["weight_B=1.0"]
+    assert after.rank_correlation >= before.rank_correlation
+    assert after.top_draft_hits >= before.top_draft_hits
+    assert after.median_dollar_error <= before.median_dollar_error
+    assert after.model_dump() == next(p for p in data["expected"] if p["id"] == after.id)
