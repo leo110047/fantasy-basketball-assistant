@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from fba.contracts.base import ConfigError
 from fba.contracts.config import (
+    CalculationModel,
     ConfigBundle,
     LeagueRules,
     Linear,
@@ -178,7 +179,7 @@ def validate_sources(season: SeasonConfig) -> None:
 def validate_config(
     league: LeagueRules,
     season: SeasonConfig,
-    model: ModelConfig,
+    model: ModelConfig | CalculationModel,
     refs: ConfigBundle,
 ) -> ValidatedConfig:
     if season.starts_on > season.ends_on:
@@ -190,4 +191,88 @@ def validate_config(
     validate_sources(season)
     if model.calibration.evidence.as_of > season.snapshot_as_of:
         raise ConfigError("model.calibration.evidence.as_of: after snapshot cutoff")
+    if isinstance(model, CalculationModel):
+        validate_calculation_model(league, season, model)
     return ValidatedConfig(league=league, season=season, model=model, refs=refs)
+
+
+def validate_calculation_model(
+    league: LeagueRules, season: SeasonConfig, model: CalculationModel
+) -> None:
+    p = model.projection
+    fields = set(p.stat_ids)
+    if not fields or len(fields) != len(p.stat_ids):
+        raise ConfigError("model.projection.stat_ids: empty or duplicate axes")
+    groups = tuple(field for group in p.rounding_groups for field in group)
+    if (
+        any(not group for group in p.rounding_groups)
+        or len(set(groups)) != len(groups)
+        or set(groups) != fields - {p.scoring_stat}
+    ):
+        raise ConfigError("model.projection.rounding_groups: must partition primitive axes")
+    if not p.scoring_terms or any(t.stat_id == p.scoring_stat for t in p.scoring_terms):
+        raise ConfigError("model.projection.scoring_terms: missing or cyclic formula")
+    used = {p.scoring_stat, p.second_chance_stat, p.assist_stat, p.made_stat, *p.offense_stats}
+    used.update(t.stat_id for t in (*p.scoring_terms, *p.possession_terms))
+    if not used <= fields or p.threshold_stat in fields:
+        raise ConfigError("model.projection: unknown or duplicate statistic reference")
+    definitions = {s.id: s.definition for s in season.stat_definitions}
+    if not fields | {p.threshold_stat} <= set(definitions):
+        raise ConfigError("model.projection.stat_ids: undefined season statistic")
+    threshold = definitions[p.threshold_stat]
+    if not isinstance(threshold, ThresholdCount) or not set(threshold.stat_ids) <= fields:
+        raise ConfigError("model.projection.threshold_stat: requires projected threshold inputs")
+    if (
+        min(
+            p.minimum_cost_scale,
+            p.minimum_usage_scale,
+            p.count_pseudocount,
+            p.attempt_pseudocount,
+            p.feasibility_tolerance,
+        )
+        <= 0
+    ):
+        raise ConfigError("model.projection: numerical scales and tolerances must be positive")
+    validate_nested_counts(model)
+    validate_offense(model)
+    for category in league.categories:
+        terms = (
+            category.formula.terms
+            if isinstance(category.formula, Linear)
+            else (*category.formula.numerator, *category.formula.denominator)
+        )
+        if any(t.stat_id not in fields | {p.threshold_stat} for t in terms):
+            raise ConfigError(f"league.categories.{category.id}: no projected statistic")
+    for name, evidence in (("projection", p.evidence), ("valuation", model.valuation.evidence)):
+        if evidence.as_of > season.snapshot_as_of:
+            raise ConfigError(f"model.{name}.evidence.as_of: after snapshot cutoff")
+
+
+def validate_nested_counts(model: CalculationModel) -> None:
+    p = model.projection
+    children = tuple(pair.child for pair in p.nested_counts)
+    if len(children) != len(set(children)) or not set(children) <= set(p.stat_ids):
+        raise ConfigError("model.projection.nested_counts: duplicate or unknown child")
+    available = set(p.stat_ids) - set(children) - {p.scoring_stat}
+    for pair in p.nested_counts:
+        if pair.parent not in available or not any(
+            pair.parent in group and pair.child in group for group in p.rounding_groups
+        ):
+            raise ConfigError(
+                "model.projection.nested_counts: cyclic order or inconsistent rounding group"
+            )
+        available.add(pair.child)
+
+
+def validate_offense(model: CalculationModel) -> None:
+    p = model.projection
+    offense = set(p.offense_stats)
+    if (
+        len(offense) != len(p.offense_stats)
+        or not p.possession_terms
+        or any(t.coefficient <= 0 or t.stat_id not in offense for t in p.possession_terms)
+        or p.second_chance_stat in offense
+        or any((pair.child in offense) != (pair.parent in offense) for pair in p.nested_counts)
+        or (p.scoring_stat in offense and any(t.stat_id not in offense for t in p.scoring_terms))
+    ):
+        raise ConfigError("model.projection.offense_stats: inconsistent resource dependencies")

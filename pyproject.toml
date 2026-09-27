@@ -2,7 +2,10 @@
 name = "fantasy-basketball-assistant"
 version = "0.1.0"
 requires-python = "==3.13.7"
-dependencies = ["pydantic>=2.12,<3"]
+dependencies = [
+    "numpy==2.3.5",
+    "pydantic>=2.12,<3",
+]
 
 [project.scripts]
 fba = "fba.apps.cli:main"
@@ -15,7 +18,15 @@ build-backend = "hatchling.build"
 packages = ["src/fba"]
 
 [dependency-groups]
-dev = ["basedpyright", "deptry", "hypothesis", "pytest", "ruff", "vulture"]
+dev = [
+    "basedpyright",
+    "deptry",
+    "hypothesis",
+    "pytest",
+    "ruff",
+    "scipy==1.18.1",
+    "vulture",
+]
 
 [tool.ruff]
 target-version = "py313"

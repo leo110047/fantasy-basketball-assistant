@@ -1,14 +1,18 @@
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from fba.adapters.codec import canonical, decode, digest, read_bytes
+from pydantic import ValidationError
+
+from fba.adapters.codec import canonical, checked_json, decode, digest, read_bytes
 from fba.adapters.espn import validate_source_season
 from fba.contracts.base import ConfigError, DataError, Record
 from fba.contracts.config import (
+    CalculationModel,
     ConfigBundle,
     ConfigRef,
     LeagueRules,
     ModelConfig,
+    ModelDocument,
     SeasonConfig,
     ValidatedConfig,
 )
@@ -38,7 +42,7 @@ def load_config(league: Path, season: Path, model: Path) -> ValidatedConfig:
     for source in year.sources:
         if source.adapter.startswith("espn_"):
             validate_source_season(source)
-    parameters, model_ref = load_one(model, ModelConfig, "urn:fantasy-assistant:model:1")
+    parameters, model_ref = load_parameters(model)
     return validate_config(
         rules,
         year,
@@ -48,4 +52,17 @@ def load_config(league: Path, season: Path, model: Path) -> ValidatedConfig:
             season=season_ref,
             model=model_ref,
         ),
+    )
+
+
+def load_parameters(path: Path) -> tuple[ModelConfig | CalculationModel, ConfigRef]:
+    data = read_bytes(path)
+    try:
+        parameters = ModelDocument.model_validate_json(checked_json(data, str(path))).root
+    except (ValidationError, DataError) as exc:
+        raise ConfigError(f"{path}: {exc}") from exc
+    return parameters, ConfigRef(
+        schema_id=f"urn:fantasy-assistant:model:{parameters.format_version}",
+        input_sha256=digest(data),
+        effective_sha256=digest(canonical(parameters)),
     )

@@ -1,5 +1,5 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -7,6 +7,137 @@
       "reference": "Fantasy refactor specification section 4.6; reference backtest_improvements.py",
       "as_of": "2026-09-27T11:15:43.799266+00:00",
       "reason": "Fit previous season projected GP against actual season totals; absence of an actual season record means zero games, following the reference calibration."
+    }
+  },
+  "projection": {
+    "stat_ids": [
+      "FGM",
+      "FGA",
+      "FTM",
+      "FTA",
+      "PTS",
+      "3PM",
+      "REB",
+      "OREB",
+      "AST",
+      "TO",
+      "STL",
+      "BLK"
+    ],
+    "rounding_groups": [
+      [
+        "FGM",
+        "FGA",
+        "3PM"
+      ],
+      [
+        "FTM",
+        "FTA"
+      ],
+      [
+        "REB",
+        "OREB"
+      ],
+      [
+        "AST"
+      ],
+      [
+        "TO"
+      ],
+      [
+        "STL"
+      ],
+      [
+        "BLK"
+      ]
+    ],
+    "nested_counts": [
+      {
+        "child": "FGM",
+        "parent": "FGA"
+      },
+      {
+        "child": "FTM",
+        "parent": "FTA"
+      },
+      {
+        "child": "3PM",
+        "parent": "FGM"
+      },
+      {
+        "child": "OREB",
+        "parent": "REB"
+      }
+    ],
+    "scoring_stat": "PTS",
+    "scoring_terms": [
+      {
+        "stat_id": "FGM",
+        "coefficient": 2
+      },
+      {
+        "stat_id": "3PM",
+        "coefficient": 1
+      },
+      {
+        "stat_id": "FTM",
+        "coefficient": 1
+      }
+    ],
+    "threshold_stat": "DD",
+    "offense_stats": [
+      "FGM",
+      "FGA",
+      "FTM",
+      "FTA",
+      "PTS",
+      "3PM",
+      "AST",
+      "TO"
+    ],
+    "possession_terms": [
+      {
+        "stat_id": "FGA",
+        "coefficient": 1
+      },
+      {
+        "stat_id": "FTA",
+        "coefficient": 0.44
+      },
+      {
+        "stat_id": "TO",
+        "coefficient": 1
+      }
+    ],
+    "second_chance_stat": "OREB",
+    "assist_stat": "AST",
+    "made_stat": "FGM",
+    "regulation_minutes": 48,
+    "players_on_court": 5,
+    "minimum_cost_scale": 1.0,
+    "minimum_usage_scale": 0.001,
+    "count_pseudocount": 0.5,
+    "attempt_pseudocount": 1.0,
+    "search_iterations": 70,
+    "integration_batch_size": 128,
+    "feasibility_tolerance": 1e-08,
+    "evidence": {
+      "kind": "source",
+      "reference": "Locked auction-desk projection.py, projection_moments.py, valuation.py (2026-09-27)",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Equivalent reference formulas. Source averaging, historical minute cost, population SD, replacement band, and numeric tolerances are carried explicitly; not a validated causal forecast."
+    }
+  },
+  "valuation": {
+    "pool_iterations": 6,
+    "healthy_games": 55,
+    "replacement_count": 10,
+    "result_decimals": 8,
+    "evidence": {
+      "kind": "source",
+      "reference": "Locked auction-desk projection.py, projection_moments.py, valuation.py (2026-09-27)",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Equivalent reference formulas. Source averaging, historical minute cost, population SD, replacement band, and numeric tolerances are carried explicitly; not a validated causal forecast."
     }
   }
 }

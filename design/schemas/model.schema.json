@@ -1,5 +1,33 @@
 {
   "$defs": {
+    "CalculationModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 2,
+          "minimum": 2,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation"
+      ],
+      "title": "CalculationModel",
+      "type": "object"
+    },
     "CalibrationMethod": {
       "additionalProperties": false,
       "properties": {
@@ -55,25 +83,266 @@
       ],
       "title": "Evidence",
       "type": "object"
-    }
-  },
-  "additionalProperties": false,
-  "description": "Stage 1 accepts only settings consumed by snapshot construction.",
-  "properties": {
-    "format_version": {
-      "maximum": 1,
-      "minimum": 1,
-      "title": "Format Version",
-      "type": "integer"
     },
-    "calibration": {
-      "$ref": "#/$defs/CalibrationMethod"
+    "ModelConfig": {
+      "additionalProperties": false,
+      "description": "Stage 1 accepts only settings consumed by snapshot construction.",
+      "properties": {
+        "format_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration"
+      ],
+      "title": "ModelConfig",
+      "type": "object"
+    },
+    "NestedCount": {
+      "additionalProperties": false,
+      "properties": {
+        "child": {
+          "minLength": 1,
+          "title": "Child",
+          "type": "string"
+        },
+        "parent": {
+          "minLength": 1,
+          "title": "Parent",
+          "type": "string"
+        }
+      },
+      "required": [
+        "child",
+        "parent"
+      ],
+      "title": "NestedCount",
+      "type": "object"
+    },
+    "ProjectionParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Stat Ids",
+          "type": "array"
+        },
+        "rounding_groups": {
+          "items": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rounding Groups",
+          "type": "array"
+        },
+        "nested_counts": {
+          "items": {
+            "$ref": "#/$defs/NestedCount"
+          },
+          "title": "Nested Counts",
+          "type": "array"
+        },
+        "scoring_stat": {
+          "minLength": 1,
+          "title": "Scoring Stat",
+          "type": "string"
+        },
+        "scoring_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Scoring Terms",
+          "type": "array"
+        },
+        "threshold_stat": {
+          "minLength": 1,
+          "title": "Threshold Stat",
+          "type": "string"
+        },
+        "offense_stats": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Offense Stats",
+          "type": "array"
+        },
+        "possession_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Possession Terms",
+          "type": "array"
+        },
+        "second_chance_stat": {
+          "minLength": 1,
+          "title": "Second Chance Stat",
+          "type": "string"
+        },
+        "assist_stat": {
+          "minLength": 1,
+          "title": "Assist Stat",
+          "type": "string"
+        },
+        "made_stat": {
+          "minLength": 1,
+          "title": "Made Stat",
+          "type": "string"
+        },
+        "regulation_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Regulation Minutes",
+          "type": "integer"
+        },
+        "players_on_court": {
+          "exclusiveMinimum": 0,
+          "title": "Players On Court",
+          "type": "integer"
+        },
+        "minimum_cost_scale": {
+          "minimum": 0,
+          "title": "Minimum Cost Scale",
+          "type": "number"
+        },
+        "minimum_usage_scale": {
+          "minimum": 0,
+          "title": "Minimum Usage Scale",
+          "type": "number"
+        },
+        "count_pseudocount": {
+          "minimum": 0,
+          "title": "Count Pseudocount",
+          "type": "number"
+        },
+        "attempt_pseudocount": {
+          "minimum": 0,
+          "title": "Attempt Pseudocount",
+          "type": "number"
+        },
+        "search_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Search Iterations",
+          "type": "integer"
+        },
+        "integration_batch_size": {
+          "exclusiveMinimum": 0,
+          "title": "Integration Batch Size",
+          "type": "integer"
+        },
+        "feasibility_tolerance": {
+          "minimum": 0,
+          "title": "Feasibility Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "stat_ids",
+        "rounding_groups",
+        "nested_counts",
+        "scoring_stat",
+        "scoring_terms",
+        "threshold_stat",
+        "offense_stats",
+        "possession_terms",
+        "second_chance_stat",
+        "assist_stat",
+        "made_stat",
+        "regulation_minutes",
+        "players_on_court",
+        "minimum_cost_scale",
+        "minimum_usage_scale",
+        "count_pseudocount",
+        "attempt_pseudocount",
+        "search_iterations",
+        "integration_batch_size",
+        "feasibility_tolerance",
+        "evidence"
+      ],
+      "title": "ProjectionParameters",
+      "type": "object"
+    },
+    "Term": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_id": {
+          "minLength": 1,
+          "title": "Stat Id",
+          "type": "string"
+        },
+        "coefficient": {
+          "title": "Coefficient",
+          "type": "number"
+        }
+      },
+      "required": [
+        "stat_id",
+        "coefficient"
+      ],
+      "title": "Term",
+      "type": "object"
+    },
+    "ValuationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "pool_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Pool Iterations",
+          "type": "integer"
+        },
+        "healthy_games": {
+          "minimum": 0,
+          "title": "Healthy Games",
+          "type": "number"
+        },
+        "replacement_count": {
+          "exclusiveMinimum": 0,
+          "title": "Replacement Count",
+          "type": "integer"
+        },
+        "result_decimals": {
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Result Decimals",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "pool_iterations",
+        "healthy_games",
+        "replacement_count",
+        "result_decimals",
+        "evidence"
+      ],
+      "title": "ValuationParameters",
+      "type": "object"
     }
   },
-  "required": [
-    "format_version",
-    "calibration"
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ModelConfig"
+    },
+    {
+      "$ref": "#/$defs/CalculationModel"
+    }
   ],
-  "title": "ModelConfig",
-  "type": "object"
+  "title": "ModelDocument"
 }

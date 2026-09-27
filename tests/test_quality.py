@@ -2,7 +2,7 @@ import ast
 import json
 from pathlib import Path
 
-from fba.contracts.config import LeagueRules, ModelConfig, SeasonConfig
+from fba.contracts.config import LeagueRules, ModelDocument, SeasonConfig
 from fba.contracts.data import IdentityMap, ManualAdjustments
 
 
@@ -14,7 +14,7 @@ def test_runtime_types_own_schemas():
     for name, model in (
         ("league", LeagueRules),
         ("season", SeasonConfig),
-        ("model", ModelConfig),
+        ("model", ModelDocument),
         ("identity-map", IdentityMap),
         ("manual-adjustments", ManualAdjustments),
     ):
@@ -24,17 +24,43 @@ def test_runtime_types_own_schemas():
 
 
 def test_core_dependency_direction_and_no_io_or_mutable_globals():
-    allowed = {"collections", "datetime", "fractions", "typing", "fba.contracts"}
+    allowed = {
+        "collections",
+        "datetime",
+        "fractions",
+        "typing",
+        "fba.contracts",
+        "math",
+        "itertools",
+        "numpy",
+        "numpy.typing",
+    }
     forbidden_calls = {"open", "eval", "exec", "__import__", "print", "input"}
     for path in (root() / "src/fba/core").glob("*.py"):
         tree = ast.parse(path.read_text())
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
-                assert node.module in allowed or node.module.startswith("fba.contracts."), path
+                assert node.module in allowed or node.module.startswith(
+                    ("fba.contracts.", "fba.core.")
+                ), path
             if isinstance(node, ast.Import):
                 assert all(n.name in allowed for n in node.names), path
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 assert node.func.id not in forbidden_calls, path
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                assert node.func.attr not in {
+                    "load",
+                    "save",
+                    "savez",
+                    "savez_compressed",
+                    "loadtxt",
+                    "savetxt",
+                    "fromfile",
+                    "tofile",
+                    "memmap",
+                    "genfromtxt",
+                    "ctypeslib",
+                }, path
         for node in tree.body:
             if isinstance(node, (ast.Assign, ast.AnnAssign)):
                 assert not isinstance(node.value, (ast.List, ast.Dict, ast.Set, ast.Call)), path

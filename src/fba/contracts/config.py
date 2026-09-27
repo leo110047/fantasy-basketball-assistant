@@ -1,7 +1,7 @@
 from datetime import date, time
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, Field
+from pydantic import AwareDatetime, Field, RootModel
 
 from fba.contracts.base import (
     Finite,
@@ -216,6 +216,54 @@ class ModelConfig(Record):
     calibration: CalibrationMethod
 
 
+class NestedCount(Record):
+    child: Text
+    parent: Text
+
+
+class ProjectionParameters(Record):
+    stat_ids: tuple[Text, ...]
+    rounding_groups: tuple[tuple[Text, ...], ...]
+    nested_counts: tuple[NestedCount, ...]
+    scoring_stat: Text
+    scoring_terms: tuple[Term, ...]
+    threshold_stat: Text
+    offense_stats: tuple[Text, ...]
+    possession_terms: tuple[Term, ...]
+    second_chance_stat: Text
+    assist_stat: Text
+    made_stat: Text
+    regulation_minutes: PositiveInt
+    players_on_court: PositiveInt
+    minimum_cost_scale: Nonnegative
+    minimum_usage_scale: Nonnegative
+    count_pseudocount: Nonnegative
+    attempt_pseudocount: Nonnegative
+    search_iterations: PositiveInt
+    integration_batch_size: PositiveInt
+    feasibility_tolerance: Nonnegative
+    evidence: Evidence
+
+
+class ValuationParameters(Record):
+    pool_iterations: PositiveInt
+    healthy_games: Nonnegative
+    replacement_count: PositiveInt
+    result_decimals: Annotated[int, Field(ge=0, le=12)]
+    evidence: Evidence
+
+
+class CalculationModel(Record):
+    format_version: Annotated[int, Field(ge=2, le=2)]
+    calibration: CalibrationMethod
+    projection: ProjectionParameters
+    valuation: ValuationParameters
+
+
+class ModelDocument(RootModel[ModelConfig | CalculationModel]):
+    pass
+
+
 class ConfigRef(Record):
     schema_id: Text
     input_sha256: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
@@ -231,5 +279,5 @@ class ConfigBundle(Record):
 class ValidatedConfig(Record):
     league: LeagueRules
     season: SeasonConfig
-    model: ModelConfig
+    model: ModelConfig | CalculationModel
     refs: ConfigBundle

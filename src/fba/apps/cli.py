@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from fba.adapters.acquisition import Acquired, acquire
+from fba.adapters.calculation import calculate_file, evaluate_file
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot, publish
@@ -92,6 +93,10 @@ def parser() -> argparse.ArgumentParser:
     for name in ("league", "season", "model", "output"):
         build_parser.add_argument(f"--{name}", required=True, type=Path)
     build_parser.add_argument("--version", required=True, type=int)
+    for name in ("calculate", "evaluate"):
+        calculation = commands.add_parser(name, help="Compute from a frozen calculation input")
+        calculation.add_argument("input", type=Path)
+        calculation.add_argument("--output", required=True, type=Path)
     for name in ("rebuild", "inspect"):
         command = commands.add_parser(name)
         command.add_argument("snapshot", type=Path)
@@ -103,6 +108,11 @@ def parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = parser().parse_args()
     try:
+        if args.command in ("calculate", "evaluate"):
+            operation = calculate_file if args.command == "calculate" else evaluate_file
+            result = operation(args.input, args.output)
+            print(json.dumps({"result": str(result), "sha256": digest(read_bytes(result))}))
+            return 0
         if args.command == "build":
             path = build(args.league, args.season, args.model, args.output, args.version)
         elif args.command == "rebuild":
