@@ -4,7 +4,7 @@ from pathlib import Path
 from fba.adapters import espn
 from fba.adapters.calculation import require_completed_season
 from fba.adapters.codec import canonical, decode, digest, read_bytes
-from fba.adapters.config import league_zone
+from fba.adapters.config import league_zone, validate_trade_deadline
 from fba.adapters.snapshots import checked_path, load_snapshot
 from fba.contracts.archive import AnnualEvaluation, ForecastArchive
 from fba.contracts.base import DataError
@@ -45,6 +45,7 @@ def forecast_archive(inputs: PreparedInput, result: CalculationResult, root: Pat
 def validate_archive(archive: ForecastArchive, current: ValidatedConfig) -> None:
     config = archive.config
     league_zone(config.league.timezone)
+    validate_trade_deadline(config.league, config.season)
     validate_config(config.league, config.season, config.model, config.refs)
     for name in ("league", "season", "model"):
         if digest(canonical(getattr(config, name))) != getattr(config.refs, name).effective_sha256:

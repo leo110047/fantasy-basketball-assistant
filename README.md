@@ -1,6 +1,6 @@
 # Fantasy Basketball Assistant
 
-設定驅動的本機 Yahoo 拍賣籃球助手。提供年度資料建置、投影估值、離線競標計算、逐日管理重播及預測回測；操作介面仍待後續階段。
+設定驅動的本機 Yahoo 拍賣籃球助手。提供年度資料建置、投影估值、本機競標桌、逐日管理重播及預測回測。
 
 需要 `uv` 和 C++17 編譯器。`scripts/check` 建立鎖定的 Python 環境並跑全部檢查。
 
@@ -20,11 +20,21 @@ uv run fba annual --league /path/league.json --season /path/season.json \
 ```sh
 uv run fba draft-template /path/auction-input-SHA256/auction-input.json \
   --mine 1 --output /path/draft.json
-uv run fba auction /path/auction-input-SHA256/auction-input.json \
-  --draft /path/draft.json --stage equal --workers 8 --output /path/results
+uv run fba serve /path/auction-input-SHA256/auction-input.json \
+  --draft /path/draft.json --log /path/auction.jsonl --workers 4
 ```
 
-草稿的 `sales` 記錄 `id`、`player_id`、`buyer`、`amount`；撤銷時移除該筆，每次修改增加 `revision`。`market` 只更新市場與預算，`equal` 計算加總停損價，`fit` 加入條件式陣容調整。適配是假設下的局部估值，並非實戰勝率；無解與求解失敗會明示。每份結果綁定設定、輸入及草稿雜湊。
+開啟 `serve` 顯示的完整網址。指定本輪球員、買家與實際成交價後登錄；可撤銷上一筆、匯出／匯入備份，以及設定我方隊伍與隊名。成交經後端驗證後直接保存到草稿檔，重新整理與重啟服務都會保留。同一草稿一次只開一個服務；每次重啟請使用新網址。
+
+服務運行期間透過介面修改草稿；手動編輯檔案前先停止服務。
+
+每次保存會將被替換的檔案保留在草稿旁的 `.<草稿檔名>.history/`，包含保存間隙的外部修改。需復原時先停止服務、保留現有草稿，再從歷史檔選擇正確版本。歷史檔不會自動刪除；保存需要支援原子交換的 macOS／Linux 本機檔案系統。
+
+市場與預算先更新，停損價在背景重算；「更新中」不顯示舊停損價。計算失敗不影響已保存成交，可按重試。成交若顯示「保存未確認」，先重新整理核對紀錄，避免重複登錄。買／不買比較使用當前類別加總模型；依陣容調整是假設下的局部估值，並非實戰勝率。
+
+服務僅限本機、離線讀取凍結輸入。`auction.jsonl` 保存各次計算的草稿、設定／資料雜湊、結果與耗時；瀏覽器 console 的 `fba timing` 記錄畫面完成時間。草稿、日誌與備份請放在專案外。
+
+只需結果檔時：`uv run fba auction /path/auction-input.json --draft /path/draft.json --stage equal --workers 8 --output /path/results`。`--stage` 可選 `market`、`equal`、`fit`。
 
 既有快照可完全離線重建；結果拒絕覆寫，請使用新的輸出目錄。
 

@@ -48,6 +48,7 @@ def test_non_python_runtime_and_test_assets_have_entrypoint_references():
     assets = [
         *(root() / "tests/fixtures").iterdir(),
         *(root() / "src/fba/native").iterdir(),
+        *(root() / "src/fba/apps/static").iterdir(),
         root() / "tests/native_guards.cpp",
     ]
     for asset in assets:
@@ -183,3 +184,14 @@ def test_native_function_complexity_is_bounded():
     assert all(f.cyclomatic_complexity <= 15 for f in functions), [
         (f.name, f.cyclomatic_complexity) for f in functions if f.cyclomatic_complexity > 15
     ]
+
+
+def test_browser_function_complexity_is_bounded():
+    for path in (root() / "src/fba/apps/static").glob("*.js"):
+        functions = lizard.analyze_file(str(path)).function_list
+        assert functions
+        assert all(f.cyclomatic_complexity <= 15 for f in functions), [
+            (path.name, f.name, f.cyclomatic_complexity)
+            for f in functions
+            if f.cyclomatic_complexity > 15
+        ]

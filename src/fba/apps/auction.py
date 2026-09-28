@@ -2,9 +2,9 @@ from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import get_context
 
 from fba.adapters.native import NativeArtifact, NativeKernel
-from fba.contracts.auction import MarginalRequest, Plan
+from fba.contracts.auction import Infeasible, MarginalRequest, Plan
 from fba.contracts.season import MarginalFeature
-from fba.core.auction import run_caps
+from fba.core.auction import comparison_branch, run_caps
 from fba.core.fit import marginal_batch
 from fba.core.managed import ManagedSeason
 from fba.core.portfolio import Portfolio
@@ -43,6 +43,15 @@ class AuctionSession:
         if self.kernel is None:
             self.kernel = NativeKernel()
         return self.kernel
+
+    def comparison(
+        self, portfolio: Portfolio, player: int, branch: Portfolio
+    ) -> tuple[Plan | Infeasible, Plan | Infeasible, int]:
+        skip_job = self.pool.submit(comparison_branch, portfolio, player)
+        buy_job = self.pool.submit(comparison_branch, branch, None)
+        skip, skip_calls = skip_job.result()
+        buy, buy_calls = buy_job.result()
+        return skip, buy, skip_calls + buy_calls
 
     def features(self, request: MarginalRequest) -> tuple[MarginalFeature, ...]:
         kernel = self.native()

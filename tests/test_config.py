@@ -61,3 +61,23 @@ def test_weekly_player_lock_conflict(configs, parsed):
 def test_duplicate_json_keys_fail():
     with pytest.raises(DataError, match="duplicate key"):
         checked_json(b'{"teams":12,"teams":16}', "league.json")
+
+
+@pytest.mark.parametrize(
+    "instant,valid",
+    [
+        ("2025-10-20T04:00:00Z", True),
+        ("2025-10-27T03:59:59Z", True),
+        ("2025-10-20T03:59:59Z", False),
+        ("2025-10-27T04:00:00Z", False),
+    ],
+)
+def test_trade_deadline_uses_league_timezone_and_season(configs, parsed, instant, valid):
+    from fba.adapters.config import validate_trade_deadline
+
+    league = LeagueRules.model_validate_json(json.dumps(configs[0] | {"trade_deadline": instant}))
+    if valid:
+        validate_trade_deadline(league, parsed[1])
+    else:
+        with pytest.raises(ConfigError, match="trade_deadline"):
+            validate_trade_deadline(league, parsed[1])

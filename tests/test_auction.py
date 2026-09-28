@@ -15,10 +15,11 @@ from fba.contracts.auction import (
     Infeasible,
     Plan,
     Sale,
+    TeamBudget,
 )
 from fba.contracts.base import DataError
 from fba.core.auction import calculate_auction, compare, market_context, portfolio_for
-from fba.core.market import opening_anchors
+from fba.core.market import bidders_by_position, opening_anchors
 from fba.core.portfolio import Portfolio
 from fba.core.roster import assign, completable
 
@@ -84,6 +85,35 @@ def independent_legal(league, players):
         )
 
     return fill(league.starter_slots, players)
+
+
+@pytest.mark.parametrize("bench", range(3))
+def test_position_grouped_bidders_match_exhaustive_completion(bench):
+    c = config()
+    league = c.league.model_copy(
+        update={"teams": 2, "starter_slots": c.league.starter_slots[:2], "bench_slots": bench}
+    )
+    shapes = (("PG",), ("SG",), ("PG", "SG"), ("SG", "PG"), ("C",))
+    players = tuple(player(i, positions) for i, positions in enumerate(shapes * 2))
+    size = len(league.starter_slots) + bench
+    for count in range(size + 1):
+        held = players[:count]
+        room = tuple(
+            TeamBudget(
+                id=str(j),
+                owned=tuple(p.id for p in held),
+                budget=league.budget,
+                slots=size - count,
+                maximum_bid=league.budget,
+            )
+            for j in range(league.teams)
+        )
+        grouped = bidders_by_position(league, c.model.market, players, room, 1.0)
+        fillers = tuple(player(100 + i, ("PG", "SG")) for i in range(size - count - 1))
+        for candidate in players:
+            possible = count < size and independent_legal(league, (*held, candidate, *fillers))
+            assert bool(grouped[tuple(sorted(candidate.positions))]) == possible
+        assert grouped == bidders_by_position(league, c.model.market, players[::-1], room, 1.0)
 
 
 @pytest.mark.parametrize("seed", range(12))
@@ -331,6 +361,15 @@ def test_parallel_caps_are_identical_on_a_changed_state():
         fast = calculate_auction(inputs, draft, "0" * 64, "3" * 64, runner=session.caps)
         slow = calculate_auction(inputs, draft, "0" * 64, "3" * 64)
         assert canonical(fast) == canonical(slow)
+        players, market = market_context(inputs, draft, "0" * 64)
+        for candidate, price in (("001", 1), ("004", 5), ("007", 100)):
+            slow_comparison = compare(
+                portfolio_for(inputs, players, market, draft), candidate, price
+            )
+            fast_comparison = compare(
+                portfolio_for(inputs, players, market, draft), candidate, price, session.comparison
+            )
+            assert canonical(fast_comparison) == canonical(slow_comparison)
     finally:
         session.close()
 

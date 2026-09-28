@@ -17,6 +17,7 @@ from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot,
 from fba.apps.annual import finish_annual
 from fba.apps.auction import AuctionSession
 from fba.apps.build import assemble
+from fba.apps.server import serve
 from fba.contracts.auction import SolverError
 from fba.contracts.base import ConfigError, DataError, IdentityError
 from fba.contracts.config import ValidatedConfig
@@ -146,12 +147,21 @@ def parser() -> argparse.ArgumentParser:
     draft.add_argument("input", type=Path)
     draft.add_argument("--mine", required=True, type=int)
     draft.add_argument("--output", required=True, type=Path)
+    desk = commands.add_parser("serve", help="Open a local offline auction desk")
+    desk.add_argument("input", type=Path)
+    desk.add_argument("--draft", required=True, type=Path)
+    desk.add_argument("--log", required=True, type=Path)
+    desk.add_argument("--workers", required=True, type=int)
+    desk.add_argument("--port", type=int, default=0)
     return root
 
 
 def main() -> int:
     args = parser().parse_args()
     try:
+        if args.command == "serve":
+            serve(args.input, args.draft, args.log, args.workers, args.port)
+            return 0
         if args.command == "draft-template":
             print(json.dumps({"draft": str(draft_template(args.input, args.mine, args.output))}))
             return 0

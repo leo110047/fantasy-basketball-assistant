@@ -43,9 +43,8 @@ class Portfolio:
         self.slots = capacity(league) - len(owned)
         self.values = np.array([p.utility or 0.0 for p in players])
         cost = np.array([c if c is not None else np.inf for c in costs])
-        supersets = np.array(
-            [[set(p.positions) <= set(q.positions) for q in players] for p in players]
-        )
+        positions = tuple(frozenset(p.positions) for p in players)
+        supersets = np.array([[p <= q for q in positions] for p in positions])
         weak = (self.values[None, :] >= self.values[:, None]) & (cost[None, :] <= cost[:, None])
         earlier = np.arange(len(players))[None, :] < np.arange(len(players))[:, None]
         strict = (self.values[None, :] > self.values[:, None]) & (cost[None, :] < cost[:, None])

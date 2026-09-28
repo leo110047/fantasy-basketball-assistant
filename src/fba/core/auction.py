@@ -257,7 +257,31 @@ def calculate_auction(
     )
 
 
-def compare(portfolio: Portfolio, player_id: str, price: int) -> Comparison:
+def comparison_branch(portfolio: Portfolio, exclude: int | None) -> tuple[Plan | Infeasible, int]:
+    plan = portfolio.solve(exclude=exclude, canonical=True)
+    return plan, portfolio.calls
+
+
+def comparison_plans(
+    portfolio: Portfolio, player: int, branch: Portfolio
+) -> tuple[Plan | Infeasible, Plan | Infeasible, int]:
+    skip, skip_calls = comparison_branch(portfolio, player)
+    buy, buy_calls = comparison_branch(branch, None)
+    return skip, buy, skip_calls + buy_calls
+
+
+class ComparisonRunner(Protocol):
+    def __call__(
+        self, portfolio: Portfolio, player: int, branch: Portfolio
+    ) -> tuple[Plan | Infeasible, Plan | Infeasible, int]: ...
+
+
+def compare(
+    portfolio: Portfolio,
+    player_id: str,
+    price: int,
+    runner: ComparisonRunner = comparison_plans,
+) -> Comparison:
     candidates = [i for i, p in enumerate(portfolio.players) if p.id == player_id]
     if not candidates or player_id in portfolio.owned:
         raise DataError("comparison.player_id: unknown or already owned")
@@ -270,7 +294,6 @@ def compare(portfolio: Portfolio, player_id: str, price: int) -> Comparison:
         or price % portfolio.league.bid_increment
     ):
         raise DataError("comparison.price: outside legal bid range")
-    skip = portfolio.solve(exclude=player, canonical=True)
     branch = Portfolio(
         portfolio.league,
         portfolio.parameters,
@@ -281,7 +304,7 @@ def compare(portfolio: Portfolio, player_id: str, price: int) -> Comparison:
         portfolio.budget - price,
         prune=portfolio.prune,
     )
-    buy = branch.solve(canonical=True)
+    skip, buy, calls = runner(portfolio, player, branch)
     if isinstance(buy, Plan):
         buy = buy.model_copy(
             update={
@@ -298,5 +321,5 @@ def compare(portfolio: Portfolio, player_id: str, price: int) -> Comparison:
         buy=result_plan(buy, decimals),
         skip=result_plan(skip, decimals),
         delta=result_number(delta, decimals) if delta is not None else None,
-        solver_calls=portfolio.calls + branch.calls,
+        solver_calls=calls,
     )

@@ -43,10 +43,21 @@ def league_zone(timezone: str) -> ZoneInfo:
         raise ConfigError(f"league.timezone: unknown timezone {timezone}") from exc
 
 
+def validate_trade_deadline(rules: LeagueRules, season: SeasonConfig) -> None:
+    deadline = rules.trade_deadline
+    if deadline is not None:
+        local_day = deadline.astimezone(league_zone(rules.timezone)).date()
+        if not season.starts_on <= local_day <= season.ends_on:
+            raise ConfigError(
+                "league.trade_deadline: outside the configured season in league.timezone"
+            )
+
+
 def load_config(league: Path, season: Path, model: Path) -> ValidatedConfig:
     rules, league_ref = load_one(league, LeagueRules, "urn:fantasy-assistant:league:1")
     league_zone(rules.timezone)
     year, season_ref = load_one(season, SeasonConfig, "urn:fantasy-assistant:season:1")
+    validate_trade_deadline(rules, year)
     for source in year.sources:
         if source.adapter.startswith("espn_"):
             validate_source_season(source)

@@ -7,6 +7,35 @@ from fba.contracts.config import LeagueRules, MarketParameters
 from fba.core.roster import capacity, completable
 
 
+def bidders_by_position(
+    league: LeagueRules,
+    parameters: MarketParameters,
+    players: tuple[AuctionPlayer, ...],
+    room: tuple[TeamBudget, ...],
+    average_surplus: float,
+) -> dict[tuple[str, ...], tuple[tuple[int, float], ...]]:
+    by_id = {p.id: p for p in players}
+    representatives = {tuple(sorted(p.positions)): p for p in players}
+    bidders: dict[tuple[str, ...], list[tuple[int, float]]] = {key: [] for key in representatives}
+    for j, team in enumerate(room):
+        if not team.slots:
+            continue
+        held = tuple(by_id[i] for i in team.owned)
+        wealth = float(
+            np.clip(
+                (team.budget / team.slots - league.minimum_bid) / average_surplus,
+                parameters.wealth_lower,
+                parameters.wealth_upper,
+            )
+            ** parameters.wealth_exponent
+        )
+        for positions, player in representatives.items():
+            # Matching cardinality depends on positions, never player identity or price.
+            if completable(league, (*held, player)):
+                bidders[positions].append((j, wealth))
+    return {key: tuple(value) for key, value in bidders.items()}
+
+
 def opening_anchors(
     league: LeagueRules, players: tuple[AuctionPlayer, ...]
 ) -> dict[str, float | None]:
@@ -63,65 +92,59 @@ def price_market(
     )
     shift = float(np.log(np.exp(parameters.volatility * np.sort(normal, axis=1)[:, -2]).mean()))
     multipliers = np.exp(parameters.volatility * z - shift)
-    by_id = {p.id: p for p in players}
+    eligible = bidders_by_position(league, parameters, players, room, average_surplus)
     own = next(t for t in room if t.id == state.mine)
     prices: dict[str, MarketPrice] = {}
+    quotes_by_anchor_position: dict[tuple[float, tuple[str, ...]], MarketPrice] = {}
     for player in remaining:
         anchor = anchors[player.id]
         assert anchor is not None
-        bids: list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = []
-        foes: list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = []
-        bidders = 0
-        for j, team in enumerate(room):
-            held = tuple(by_id[i] for i in team.owned)
-            if not team.slots or not completable(league, (*held, player)):
-                continue
-            wealth = (
-                np.clip(
-                    (team.budget / team.slots - league.minimum_bid) / average_surplus,
-                    parameters.wealth_lower,
-                    parameters.wealth_upper,
-                )
-                ** parameters.wealth_exponent
+        key = (anchor, tuple(sorted(player.positions)))
+        if key in quotes_by_anchor_position:
+            prices[player.id] = quotes_by_anchor_position[key].model_copy(
+                update={"player_id": player.id}
             )
-            samples = (
-                np.floor(
-                    np.minimum(
-                        team.maximum_bid,
-                        np.maximum(
-                            league.minimum_bid,
-                            league.minimum_bid
-                            + (anchor - league.minimum_bid)
-                            * inflation
-                            * wealth
-                            * multipliers[:, j],
-                        ),
-                    )
-                    / league.bid_increment
-                )
-                * league.bid_increment
-            )
-            bids.append(samples)
-            if team.id != state.mine:
-                foes.append(samples)
-                bidders += int(
-                    team.maximum_bid >= parameters.competition_bid
-                    and (
-                        np.sort(samples)[(len(samples) - 1) // 2]
-                        + np.sort(samples)[len(samples) // 2]
-                    )
-                    / 2
-                    >= parameters.competition_bid
-                )
-        if not bids:
             continue
+        participants = eligible[key[1]]
+        if not participants:
+            continue
+        indices = [j for j, _ in participants]
+        wealth = np.array([value for _, value in participants])
+        maximum = np.array([room[j].maximum_bid for j in indices])
+        bids = (
+            np.floor(
+                np.minimum(
+                    maximum[:, None],
+                    np.maximum(
+                        league.minimum_bid,
+                        league.minimum_bid
+                        + (anchor - league.minimum_bid)
+                        * inflation
+                        * wealth[:, None]
+                        * multipliers[:, indices].T,
+                    ),
+                )
+                / league.bid_increment
+            )
+            * league.bid_increment
+        )
+        foe_rows = np.array([room[j].id != state.mine for j in indices])
+        foes = bids[foe_rows]
+        lower, upper = (parameters.samples - 1) // 2, parameters.samples // 2
+        middle = np.partition(foes, (lower, upper), axis=1)
+        bidders = int(
+            np.count_nonzero(
+                (maximum[foe_rows] >= parameters.competition_bid)
+                & ((middle[:, lower] + middle[:, upper]) / 2 >= parameters.competition_bid)
+            )
+        )
         ordered = np.sort(bids, axis=0)
         expected = (
             float(np.minimum(ordered[-1], ordered[-2] + league.bid_increment).mean())
             if len(bids) > 1
             else float(league.minimum_bid)
         )
-        high = np.max(foes, axis=0) if foes else np.zeros(parameters.samples)
+        high = np.max(foes, axis=0) if len(foes) else np.zeros(parameters.samples)
         needed = np.where(
             high <= league.minimum_bid,
             league.minimum_bid,
@@ -136,6 +159,7 @@ def price_market(
             planning_cost=ceil(acquisition / league.bid_increment) * league.bid_increment,
             bidders=bidders,
         )
+        quotes_by_anchor_position[key] = prices[player.id]
     return MarketResult(
         room=room,
         prices=tuple(
