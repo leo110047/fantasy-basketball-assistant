@@ -1,5 +1,49 @@
 {
   "$defs": {
+    "AuctionModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 5,
+          "minimum": 5,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketParameters"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit"
+      ],
+      "title": "AuctionModel",
+      "type": "object"
+    },
     "CalculationModel": {
       "additionalProperties": false,
       "properties": {
@@ -47,6 +91,27 @@
       "title": "CalibrationMethod",
       "type": "object"
     },
+    "CategoryFloor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "exclusiveMinimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "value"
+      ],
+      "title": "CategoryFloor",
+      "type": "object"
+    },
     "Evidence": {
       "additionalProperties": false,
       "properties": {
@@ -84,6 +149,122 @@
       "title": "Evidence",
       "type": "object"
     },
+    "FitParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "samples": {
+          "exclusiveMinimum": 0,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "opponent_seed": {
+          "minimum": 0,
+          "title": "Opponent Seed",
+          "type": "integer"
+        },
+        "health_samples": {
+          "exclusiveMinimum": 0,
+          "title": "Health Samples",
+          "type": "integer"
+        },
+        "health_seed": {
+          "minimum": 0,
+          "title": "Health Seed",
+          "type": "integer"
+        },
+        "health_blocks": {
+          "exclusiveMinimum": 0,
+          "title": "Health Blocks",
+          "type": "integer"
+        },
+        "mean_missed_games": {
+          "exclusiveMinimum": 0,
+          "title": "Mean Missed Games",
+          "type": "number"
+        },
+        "forecast_days": {
+          "exclusiveMinimum": 0,
+          "title": "Forecast Days",
+          "type": "integer"
+        },
+        "unavailable_status": {
+          "minLength": 1,
+          "title": "Unavailable Status",
+          "type": "string"
+        },
+        "availability_floor": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Availability Floor",
+          "type": "number"
+        },
+        "category_floors": {
+          "items": {
+            "$ref": "#/$defs/CategoryFloor"
+          },
+          "title": "Category Floors",
+          "type": "array"
+        },
+        "bandwidth": {
+          "exclusiveMinimum": 0,
+          "title": "Bandwidth",
+          "type": "number"
+        },
+        "gradient_fraction": {
+          "exclusiveMinimum": 0,
+          "title": "Gradient Fraction",
+          "type": "number"
+        },
+        "gradient_floor": {
+          "exclusiveMinimum": 0,
+          "title": "Gradient Floor",
+          "type": "number"
+        },
+        "steps": {
+          "items": {
+            "exclusiveMinimum": 0,
+            "maximum": 1,
+            "type": "number"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "improvement_tolerance": {
+          "exclusiveMinimum": 0,
+          "title": "Improvement Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "samples",
+        "seed",
+        "opponent_seed",
+        "health_samples",
+        "health_seed",
+        "health_blocks",
+        "mean_missed_games",
+        "forecast_days",
+        "unavailable_status",
+        "availability_floor",
+        "category_floors",
+        "bandwidth",
+        "gradient_fraction",
+        "gradient_floor",
+        "steps",
+        "improvement_tolerance",
+        "evidence"
+      ],
+      "title": "FitParameters",
+      "type": "object"
+    },
     "HistoryShare": {
       "additionalProperties": false,
       "properties": {
@@ -103,6 +284,73 @@
         "parent_stat"
       ],
       "title": "HistoryShare",
+      "type": "object"
+    },
+    "MarketParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "volatility": {
+          "minimum": 0,
+          "title": "Volatility",
+          "type": "number"
+        },
+        "samples": {
+          "exclusiveMinimum": 0,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "normalization_samples": {
+          "exclusiveMinimum": 0,
+          "title": "Normalization Samples",
+          "type": "integer"
+        },
+        "normalization_seed": {
+          "minimum": 0,
+          "title": "Normalization Seed",
+          "type": "integer"
+        },
+        "wealth_lower": {
+          "minimum": 0,
+          "title": "Wealth Lower",
+          "type": "number"
+        },
+        "wealth_upper": {
+          "minimum": 0,
+          "title": "Wealth Upper",
+          "type": "number"
+        },
+        "wealth_exponent": {
+          "minimum": 0,
+          "title": "Wealth Exponent",
+          "type": "number"
+        },
+        "competition_bid": {
+          "exclusiveMinimum": 0,
+          "title": "Competition Bid",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "volatility",
+        "samples",
+        "seed",
+        "normalization_samples",
+        "normalization_seed",
+        "wealth_lower",
+        "wealth_upper",
+        "wealth_exponent",
+        "competition_bid",
+        "evidence"
+      ],
+      "title": "MarketParameters",
       "type": "object"
     },
     "ModelConfig": {
@@ -596,6 +844,54 @@
       "title": "ResourceParameters",
       "type": "object"
     },
+    "SolverParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "time_limit_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Time Limit Seconds",
+          "type": "number"
+        },
+        "value_tolerance": {
+          "exclusiveMinimum": 0,
+          "title": "Value Tolerance",
+          "type": "number"
+        },
+        "bound_multipliers": {
+          "items": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Bound Multipliers",
+          "type": "array"
+        },
+        "nomination_count": {
+          "exclusiveMinimum": 0,
+          "title": "Nomination Count",
+          "type": "integer"
+        },
+        "result_decimals": {
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Result Decimals",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "time_limit_seconds",
+        "value_tolerance",
+        "bound_multipliers",
+        "nomination_count",
+        "result_decimals",
+        "evidence"
+      ],
+      "title": "SolverParameters",
+      "type": "object"
+    },
     "Term": {
       "additionalProperties": false,
       "properties": {
@@ -667,6 +963,9 @@
     },
     {
       "$ref": "#/$defs/PreparationModel"
+    },
+    {
+      "$ref": "#/$defs/AuctionModel"
     }
   ],
   "title": "ModelDocument"

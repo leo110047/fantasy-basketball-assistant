@@ -5,13 +5,16 @@ import tempfile
 from pathlib import Path
 
 from fba.adapters.acquisition import Acquired, acquire
+from fba.adapters.auction import auction_file, draft_template, prepare_auction
 from fba.adapters.calculation import calculate_file, evaluate_file
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.migration import migrate_projection
 from fba.adapters.preparation import project
 from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot, publish
+from fba.apps.auction import AuctionSession
 from fba.apps.build import assemble
+from fba.contracts.auction import SolverError
 from fba.contracts.base import ConfigError, DataError, IdentityError
 from fba.contracts.config import ValidatedConfig
 
@@ -120,12 +123,52 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument("snapshot", type=Path)
         if name == "rebuild":
             command.add_argument("--output", required=True, type=Path)
+    auction = commands.add_parser("auction", help="Compute an offline auction state")
+    auction.add_argument("input", type=Path)
+    auction.add_argument("--draft", required=True, type=Path)
+    auction.add_argument("--workers", required=True, type=int)
+    auction.add_argument("--output", required=True, type=Path)
+    auction.add_argument("--stage", choices=("market", "equal", "fit"), required=True)
+    prepare = commands.add_parser(
+        "prepare-auction", help="Freeze an auction from a valued projection"
+    )
+    prepare.add_argument("projection", type=Path)
+    prepare.add_argument("--model", required=True, type=Path)
+    prepare.add_argument("--output", required=True, type=Path)
+    draft = commands.add_parser(
+        "draft-template", help="Create an empty draft with editable team labels"
+    )
+    draft.add_argument("input", type=Path)
+    draft.add_argument("--mine", required=True, type=int)
+    draft.add_argument("--output", required=True, type=Path)
     return root
 
 
 def main() -> int:
     args = parser().parse_args()
     try:
+        if args.command == "draft-template":
+            print(json.dumps({"draft": str(draft_template(args.input, args.mine, args.output))}))
+            return 0
+        if args.command in ("auction", "prepare-auction"):
+            if args.command == "auction":
+                session = AuctionSession(args.workers)
+                try:
+                    path = auction_file(
+                        args.input,
+                        args.draft,
+                        args.output,
+                        args.stage,
+                        session.caps,
+                        session.features,
+                        session.native() if args.stage == "fit" else None,
+                    )
+                finally:
+                    session.close()
+            else:
+                path = prepare_auction(args.projection, args.model, args.output)
+            print(json.dumps({"result": str(path)}))
+            return 0
         if args.command in ("project", "annual"):
             if args.command == "annual":
                 with tempfile.TemporaryDirectory(prefix="fba-annual-") as folder:
@@ -163,7 +206,7 @@ def main() -> int:
     except IdentityError as exc:
         print(json.dumps({"error": str(exc), "unresolved": exc.unresolved}), file=sys.stderr)
         return 2
-    except (ConfigError, DataError) as exc:
+    except (ConfigError, DataError, SolverError) as exc:
         print(json.dumps({"error": str(exc)}), file=sys.stderr)
         return 2
     return 0

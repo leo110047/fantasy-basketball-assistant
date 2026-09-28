@@ -1,7 +1,11 @@
 import ast
+import difflib
 import json
 from pathlib import Path
 
+import lizard
+
+from fba.contracts.auction import DraftState
 from fba.contracts.config import LeagueRules, ModelDocument, SeasonConfig
 from fba.contracts.data import IdentityMap, ManualAdjustments
 
@@ -12,6 +16,7 @@ def root():
 
 def test_runtime_types_own_schemas():
     for name, model in (
+        ("draft", DraftState),
         ("league", LeagueRules),
         ("season", SeasonConfig),
         ("model", ModelDocument),
@@ -34,6 +39,9 @@ def test_core_dependency_direction_and_no_io_or_mutable_globals():
         "itertools",
         "numpy",
         "numpy.typing",
+        "scipy.optimize",
+        "scipy.special",
+        "scipy.stats",
     }
     forbidden_calls = {"open", "eval", "exec", "__import__", "print", "input"}
     for path in (root() / "src/fba/core").glob("*.py"):
@@ -107,3 +115,36 @@ def test_no_duplicate_nontrivial_function_bodies():
                 )
                 assert normalized not in bodies, (path, node.name, bodies.get(normalized))
                 bodies[normalized] = (path.name, node.name)
+
+
+def test_long_functions_do_not_duplicate_eighty_percent_of_their_body():
+    bodies = []
+    for path in (root() / "src/fba").rglob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                lines = ast.unparse(ast.Module(body=node.body, type_ignores=[])).splitlines()
+                if len(lines) >= 10:
+                    bodies.append((path.name, node.name, lines))
+    for i, (path, name, lines) in enumerate(bodies):
+        for other_path, other_name, other_lines in bodies[i + 1 :]:
+            match = difflib.SequenceMatcher(None, lines, other_lines, autojunk=False)
+            if match.quick_ratio() >= 0.8:
+                assert match.ratio() < 0.8, (path, name, other_path, other_name)
+
+
+def test_native_core_has_no_fixed_league_dimensions_or_io():
+    import re
+
+    source = (root() / "src/fba/native/season.cpp").read_text()
+    assert not re.search(r"\b(14|200|82)\b|\b(PG|SG|SF|PF|OREB|DD)\b", source)
+    assert not re.search(r"\b(fopen|fread|fwrite|socket|system|popen)\s*\(", source)
+    assert "std::array" not in source
+    assert "int R, int L, int I" in source
+
+
+def test_native_function_complexity_is_bounded():
+    functions = lizard.analyze_file(str(root() / "src/fba/native/season.cpp")).function_list
+    assert functions
+    assert all(f.cyclomatic_complexity <= 15 for f in functions), [
+        (f.name, f.cyclomatic_complexity) for f in functions if f.cyclomatic_complexity > 15
+    ]

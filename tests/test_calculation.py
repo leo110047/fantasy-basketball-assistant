@@ -39,6 +39,9 @@ def projection_bundle(tmp_path):
         if week["id"] in ("w21", "w22"):
             week["phase"] = "postseason"
     league["categories"] = [next(c for c in league["categories"] if c["id"] == "PTS")]
+    files["model"]["fit"]["category_floors"] = [
+        c for c in files["model"]["fit"]["category_floors"] if c["id"] == "PTS"
+    ]
     files["model"]["valuation"]["healthy_games"] = 3
     files["model"]["valuation"]["replacement_count"] = 2
     for name, value in files.items():
@@ -270,6 +273,9 @@ def test_explicit_migration_preserves_sources_and_removes_sd_dependency(
     source_bytes = path.read_bytes()
     model = json.loads((Path(__file__).parents[1] / "examples/2026-27/model.json").read_text())
     model["valuation"].update(healthy_games=1, replacement_count=2)
+    model["fit"]["category_floors"] = [
+        c for c in model["fit"]["category_floors"] if c["id"] == "PTS"
+    ]
     new_model = tmp_path / "new-model.json"
     new_model.write_text(json.dumps(model))
     with pytest.raises(DataError, match="format_version"):
@@ -323,7 +329,12 @@ def test_migration_rejects_source_changed_after_verification(
         return checked
 
     monkeypatch.setattr(migration, "load_calculation_input", change_after_load)
-    model = Path(__file__).parents[1] / "examples/2026-27/model.json"
+    parameters = json.loads((Path(__file__).parents[1] / "examples/2026-27/model.json").read_text())
+    parameters["fit"]["category_floors"] = [
+        c for c in parameters["fit"]["category_floors"] if c["id"] == "PTS"
+    ]
+    model = tmp_path / "migration-model.json"
+    model.write_text(json.dumps(parameters))
     output = tmp_path / "changed-during-read"
     with pytest.raises(DataError, match="changed during conversion"):
         migrate_projection(

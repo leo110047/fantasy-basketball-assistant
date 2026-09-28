@@ -1,5 +1,5 @@
 {
-  "format_version": 4,
+  "format_version": 5,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -167,6 +167,148 @@
       "reference": "Locked v2 data_v2.py, bank.py and projections.py; annual source preparation",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Missing OREB uses individual historical share, or a configured position pool when history is insufficient. Scoring components can be derived from the exact scoring identity. Historical-only priors use previous-season means and bounded GP; older-season role overrides are not inferred. Pooling is an explicit assumption for rookies and veterans alike. Missing usable priors remain unavailable."
+    }
+  },
+  "market": {
+    "volatility": 0.25,
+    "samples": 512,
+    "seed": 20260926,
+    "normalization_samples": 100000,
+    "normalization_seed": 0,
+    "wealth_lower": 0.5,
+    "wealth_upper": 2.0,
+    "wealth_exponent": 0.5,
+    "competition_bid": 3,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Locked auction-desk engine.py conditional market and exact portfolio model",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Preserve seeded lognormal willingness and paired conditional acquisition. The market model is uncalibrated; price ties may require first nomination."
+    }
+  },
+  "solver": {
+    "time_limit_seconds": 5.0,
+    "value_tolerance": 1e-07,
+    "bound_multipliers": [
+      0.0,
+      0.0001,
+      0.0001778279,
+      0.0003162278,
+      0.0005623413,
+      0.001,
+      0.001778279,
+      0.003162278,
+      0.005623413,
+      0.01,
+      0.01778279,
+      0.03162278,
+      0.05623413,
+      0.1,
+      0.1778279,
+      0.3162278,
+      0.5623413,
+      1.0,
+      1.778279,
+      3.162278,
+      5.623413,
+      10.0,
+      17.78279,
+      31.62278,
+      56.23413,
+      100.0,
+      177.8279,
+      316.2278,
+      562.3413,
+      1000.0,
+      1778.279,
+      3162.278,
+      5623.413,
+      10000.0
+    ],
+    "nomination_count": 3,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Locked auction-desk engine.py conditional market and exact portfolio model",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Exact integer optimizers, zero relative MIP gap, explicit failures. Deterministic ID tie-breaking; value tolerance follows the reference cap threshold. Published utility, loss and fit diagnostics use six decimal places; integer optimizers keep unrounded values."
+    },
+    "result_decimals": 6
+  },
+  "fit": {
+    "samples": 16384,
+    "seed": 9026,
+    "opponent_seed": 110926,
+    "health_samples": 64,
+    "health_seed": 62926,
+    "health_blocks": 4,
+    "mean_missed_games": 6.0,
+    "forecast_days": 7,
+    "unavailable_status": "O",
+    "availability_floor": 0.05,
+    "category_floors": [
+      {
+        "id": "REB",
+        "value": 1
+      },
+      {
+        "id": "OREB",
+        "value": 1
+      },
+      {
+        "id": "FG%",
+        "value": 0.005
+      },
+      {
+        "id": "FT%",
+        "value": 0.01
+      },
+      {
+        "id": "AST",
+        "value": 1
+      },
+      {
+        "id": "A/T",
+        "value": 0.05
+      },
+      {
+        "id": "PTS",
+        "value": 1
+      },
+      {
+        "id": "3PM",
+        "value": 1
+      },
+      {
+        "id": "STL",
+        "value": 0.5
+      },
+      {
+        "id": "BLK",
+        "value": 0.5
+      },
+      {
+        "id": "DD",
+        "value": 0.5
+      }
+    ],
+    "bandwidth": 0.18,
+    "gradient_fraction": 0.03,
+    "gradient_floor": 0.05,
+    "steps": [
+      0.015625,
+      0.03125,
+      0.0625,
+      0.125,
+      0.25,
+      0.5,
+      1.0
+    ],
+    "improvement_tolerance": 1e-09,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Locked weekly.py and management.py",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Preserve conditional managed marginal linearization, stratified Markov health paths, Sobol moments and paired block step acceptance. O is the simulated public injury designation; unclassified GP loss receives no IL credit. No championship probability claim."
     }
   }
 }

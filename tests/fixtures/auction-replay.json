@@ -1,0 +1,128 @@
+{
+  "sales": [
+    {
+      "id": "sale-000",
+      "player_id": "3112335",
+      "buyer": "team-00",
+      "amount": 95
+    },
+    {
+      "id": "sale-001",
+      "player_id": "4278073",
+      "buyer": "team-03",
+      "amount": 42
+    },
+    {
+      "id": "sale-002",
+      "player_id": "5104157",
+      "buyer": "team-01",
+      "amount": 76
+    },
+    {
+      "id": "sale-003",
+      "player_id": "3155942",
+      "buyer": "team-00",
+      "amount": 31
+    },
+    {
+      "id": "sale-004",
+      "player_id": "3945274",
+      "buyer": "team-02",
+      "amount": 67
+    },
+    {
+      "id": "sale-005",
+      "player_id": "4396993",
+      "buyer": "team-11",
+      "amount": 73
+    },
+    {
+      "id": "sale-006",
+      "player_id": "3136195",
+      "buyer": "team-12",
+      "amount": 30
+    },
+    {
+      "id": "sale-007",
+      "player_id": "4432166",
+      "buyer": "team-04",
+      "amount": 71
+    },
+    {
+      "id": "sale-008",
+      "player_id": "4433134",
+      "buyer": "team-13",
+      "amount": 41
+    },
+    {
+      "id": "sale-009",
+      "player_id": "4433621",
+      "buyer": "team-00",
+      "amount": 30
+    },
+    {
+      "id": "sale-010",
+      "player_id": "4701230",
+      "buyer": "team-09",
+      "amount": 78
+    },
+    {
+      "id": "sale-011",
+      "player_id": "3936299",
+      "buyer": "team-11",
+      "amount": 30
+    },
+    {
+      "id": "sale-012",
+      "player_id": "3992",
+      "buyer": "team-02",
+      "amount": 36
+    },
+    {
+      "id": "sale-013",
+      "player_id": "4871145",
+      "buyer": "team-10",
+      "amount": 37
+    },
+    {
+      "id": "sale-014",
+      "player_id": "4065648",
+      "buyer": "team-07",
+      "amount": 59
+    },
+    {
+      "id": "sale-015",
+      "player_id": "3032977",
+      "buyer": "team-08",
+      "amount": 80
+    },
+    {
+      "id": "sale-016",
+      "player_id": "4277905",
+      "buyer": "team-09",
+      "amount": 27
+    },
+    {
+      "id": "sale-017",
+      "player_id": "3908809",
+      "buyer": "team-10",
+      "amount": 59
+    },
+    {
+      "id": "sale-018",
+      "player_id": "4684740",
+      "buyer": "team-07",
+      "amount": 32
+    },
+    {
+      "id": "sale-019",
+      "player_id": "6450",
+      "buyer": "team-05",
+      "amount": 31
+    }
+  ],
+  "reference": "auction-reference.json",
+  "workers": 2,
+  "baseline_p95_seconds": 1.620842959,
+  "allowed_regression": 0.1
+}

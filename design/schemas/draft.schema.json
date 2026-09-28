@@ -1,0 +1,222 @@
+{
+  "$defs": {
+    "ConfigBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "league": {
+          "$ref": "#/$defs/ConfigRef"
+        },
+        "season": {
+          "$ref": "#/$defs/ConfigRef"
+        },
+        "model": {
+          "$ref": "#/$defs/ConfigRef"
+        }
+      },
+      "required": [
+        "league",
+        "season",
+        "model"
+      ],
+      "title": "ConfigBundle",
+      "type": "object"
+    },
+    "ConfigRef": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "input_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "effective_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Effective Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_id",
+        "input_sha256",
+        "effective_sha256"
+      ],
+      "title": "ConfigRef",
+      "type": "object"
+    },
+    "DraftOverride": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Market"
+        },
+        "positions": {
+          "anyOf": [
+            {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Positions"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_id",
+        "market",
+        "positions",
+        "reason"
+      ],
+      "title": "DraftOverride",
+      "type": "object"
+    },
+    "DraftTeam": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "DraftTeam",
+      "type": "object"
+    },
+    "Sale": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "buyer": {
+          "minLength": 1,
+          "title": "Buyer",
+          "type": "string"
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "player_id",
+        "buyer",
+        "amount"
+      ],
+      "title": "Sale",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "maximum": 1,
+      "minimum": 1,
+      "title": "Format Version",
+      "type": "integer"
+    },
+    "draft_id": {
+      "minLength": 1,
+      "title": "Draft Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "config": {
+      "$ref": "#/$defs/ConfigBundle"
+    },
+    "input_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Sha256",
+      "type": "string"
+    },
+    "mine": {
+      "minLength": 1,
+      "title": "Mine",
+      "type": "string"
+    },
+    "teams": {
+      "items": {
+        "$ref": "#/$defs/DraftTeam"
+      },
+      "title": "Teams",
+      "type": "array"
+    },
+    "sales": {
+      "items": {
+        "$ref": "#/$defs/Sale"
+      },
+      "title": "Sales",
+      "type": "array"
+    },
+    "overrides": {
+      "items": {
+        "$ref": "#/$defs/DraftOverride"
+      },
+      "title": "Overrides",
+      "type": "array"
+    }
+  },
+  "required": [
+    "format_version",
+    "draft_id",
+    "revision",
+    "config",
+    "input_sha256",
+    "mine",
+    "teams",
+    "sales",
+    "overrides"
+  ],
+  "title": "DraftState",
+  "type": "object"
+}

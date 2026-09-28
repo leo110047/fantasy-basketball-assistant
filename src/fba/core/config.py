@@ -3,6 +3,7 @@ from math import fsum
 
 from fba.contracts.base import ConfigError
 from fba.contracts.config import (
+    AuctionModel,
     CalculationModel,
     ConfigBundle,
     LeagueRules,
@@ -182,7 +183,7 @@ def validate_sources(season: SeasonConfig) -> None:
 def validate_config(
     league: LeagueRules,
     season: SeasonConfig,
-    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel,
+    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel,
     refs: ConfigBundle,
 ) -> ValidatedConfig:
     if season.starts_on > season.ends_on:
@@ -198,7 +199,32 @@ def validate_config(
         validate_calculation_model(league, season, model)
     if isinstance(model, PreparationModel):
         validate_preparation_model(league, season, model)
+    if isinstance(model, AuctionModel):
+        if not 0 < model.market.wealth_lower <= model.market.wealth_upper:
+            raise ConfigError("model.market: invalid wealth bounds")
+        if model.market.competition_bid < league.minimum_bid:
+            raise ConfigError("model.market.competition_bid: below minimum bid")
+        if any(
+            e.as_of > season.snapshot_as_of
+            for e in (model.market.evidence, model.solver.evidence, model.fit.evidence)
+        ):
+            raise ConfigError("model.auction.evidence: after snapshot cutoff")
+        validate_fit_model(league, model)
     return ValidatedConfig(league=league, season=season, model=model, refs=refs)
+
+
+def validate_fit_model(league: LeagueRules, model: AuctionModel) -> None:
+    p = model.fit
+    if p.samples & (p.samples - 1) or p.health_samples % p.health_blocks:
+        raise ConfigError(
+            "model.fit: samples must be a power of two; health samples must partition into blocks"
+        )
+    ids = tuple(c.id for c in p.category_floors)
+    unique(ids, "model.fit.category_floors")
+    if set(ids) != {c.id for c in league.categories}:
+        raise ConfigError("model.fit.category_floors: must exactly cover configured categories")
+    if tuple(sorted(set(p.steps))) != p.steps or not p.steps:
+        raise ConfigError("model.fit.steps: requires strictly increasing positive steps")
 
 
 def validate_preparation_model(

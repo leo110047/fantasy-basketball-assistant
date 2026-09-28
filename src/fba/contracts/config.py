@@ -310,7 +310,63 @@ class PreparationModel(CalculationModel):
     preparation: PreparationParameters
 
 
-class ModelDocument(RootModel[ModelConfig | ResourceModel | CalculationModel | PreparationModel]):
+class MarketParameters(Record):
+    volatility: Nonnegative
+    samples: PositiveInt
+    seed: Natural
+    normalization_samples: PositiveInt
+    normalization_seed: Natural
+    wealth_lower: Nonnegative
+    wealth_upper: Nonnegative
+    wealth_exponent: Nonnegative
+    competition_bid: PositiveInt
+    evidence: Evidence
+
+
+class SolverParameters(Record):
+    time_limit_seconds: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    value_tolerance: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    bound_multipliers: Annotated[tuple[Nonnegative, ...], Field(min_length=1)]
+    nomination_count: PositiveInt
+    result_decimals: Annotated[int, Field(ge=0, le=12)]
+    evidence: Evidence
+
+
+class CategoryFloor(Record):
+    id: Text
+    value: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+
+
+class FitParameters(Record):
+    samples: PositiveInt
+    seed: Natural
+    opponent_seed: Natural
+    health_samples: PositiveInt
+    health_seed: Natural
+    health_blocks: PositiveInt
+    mean_missed_games: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    forecast_days: PositiveInt
+    unavailable_status: Text
+    availability_floor: Annotated[float, Field(gt=0, le=1)]
+    category_floors: tuple[CategoryFloor, ...]
+    bandwidth: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    gradient_fraction: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    gradient_floor: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    steps: tuple[Annotated[float, Field(gt=0, le=1)], ...]
+    improvement_tolerance: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    evidence: Evidence
+
+
+class AuctionModel(PreparationModel):
+    format_version: Annotated[int, Field(ge=5, le=5)]
+    market: MarketParameters
+    solver: SolverParameters
+    fit: FitParameters
+
+
+class ModelDocument(
+    RootModel[ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel]
+):
     pass
 
 
@@ -329,5 +385,5 @@ class ConfigBundle(Record):
 class ValidatedConfig(Record):
     league: LeagueRules
     season: SeasonConfig
-    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel
+    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel
     refs: ConfigBundle

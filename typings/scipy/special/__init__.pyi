@@ -1,0 +1,3 @@
+import numpy as np
+from numpy.typing import NDArray
+def expit(x: NDArray[np.float64]) -> NDArray[np.float64]: ...

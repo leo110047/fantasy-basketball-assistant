@@ -7,6 +7,7 @@ from fba.adapters.codec import canonical, checked_json, decode, digest, read_byt
 from fba.adapters.espn import validate_source_season
 from fba.contracts.base import ConfigError, DataError, Record
 from fba.contracts.config import (
+    AuctionModel,
     CalculationModel,
     ConfigBundle,
     ConfigRef,
@@ -59,7 +60,9 @@ def load_config(league: Path, season: Path, model: Path) -> ValidatedConfig:
 
 def load_parameters(
     path: Path,
-) -> tuple[ModelConfig | ResourceModel | CalculationModel | PreparationModel, ConfigRef]:
+) -> tuple[
+    ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel, ConfigRef
+]:
     data = read_bytes(path)
     try:
         parameters = ModelDocument.model_validate_json(checked_json(data, str(path))).root

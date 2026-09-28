@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from fba.contracts.base import DataError
-from fba.contracts.config import PreparationModel, PriorWeight, SeasonConfig
+from fba.contracts.config import ModelDocument, PriorWeight, SeasonConfig
 from fba.contracts.projection import Prior, ProjectionPlayer
 from fba.core.distribution import moments
 from fba.core.projection import prior
@@ -13,9 +13,9 @@ from fba.core.projection import prior
 
 @pytest.fixture
 def model():
-    return PreparationModel.model_validate_json(
+    return ModelDocument.model_validate_json(
         (Path(__file__).parents[1] / "examples/2026-27/model.json").read_bytes()
-    )
+    ).root
 
 
 def test_distribution_has_independent_closed_form_threshold_moments(model):

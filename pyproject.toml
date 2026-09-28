@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = "==3.13.7"
 dependencies = [
     "numpy==2.3.5",
+    "scipy==1.18.1",
     "pydantic>=2.12,<3",
 ]
 
@@ -22,9 +23,9 @@ dev = [
     "basedpyright",
     "deptry",
     "hypothesis",
+    "lizard==1.21.2",
     "pytest",
     "ruff",
-    "scipy==1.18.1",
     "vulture",
 ]
 

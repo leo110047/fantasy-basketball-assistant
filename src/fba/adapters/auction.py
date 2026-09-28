@@ -1,0 +1,268 @@
+from pathlib import Path
+from time import perf_counter_ns
+
+from fba.adapters.calculation import load_calculation_input, load_projection, publish_result
+from fba.adapters.codec import canonical, decode, digest, read_bytes
+from fba.adapters.config import load_parameters
+from fba.adapters.snapshots import artifact, load_snapshot, publish_bundle
+from fba.contracts.auction import AuctionInput, AuctionPlayer, DraftState, DraftTeam, MarketUpdate
+from fba.contracts.base import ConfigError, DataError, FormatVersion, Natural, Record, Text
+from fba.contracts.config import AuctionModel, CalculationModel
+from fba.contracts.data import Digest, Snapshot
+from fba.contracts.projection import CalculationResult, ProductionInput
+from fba.contracts.season import ManagedPlayer, ManagementInput, SeasonKernel
+from fba.core.auction import CapRunner, calculate_auction, market_context, run_caps
+from fba.core.config import validate_config
+from fba.core.fit import FeatureRunner
+
+
+class AuctionExecution(Record):
+    format_version: FormatVersion
+    input_sha256: Digest
+    state_sha256: Digest
+    result_sha256: Digest
+    stage: Text
+    elapsed_ns: Natural
+
+
+def auction_players(
+    snapshot: Snapshot, calculation: CalculationResult
+) -> tuple[AuctionPlayer, ...]:
+    values = {p.id: p for p in calculation.valuation.players}
+    ids = tuple(p.roster.id for p in snapshot.players)
+    if (
+        len(values) != len(calculation.valuation.players)
+        or len(set(ids)) != len(ids)
+        or set(ids) != set(values)
+    ):
+        raise DataError("auction.players: snapshot and valuation populations disagree")
+    return tuple(
+        AuctionPlayer(
+            id=p.roster.id,
+            name=p.roster.name,
+            positions=p.roster.positions,
+            positions_confirmed=True,
+            active=p.team_id is not None,
+            projected_price=p.roster.projected_price,
+            fair=values[p.roster.id].fair,
+            utility=values[p.roster.id].utility,
+        )
+        for p in sorted(snapshot.players, key=lambda p: p.roster.id)
+    )
+
+
+def load_auction(path: Path) -> tuple[AuctionInput, str]:
+    inputs, input_hash = load_calculation_input(path, AuctionInput)
+    artifacts = {a.path: a.sha256 for a in inputs.artifacts}
+    if (
+        artifacts.get("source/snapshot.json") != inputs.snapshot_sha256
+        or artifacts.get("source/calculation.json") != inputs.calculation_sha256
+    ):
+        raise DataError("auction.sources: source artifacts and lineage hashes disagree")
+    snapshot = decode(
+        Snapshot, read_bytes(path.parent / "source/snapshot.json"), "auction.snapshot"
+    )
+    result = decode(
+        CalculationResult,
+        read_bytes(path.parent / "source/calculation.json"),
+        "auction.calculation",
+    )
+    if (
+        snapshot.as_of > inputs.config.season.snapshot_as_of
+        or snapshot.season_id != inputs.config.season.season_id
+        or result.config.league != inputs.config.refs.league
+        or result.config.season != inputs.config.refs.season
+        or inputs.players != auction_players(snapshot, result)
+    ):
+        raise DataError("auction.sources: season, configuration or derived players disagree")
+    if inputs.management is None:
+        raise DataError("auction.management: frozen managed projections are required")
+    model = inputs.config.model
+    if not isinstance(model, AuctionModel):
+        raise ConfigError("model: auction requires format_version 5")
+    if inputs.management.stat_ids != (*model.projection.stat_ids, model.projection.threshold_stat):
+        raise DataError("auction.management.stat_ids: differs from frozen projection axes")
+    ids = tuple(p.id for p in inputs.management.players)
+    if len(ids) != len(set(ids)) or set(ids) != {p.id for p in inputs.players}:
+        raise DataError("auction.management: player population disagrees with catalogue")
+    projected = {p.id: p for p in result.projections}
+    for player in inputs.management.players:
+        p = projected.get(player.id)
+        if p is not None and (
+            player.expected_games != p.expected_games
+            or player.means != p.stats
+            or player.covariance != p.covariance
+        ):
+            raise DataError(f"auction.management.{player.id}: differs from frozen projection")
+    return inputs, input_hash
+
+
+def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
+    inputs, projection_hash = load_projection(projection / "projection-input.json")
+    paths = tuple((projection / "results").glob("calculation-*.json"))
+    if len(paths) != 1:
+        raise DataError("auction.projection: requires exactly one calculation result")
+    payload = read_bytes(paths[0])
+    calculation = decode(CalculationResult, payload, str(paths[0]))
+    if (
+        paths[0].name != f"calculation-{digest(payload)}.json"
+        or calculation.input_sha256 != projection_hash
+        or calculation.config != inputs.config.refs
+    ):
+        raise DataError("auction.projection: calculation hash or input linkage mismatch")
+    model, ref = load_parameters(model_path)
+    if not isinstance(model, AuctionModel):
+        raise ConfigError("model: auction requires format_version 5")
+    # Auction settings cannot silently change the projection represented by these values.
+    for name in ("calibration", "projection", "valuation", "preparation"):
+        if getattr(model, name) != getattr(inputs.config.model, name, None):
+            raise ConfigError(f"model.{name}: differs from frozen projection; rebuild it first")
+    config = validate_config(
+        inputs.config.league,
+        inputs.config.season,
+        model,
+        inputs.config.refs.model_copy(update={"model": ref}),
+    )
+    snapshot_root = projection / inputs.calibration_snapshot
+    snapshot = load_snapshot(snapshot_root)
+    players = auction_players(snapshot, calculation)
+    files = {
+        f"config/{n}.json": read_bytes(projection / f"config/{n}.json")
+        for n in ("league", "season")
+    }
+    files["config/model.json"] = read_bytes(model_path)
+    if digest(files["config/model.json"]) != ref.input_sha256:
+        raise ConfigError("model: changed during auction preparation")
+    files["config/effective.json"] = canonical(config)
+    files["source/calculation.json"] = payload
+    files["source/snapshot.json"] = read_bytes(snapshot_root / "snapshot.json")
+    auction = AuctionInput(
+        format_version=1,
+        config=config,
+        artifacts=tuple(artifact(p, data) for p, data in sorted(files.items())),
+        snapshot_sha256=digest(files["source/snapshot.json"]),
+        calculation_sha256=digest(payload),
+        players=players,
+        management=prepare_management(inputs, calculation, players),
+    )
+    return publish_bundle(
+        auction, auction.artifacts, config.season.snapshot_as_of, files, output, "auction-input"
+    )
+
+
+def prepare_management(
+    inputs: ProductionInput, calculation: CalculationResult, players: tuple[AuctionPlayer, ...]
+) -> ManagementInput:
+    model = inputs.config.model
+    if not isinstance(model, CalculationModel):
+        raise ConfigError("projection: missing statistic axes")
+    axes = (*model.projection.stat_ids, model.projection.threshold_stat)
+    results = {p.id: p for p in calculation.projections}
+    source = {p.id: p for p in inputs.players}
+    teams = {t.id: t for t in inputs.teams}
+    managed: list[ManagedPlayer] = []
+    for player in players:
+        p = source[player.id]
+        team = teams.get(p.team_id or "")
+        projected = results.get(player.id)
+        full = team.full_season_games if team is not None else 0
+        expected = projected.expected_games if projected is not None else 0.0
+        managed.append(
+            ManagedPlayer(
+                id=player.id,
+                expected_games=expected,
+                healthy_games=expected if p.return_on is not None else float(full),
+                season_games=float(full),
+                return_on=p.return_on,
+                game_days=team.dates if team else (),
+                means=projected.stats if projected else (0.0,) * len(axes),
+                covariance=projected.covariance
+                if projected
+                else tuple((0.0,) * len(axes) for _ in axes),
+            )
+        )
+    return ManagementInput(
+        stat_ids=axes, sampling_ids=tuple(p.id for p in players), players=tuple(managed)
+    )
+
+
+def auction_file(
+    path: Path,
+    draft: Path,
+    output: Path,
+    stage: str,
+    runner: CapRunner = run_caps,
+    feature_runner: FeatureRunner | None = None,
+    kernel: SeasonKernel | None = None,
+) -> Path:
+    if stage not in ("market", "equal", "fit"):
+        raise DataError("auction.stage: requires market, equal or fit")
+    inputs, input_hash = load_auction(path)
+    data = read_bytes(draft)
+    state = decode(DraftState, data, str(draft))
+    state_hash = digest(canonical(state))
+    start = perf_counter_ns()
+    if stage == "fit":
+        record = calculate_auction(
+            inputs,
+            state,
+            input_hash,
+            state_hash,
+            runner=runner,
+            mode="fit",
+            kernel=kernel,
+            feature_runner=feature_runner,
+        )
+    else:
+        record = (
+            MarketUpdate(
+                format_version=1,
+                config=inputs.config.refs,
+                input_sha256=input_hash,
+                state_sha256=state_hash,
+                market=market_context(inputs, state, input_hash)[1],
+            )
+            if stage == "market"
+            else calculate_auction(inputs, state, input_hash, state_hash, runner=runner)
+        )
+    elapsed = perf_counter_ns() - start
+    result = publish_result(record, output, stage)
+    publish_result(
+        AuctionExecution(
+            format_version=1,
+            input_sha256=input_hash,
+            state_sha256=state_hash,
+            result_sha256=digest(canonical(record)),
+            stage=stage,
+            elapsed_ns=elapsed,
+        ),
+        output,
+        "execution",
+    )
+    return result
+
+
+def draft_template(path: Path, mine: int, output: Path) -> Path:
+    inputs, input_hash = load_auction(path)
+    if not 1 <= mine <= inputs.config.league.teams:
+        raise DataError("draft.mine: requires a team number within the configured league")
+    teams = tuple(
+        DraftTeam(id=str(i), name=f"Team {i}") for i in range(1, inputs.config.league.teams + 1)
+    )
+    state = DraftState(
+        format_version=1,
+        draft_id=output.stem,
+        revision=0,
+        config=inputs.config.refs,
+        input_sha256=input_hash,
+        mine=str(mine),
+        teams=teams,
+        sales=(),
+        overrides=(),
+    )
+    try:
+        with output.open("xb") as stream:
+            stream.write(canonical(state))
+    except OSError as exc:
+        raise DataError(f"{output}: cannot create draft: {exc}") from exc
+    return output
