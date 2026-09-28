@@ -392,6 +392,16 @@ class TeamBudgetModel(SeasonModel):
     team_minutes: TeamMinuteParameters
 
 
+class HealthParameters(Record):
+    injury_share: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+    evidence: Evidence
+
+
+class HealthModel(TeamBudgetModel):
+    format_version: Annotated[int, Field(ge=8, le=8)]
+    health: HealthParameters
+
+
 class ModelDocument(
     RootModel[
         ModelConfig
@@ -401,6 +411,7 @@ class ModelDocument(
         | AuctionModel
         | SeasonModel
         | TeamBudgetModel
+        | HealthModel
     ]
 ):
     pass
@@ -429,5 +440,6 @@ class ValidatedConfig(Record):
         | AuctionModel
         | SeasonModel
         | TeamBudgetModel
+        | HealthModel
     )
     refs: ConfigBundle

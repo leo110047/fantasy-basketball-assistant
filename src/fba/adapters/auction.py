@@ -7,13 +7,14 @@ from fba.adapters.config import load_parameters
 from fba.adapters.snapshots import artifact, load_snapshot, publish_bundle
 from fba.contracts.auction import AuctionInput, AuctionPlayer, DraftState, DraftTeam, MarketUpdate
 from fba.contracts.base import ConfigError, DataError, FormatVersion, Natural, Record, Text
-from fba.contracts.config import AuctionModel, CalculationModel
+from fba.contracts.config import AuctionModel, CalculationModel, HealthModel, HealthParameters
 from fba.contracts.data import Digest, Snapshot
 from fba.contracts.projection import CalculationResult, ProductionInput, RoleProjected
 from fba.contracts.season import ManagedPlayer, ManagementInput, RoleManagedPlayer, SeasonKernel
 from fba.core.auction import CapRunner, calculate_auction, market_context, run_caps
 from fba.core.config import validate_config
 from fba.core.fit import FeatureRunner
+from fba.core.health import healthy_games
 
 
 class AuctionExecution(Record):
@@ -103,6 +104,28 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
             raise DataError(
                 f"auction.management.{player.id}: original participation differs from projection"
             )
+    if isinstance(model, HealthModel):
+        for player in inputs.management.players:
+            p = projected.get(player.id)
+            if not isinstance(player, RoleManagedPlayer) or (
+                p is not None
+                and (
+                    not isinstance(p, RoleProjected)
+                    or player.unconstrained_games != p.unconstrained_games
+                )
+            ):
+                raise DataError(f"auction.management.{player.id}: missing original participation")
+            expected_health = healthy_games(
+                player.unconstrained_games,
+                player.season_games,
+                player.return_on,
+                player.game_days,
+                model.health,
+            )
+            if player.healthy_games != expected_health:
+                raise DataError(
+                    f"auction.management.{player.id}: health decomposition differs from model"
+                )
     return inputs, input_hash
 
 
@@ -152,7 +175,9 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
         snapshot_sha256=digest(files["source/snapshot.json"]),
         calculation_sha256=digest(payload),
         players=players,
-        management=prepare_management(inputs, calculation, players),
+        management=prepare_management(
+            inputs, calculation, players, model.health if isinstance(model, HealthModel) else None
+        ),
     )
     return publish_bundle(
         auction, auction.artifacts, config.season.snapshot_as_of, files, output, "auction-input"
@@ -160,7 +185,10 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
 
 
 def prepare_management(
-    inputs: ProductionInput, calculation: CalculationResult, players: tuple[AuctionPlayer, ...]
+    inputs: ProductionInput,
+    calculation: CalculationResult,
+    players: tuple[AuctionPlayer, ...],
+    health: HealthParameters | None = None,
 ) -> ManagementInput:
     model = inputs.config.model
     if not isinstance(model, CalculationModel):
@@ -182,7 +210,13 @@ def prepare_management(
         record = ManagedPlayer(
             id=player.id,
             expected_games=expected,
-            healthy_games=unconstrained if p.return_on is not None else float(full),
+            healthy_games=(
+                healthy_games(unconstrained, full, p.return_on, team.dates if team else (), health)
+                if health is not None
+                else unconstrained
+                if p.return_on is not None
+                else float(full)
+            ),
             season_games=float(full),
             return_on=p.return_on,
             game_days=team.dates if team else (),
@@ -191,7 +225,7 @@ def prepare_management(
             if projected
             else tuple((0.0,) * len(axes) for _ in axes),
         )
-        if isinstance(projected, RoleProjected):
+        if isinstance(projected, RoleProjected) or health is not None:
             record = RoleManagedPlayer(**record.model_dump(), unconstrained_games=unconstrained)
         managed.append(record)
     return ManagementInput(

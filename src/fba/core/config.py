@@ -6,6 +6,7 @@ from fba.contracts.config import (
     AuctionModel,
     CalculationModel,
     ConfigBundle,
+    HealthModel,
     LeagueRules,
     Linear,
     ModelConfig,
@@ -231,7 +232,7 @@ def validate_config(
         if model.management.evidence.as_of > season.snapshot_as_of:
             raise ConfigError("model.management.evidence: after snapshot cutoff")
     if isinstance(model, TeamBudgetModel):
-        validate_team_minutes(model, season)
+        validate_team_minutes(model, season, league)
     return ValidatedConfig(league=league, season=season, model=model, refs=refs)
 
 
@@ -386,8 +387,12 @@ def validate_offense(model: ResourceModel) -> None:
         raise ConfigError("model.projection.offense_stats: inconsistent resource dependencies")
 
 
-def validate_team_minutes(model: TeamBudgetModel, season: SeasonConfig) -> None:
+def validate_team_minutes(
+    model: TeamBudgetModel, season: SeasonConfig, league: LeagueRules
+) -> None:
     p = model.team_minutes
+    if isinstance(model, HealthModel) and model.health.evidence.as_of > season.snapshot_as_of:
+        raise ConfigError("model.health.evidence: after snapshot cutoff")
     if p.unmodeled_reserve_minutes >= p.players_on_court * (
         p.regulation_minutes + p.overtime_minutes_per_game
     ):

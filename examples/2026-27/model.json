@@ -1,5 +1,5 @@
 {
-  "format_version": 7,
+  "format_version": 8,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -328,6 +328,15 @@
       "reference": "https://official.nba.com/rule-no-5-scoring-and-timing/ ; https://official.nba.com/rule-no-3-players-substitutes-and-coaches/",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Regulation-only expected-minute budget; Allocate first to players with greater available configured prior weight; a zero-weight historical fallback uses residual capacity. Within each coverage group, retain per-appearance minutes and statistics; proportionally reduce playing opportunities to fit residual capacity. Treat these lost appearances as noninjury rotation loss. Prior coverage is an explicit source-reliability assumption, not measured uncertainty. No standard-deviation cuts or increases. Unmodeled players share the explicit residual; zero guaranteed reserve is an uncalibrated assumption, not a zero-minute forecast."
+    }
+  },
+  "health": {
+    "injury_share": 0.5,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Configured injury/noninjury decomposition; sensitivity endpoints 0 and 1; no historical injury-label calibration",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "The 0.5 midpoint allocates half of unconstrained missed appearances to injury episodes; known return dates remain definite absence and constrained role losses remain noninjury. Not an empirical estimate."
     }
   }
 }
