@@ -13,6 +13,7 @@ from fba.contracts.config import (
     PreparationModel,
     ResourceModel,
     SeasonConfig,
+    SeasonModel,
     ThresholdCount,
     ValidatedConfig,
 )
@@ -160,13 +161,19 @@ def validate_sources(season: SeasonConfig) -> None:
             in (
                 "historical_projections",
                 "game_logs",
+                "forecast_archive",
             )
             else season.season_id
         )
         if source.season_id != expected_season:
             raise ConfigError(f"season.sources.{source.id}.season_id: expected {expected_season}")
-        if not source.url.startswith("https://"):
-            raise ConfigError(f"season.sources.{source.id}.url: requires https")
+        local_archive = source.role == "forecast_archive" and source.delivery == "manual"
+        if not source.url.startswith("https://") and not (
+            local_archive and source.url.startswith("file:///")
+        ):
+            raise ConfigError(
+                f"season.sources.{source.id}.url: requires https or a local forecast archive"
+            )
         if (source.delivery == "manual") != (source.manual_file is not None):
             raise ConfigError(f"season.sources.{source.id}.manual_file: conflicts with delivery")
         if (source.delivery == "manual") != (source.manual_capture is not None):
@@ -183,7 +190,12 @@ def validate_sources(season: SeasonConfig) -> None:
 def validate_config(
     league: LeagueRules,
     season: SeasonConfig,
-    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel,
+    model: ModelConfig
+    | ResourceModel
+    | CalculationModel
+    | PreparationModel
+    | AuctionModel
+    | SeasonModel,
     refs: ConfigBundle,
 ) -> ValidatedConfig:
     if season.starts_on > season.ends_on:
@@ -210,6 +222,13 @@ def validate_config(
         ):
             raise ConfigError("model.auction.evidence: after snapshot cutoff")
         validate_fit_model(league, model)
+    if isinstance(model, SeasonModel):
+        if model.management.reserve_adds > league.transactions.adds_per_period:
+            raise ConfigError("model.management.reserve_adds: exceeds transaction allowance")
+        if model.management.long_forecast_days < model.fit.forecast_days:
+            raise ConfigError("model.management.long_forecast_days: shorter than short forecast")
+        if model.management.evidence.as_of > season.snapshot_as_of:
+            raise ConfigError("model.management.evidence: after snapshot cutoff")
     return ValidatedConfig(league=league, season=season, model=model, refs=refs)
 
 

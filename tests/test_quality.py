@@ -5,7 +5,9 @@ from pathlib import Path
 
 import lizard
 
+from fba.contracts.archive import ForecastArchive
 from fba.contracts.auction import DraftState
+from fba.contracts.backtest import ReplayInput
 from fba.contracts.config import LeagueRules, ModelDocument, SeasonConfig
 from fba.contracts.data import IdentityMap, ManualAdjustments
 
@@ -15,17 +17,50 @@ def root():
 
 
 def test_runtime_types_own_schemas():
-    for name, model in (
+    schemas = (
+        ("forecast", ForecastArchive),
         ("draft", DraftState),
+        ("replay", ReplayInput),
         ("league", LeagueRules),
         ("season", SeasonConfig),
         ("model", ModelDocument),
         ("identity-map", IdentityMap),
         ("manual-adjustments", ManualAdjustments),
-    ):
+    )
+    assert {p.name for p in (root() / "design/schemas").glob("*.json")} == {
+        f"{name}.schema.json" for name, _ in schemas
+    }
+    for name, model in schemas:
         expected = model.model_json_schema()
         actual = json.loads((root() / "design/schemas" / f"{name}.schema.json").read_bytes())
         assert actual == expected
+
+
+def test_non_python_runtime_and_test_assets_have_entrypoint_references():
+    paths = [*(root() / "src").rglob("*.py"), *(root() / "tests").glob("test_*.py")]
+    literals = {
+        node.value
+        for path in paths
+        if path != Path(__file__)
+        for node in ast.walk(ast.parse(path.read_text()))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    assets = [
+        *(root() / "tests/fixtures").iterdir(),
+        *(root() / "src/fba/native").iterdir(),
+        root() / "tests/native_guards.cpp",
+    ]
+    for asset in assets:
+        assert any(value == asset.name or value.endswith("/" + asset.name) for value in literals), (
+            asset
+        )
+    assert set(p.name for p in (root() / "scripts").iterdir() if p.is_file()) == {
+        "check",
+        "verify.py",
+    }
+    assert "scripts/check" in (root() / ".github/workflows/check.yml").read_text()
+    assert "scripts/verify.py" in (root() / "scripts/check").read_text()
+    assert "design/contracts.pyi" in (root() / "README.md").read_text()
 
 
 def test_core_dependency_direction_and_no_io_or_mutable_globals():

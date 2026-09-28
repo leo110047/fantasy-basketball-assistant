@@ -1,6 +1,8 @@
 import os
 import tempfile
+from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -8,6 +10,7 @@ from fba.adapters.codec import canonical, checked_json, decode, digest, read_byt
 from fba.adapters.config import load_config
 from fba.adapters.snapshots import checked_path, load_snapshot
 from fba.contracts.base import DataError, Record
+from fba.contracts.config import ValidatedConfig
 from fba.contracts.projection import (
     CalibratedData,
     EvaluationInput,
@@ -37,7 +40,10 @@ def load_projection(path: Path) -> tuple[ProductionInput, str]:
     return inputs, digest(data)
 
 
-def verify_calculation_input(inputs: FrozenCalculationInput, path: Path) -> None:
+def verify_calculation_input(
+    inputs: FrozenCalculationInput, path: Path, *, source_cutoff: datetime | None = None
+) -> None:
+    cutoff = inputs.config.season.snapshot_as_of if source_cutoff is None else source_cutoff
     paths = tuple(a.path for a in inputs.artifacts)
     if len(set(paths)) != len(paths):
         raise DataError("projection.artifacts: duplicate paths")
@@ -50,9 +56,7 @@ def verify_calculation_input(inputs: FrozenCalculationInput, path: Path) -> None
             raise DataError(f"projection.artifacts.{artifact.path}: SHA-256 or size mismatch")
         p = artifact.provenance
         if p is not None and (
-            p.raw_sha256 != artifact.sha256
-            or p.retrieved_at > inputs.config.season.snapshot_as_of
-            or p.available_as_of > inputs.config.season.snapshot_as_of
+            p.raw_sha256 != artifact.sha256 or p.retrieved_at > cutoff or p.available_as_of > cutoff
         ):
             raise DataError(f"projection.artifacts.{artifact.path}: invalid provenance")
     effective = load_config(
@@ -88,7 +92,16 @@ def calculate_file(path: Path, output: Path) -> Path:
 
 def evaluate_file(path: Path, output: Path) -> Path:
     inputs, input_hash = load_calculation_input(path, EvaluationInput)
+    require_completed_season(inputs.config, datetime.now(UTC))
     return publish_result(evaluate(inputs, input_hash), output, "evaluation")
+
+
+def require_completed_season(config: ValidatedConfig, evaluated_at: datetime) -> None:
+    end = datetime.combine(
+        config.season.ends_on + timedelta(days=1), time.min, ZoneInfo(config.league.timezone)
+    )
+    if evaluated_at < end:
+        raise DataError("evaluation: season has not ended in league timezone")
 
 
 def publish_result(record: Record, output: Path, prefix: str) -> Path:

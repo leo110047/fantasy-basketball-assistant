@@ -6,8 +6,14 @@ from numpy.typing import NDArray
 
 from fba.contracts.auction import AuctionPlayer
 from fba.contracts.base import DataError
-from fba.contracts.config import FitParameters, LeagueRules
-from fba.contracts.season import ManagementInput, SeasonArrays, SeasonKernel
+from fba.contracts.config import FitParameters, LeagueRules, ManagementParameters
+from fba.contracts.season import (
+    ManagementInput,
+    ManagementPolicy,
+    SeasonArrays,
+    SeasonKernel,
+    TacticalArrays,
+)
 from fba.core.roster import capacity, match_slots
 
 type FloatArray = NDArray[np.float64]
@@ -42,6 +48,7 @@ class ManagedSeason:
         inputs: ManagementInput,
         players: tuple[AuctionPlayer, ...],
         kernel: SeasonKernel,
+        known_health: NDArray[np.bool_] | None = None,
     ) -> None:
         self.league, self.parameters, self.kernel = league, parameters, kernel
         by_id = {p.id: p for p in inputs.players}
@@ -110,7 +117,13 @@ class ManagedSeason:
                 )
         self.priority = np.array([catalog[i].utility or 0.0 for i in self.ids])
         self.value = self.priority / np.maximum(self.availability, parameters.availability_floor)
-        self.health = self.health_paths()
+        if known_health is not None and known_health.shape != (
+            parameters.health_samples,
+            self.d,
+            self.n,
+        ):
+            raise DataError("management.health: wrong observed health dimensions")
+        self.health = self.health_paths() if known_health is None else known_health.copy()
         if len(league.positions) > np.iinfo(np.uint64).bits:
             raise DataError("league.positions: exceeds native position mask width")
         bits = {position: 1 << i for i, position in enumerate(league.positions)}
@@ -181,8 +194,10 @@ class ManagedSeason:
             health[:, d] = state
         return health
 
-    def forecast(self, day: int, status: bool) -> FloatArray:
-        end = min(self.d, day + self.parameters.forecast_days)
+    def forecast(
+        self, day: int, status: bool, horizon: int | None = None, eligible_from: int = 0
+    ) -> FloatArray:
+        end = min(self.d, day + (self.parameters.forecast_days if horizon is None else horizon))
         scheduled = self.games[day:end]
         counts = np.cumsum(scheduled, axis=0) - scheduled
         back, hurt = self.rates()
@@ -194,7 +209,45 @@ class ManagedSeason:
             probabilities[j, d < self.returns] = 0
             after = (self.returns > day) & (self.returns <= d)
             probabilities[j, after] = self.availability[after]
+        if eligible_from > day:
+            probabilities[: eligible_from - day] = 0
         return (scheduled * probabilities).sum(axis=0)
+
+    def tactics(self, policy: ManagementPolicy, parameters: ManagementParameters) -> TacticalArrays:
+        days = np.arange(self.d)
+        eligible = days + int(self.league.transactions.effective == "next_day")
+        if self.league.lineup.lock_mode == "weekly":
+            locks = np.append(np.flatnonzero(self.lock_days()), self.d)
+            eligible = locks[np.searchsorted(locks, eligible)]
+        values: list[FloatArray] = []
+        for horizon in (self.parameters.forecast_days, parameters.long_forecast_days):
+            for starts in (days, eligible):
+                forecasts = np.array(
+                    [
+                        [
+                            self.forecast(d, status, horizon, int(starts[d]))
+                            for status in (False, True)
+                        ]
+                        for d in range(self.d)
+                    ]
+                )
+                values.append(
+                    np.where(self.health, forecasts[None, :, 1, :], forecasts[None, :, 0, :])
+                    * self.value
+                )
+        short_held, short_acquired, long_held, long_acquired = values
+        return TacticalArrays(
+            policy=policy,
+            short_values=short_held,
+            long_values=long_held,
+            acquired_short=short_acquired,
+            acquired_long=long_acquired,
+            short_orders=np.argsort(-short_acquired, axis=-1, kind="stable").astype(np.int32),
+            long_orders=np.argsort(-long_acquired, axis=-1, kind="stable").astype(np.int32),
+            candidate_limit=parameters.candidate_limit,
+            minimum_gain=parameters.minimum_gain,
+            opportunity_cost=parameters.opportunity_cost,
+        )
 
     def lineup(self, roster: tuple[int, ...]) -> tuple[int, ...]:
         if roster in self.lineups:
@@ -248,12 +301,7 @@ class ManagedSeason:
         self.controls[roster] = result
         return result
 
-    def arrays(self) -> SeasonArrays:
-        eligibility = [
-            self.parameters.unavailable_status in group.eligible_statuses
-            for group in self.league.injury_slots
-            for _ in range(group.count)
-        ]
+    def lock_days(self) -> NDArray[np.uint8]:
         locks = np.zeros(self.d, dtype=np.uint8)
         for week in range(len(self.weeks)):
             days = np.flatnonzero(self.week == week)
@@ -261,6 +309,14 @@ class ManagedSeason:
                 days = days[self.games[days].any(axis=1)]
             if len(days):
                 locks[days[0]] = 1
+        return locks
+
+    def arrays(self, observed_eligibility: NDArray[np.uint8] | None = None) -> SeasonArrays:
+        eligibility = [
+            self.parameters.unavailable_status in group.eligible_statuses
+            for group in self.league.injury_slots
+            for _ in range(group.count)
+        ]
         return SeasonArrays(
             health=np.ascontiguousarray(self.health, dtype=np.uint8),
             games=np.ascontiguousarray(self.games, dtype=np.uint8),
@@ -271,8 +327,12 @@ class ManagedSeason:
             priority=self.priority,
             value=self.value,
             orders=self.orders,
-            il_eligible=np.tile(np.array(eligibility, dtype=np.uint8), (self.n, 1)),
-            lock_days=locks,
+            il_eligible=(
+                np.tile(np.array(eligibility, dtype=np.uint8), (self.d, self.n, 1))
+                if observed_eligibility is None
+                else observed_eligibility
+            ),
+            lock_days=self.lock_days(),
             waiver_days=self.league.transactions.waiver_days,
             add_limit=self.league.transactions.adds_per_period,
             next_day=self.league.transactions.effective == "next_day",
@@ -293,6 +353,11 @@ class ManagedSeason:
         if rosters in self.cache:
             return self.cache[rosters]
         counts = self.kernel(self.arrays(), rosters, self.pool)
+        result = self.summarize(rosters, counts)
+        self.cache[rosters] = result
+        return result
+
+    def summarize(self, rosters: tuple[tuple[int, ...], ...], counts: FloatArray) -> ManagedMoments:
         physical = counts @ self.raw
         controls = [self.control(r) for r in rosters]
         boxes = physical - np.stack([c[0] for c in controls], axis=1)
@@ -305,9 +370,7 @@ class ManagedSeason:
             / max(1, self.parameters.health_samples - 1)
             + np.stack([c[1] for c in controls])
         )
-        result = ManagedMoments(mean, covariance, boxes)
-        self.cache[rosters] = result
-        return result
+        return ManagedMoments(mean, covariance, boxes)
 
     def set_pool(self, pool: tuple[int, ...]) -> None:
         if pool != self.pool:

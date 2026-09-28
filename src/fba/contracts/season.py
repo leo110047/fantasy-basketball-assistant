@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Protocol
+from typing import Literal, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
 
-from fba.contracts.base import Finite, Nonnegative, Record, Text
+from fba.contracts.base import Finite, Natural, Nonnegative, Record, Text
 
 
 class ManagedPlayer(Record):
@@ -36,6 +36,53 @@ class MarginalFeature(Record):
     values: tuple[Finite, ...]
 
 
+class ManagementPolicy(Record):
+    streaming_slots: tuple[Natural, ...]
+    reserve_adds: Natural
+    upgrades: bool
+
+
+class SeasonEvent(Record):
+    day: Natural
+    team: Natural
+    kind: Literal[
+        "return_release",
+        "return_drop",
+        "activate",
+        "il",
+        "injury_add",
+        "upgrade",
+        "stream",
+        "lineup",
+    ]
+    dropped: int | None
+    added: int | None
+    active: tuple[int, ...]
+    injured: tuple[int, ...]
+    started: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class TacticalArrays:
+    policy: ManagementPolicy
+    short_values: NDArray[np.float64]
+    long_values: NDArray[np.float64]
+    acquired_short: NDArray[np.float64]
+    acquired_long: NDArray[np.float64]
+    short_orders: NDArray[np.int32]
+    long_orders: NDArray[np.int32]
+    candidate_limit: int
+    minimum_gain: float
+    opportunity_cost: float
+
+
+@dataclass(frozen=True)
+class SeasonRun:
+    counts: NDArray[np.float64]
+    adds: NDArray[np.int32]
+    events: tuple[SeasonEvent, ...]
+
+
 @dataclass(frozen=True)
 class SeasonArrays:
     """Validated invocation-local numeric ABI; arrays never escape as public results."""
@@ -63,3 +110,12 @@ class SeasonKernel(Protocol):
     def __call__(
         self, arrays: SeasonArrays, rosters: tuple[tuple[int, ...], ...], pool: tuple[int, ...]
     ) -> NDArray[np.float64]: ...
+
+    def run(
+        self,
+        arrays: SeasonArrays,
+        rosters: tuple[tuple[int, ...], ...],
+        pool: tuple[int, ...],
+        tactics: TacticalArrays | None,
+        trace: bool,
+    ) -> SeasonRun: ...

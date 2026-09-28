@@ -17,7 +17,15 @@ from pydantic import (
 from fba.adapters.codec import checked_json
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import Source
-from fba.contracts.data import ActualGames, Forecast, Game, PlayerGame, ProviderPlayer, StatValue
+from fba.contracts.data import (
+    ActualGames,
+    ActualSeason,
+    Forecast,
+    Game,
+    PlayerGame,
+    ProviderPlayer,
+    StatValue,
+)
 
 
 class Wire(BaseModel):
@@ -222,6 +230,32 @@ def actual_games(
     if not result:
         raise DataError(f"{source}: missing actual season totals for calibration")
     return tuple(sorted(result, key=lambda p: p.player_id))
+
+
+def season_totals(
+    players: tuple[EspnPlayer, ...], season: int, source: str
+) -> tuple[ActualSeason, ...]:
+    counts = actual_games(players, season, source)
+    by_id = {str(p.id): p for p in players}
+    return tuple(
+        ActualSeason(
+            player_id=p.player_id,
+            games=p.games,
+            totals=stat_values(
+                next(
+                    s.stats
+                    for s in by_id[p.player_id].stats
+                    if s.seasonId == season
+                    and s.statSourceId == 0
+                    and s.statSplitTypeId == 0
+                    and s.stats
+                ),
+                f"{source}.{p.player_id}.season",
+                partial=False,
+            ),
+        )
+        for p in counts
+    )
 
 
 def schedule(data: bytes, season: int, source: str, timezone: str) -> tuple[Game, ...]:

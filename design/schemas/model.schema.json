@@ -286,6 +286,49 @@
       "title": "HistoryShare",
       "type": "object"
     },
+    "ManagementParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "long_forecast_days": {
+          "exclusiveMinimum": 0,
+          "title": "Long Forecast Days",
+          "type": "integer"
+        },
+        "candidate_limit": {
+          "exclusiveMinimum": 0,
+          "title": "Candidate Limit",
+          "type": "integer"
+        },
+        "reserve_adds": {
+          "minimum": 0,
+          "title": "Reserve Adds",
+          "type": "integer"
+        },
+        "minimum_gain": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Gain",
+          "type": "number"
+        },
+        "opportunity_cost": {
+          "minimum": 0,
+          "title": "Opportunity Cost",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "long_forecast_days",
+        "candidate_limit",
+        "reserve_adds",
+        "minimum_gain",
+        "opportunity_cost",
+        "evidence"
+      ],
+      "title": "ManagementParameters",
+      "type": "object"
+    },
     "MarketParameters": {
       "additionalProperties": false,
       "properties": {
@@ -844,6 +887,54 @@
       "title": "ResourceParameters",
       "type": "object"
     },
+    "SeasonModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 6,
+          "minimum": 6,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketParameters"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management"
+      ],
+      "title": "SeasonModel",
+      "type": "object"
+    },
     "SolverParameters": {
       "additionalProperties": false,
       "properties": {
@@ -966,6 +1057,9 @@
     },
     {
       "$ref": "#/$defs/AuctionModel"
+    },
+    {
+      "$ref": "#/$defs/SeasonModel"
     }
   ],
   "title": "ModelDocument"

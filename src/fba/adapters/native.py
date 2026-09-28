@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from fba.contracts.auction import SolverError
 from fba.contracts.base import DataError, Record, Text
 from fba.contracts.data import Digest
-from fba.contracts.season import SeasonArrays
+from fba.contracts.season import SeasonArrays, SeasonEvent, SeasonRun, TacticalArrays
 
 
 class NativeCall(Protocol):
@@ -54,6 +54,27 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
     return build, path
 
 
+class NativeOptions(ctypes.Structure):
+    _fields_ = [
+        ("reserve", ctypes.c_int),
+        ("candidates", ctypes.c_int),
+        ("upgrades", ctypes.c_int),
+        ("capacity", ctypes.c_int),
+        ("minimum_gain", ctypes.c_double),
+        ("opportunity_cost", ctypes.c_double),
+        ("flex", ctypes.c_void_p),
+        ("short_order", ctypes.c_void_p),
+        ("long_order", ctypes.c_void_p),
+        ("short_values", ctypes.c_void_p),
+        ("long_values", ctypes.c_void_p),
+        ("acquired_short", ctypes.c_void_p),
+        ("acquired_long", ctypes.c_void_p),
+        ("adds", ctypes.c_void_p),
+        ("events", ctypes.c_void_p),
+        ("emitted", ctypes.c_void_p),
+    ]
+
+
 class NativeKernel:
     def __init__(self, compiled: NativeArtifact | None = None) -> None:
         self.build: tempfile.TemporaryDirectory[str] | None = None
@@ -78,7 +99,7 @@ class NativeKernel:
             self.close()
             raise SolverError(f"management: cannot load verified native kernel: {exc}") from exc
         function = self.library.fba_season
-        function.argtypes = [ctypes.c_int] * 12 + [ctypes.c_void_p] * 16 + [ctypes.c_int]
+        function.argtypes = [ctypes.c_int] * 12 + [ctypes.c_void_p] * 17 + [ctypes.c_int]
         function.restype = ctypes.c_int
         self.function = cast(NativeCall, function)
 
@@ -89,7 +110,18 @@ class NativeKernel:
     def __call__(
         self, arrays: SeasonArrays, rosters: tuple[tuple[int, ...], ...], pool: tuple[int, ...]
     ) -> NDArray[np.float64]:
+        return self.run(arrays, rosters, pool, None, False).counts
+
+    def run(
+        self,
+        arrays: SeasonArrays,
+        rosters: tuple[tuple[int, ...], ...],
+        pool: tuple[int, ...],
+        tactics: TacticalArrays | None,
+        trace: bool,
+    ) -> SeasonRun:
         validate_arrays(arrays, rosters, pool)
+        validate_tactics(arrays, rosters, tactics)
         samples, days, n = arrays.health.shape
         roster = np.full((len(rosters), arrays.roster_capacity), -1, dtype=np.int32)
         for i, players in enumerate(rosters):
@@ -98,6 +130,36 @@ class NativeKernel:
         free = np.zeros(n, dtype=np.uint8)
         free[list(pool)] = 1
         counts = np.zeros((samples, len(rosters), arrays.week_count, n))
+        adds = np.zeros((samples, len(rosters), arrays.week_count, 3), dtype=np.int32)
+        capacity = (
+            days
+            * len(rosters)
+            * (2 * arrays.il_eligible.shape[-1] + 2 * arrays.roster_capacity + 2)
+            if trace
+            else 0
+        )
+        width = 8 + arrays.roster_capacity + arrays.il_eligible.shape[-1] + len(arrays.slots)
+        events = np.full((capacity, width), -1, dtype=np.int32)
+        emitted = np.zeros(1, dtype=np.int32)
+        flex = np.array(tactics.policy.streaming_slots if tactics else (), dtype=np.int32)
+        options = NativeOptions(
+            tactics.policy.reserve_adds if tactics else 0,
+            tactics.candidate_limit if tactics else 0,
+            int(tactics.policy.upgrades) if tactics else 0,
+            capacity,
+            tactics.minimum_gain if tactics else 0.0,
+            tactics.opportunity_cost if tactics else 0.0,
+            flex.ctypes.data if tactics else None,
+            tactics.short_orders.ctypes.data if tactics else None,
+            tactics.long_orders.ctypes.data if tactics else None,
+            tactics.short_values.ctypes.data if tactics else None,
+            tactics.long_values.ctypes.data if tactics else None,
+            tactics.acquired_short.ctypes.data if tactics else None,
+            tactics.acquired_long.ctypes.data if tactics else None,
+            adds.ctypes.data,
+            events.ctypes.data if trace else None,
+            emitted.ctypes.data,
+        )
         error = ctypes.create_string_buffer(1024)
         buffers = (
             arrays.health,
@@ -124,18 +186,93 @@ class NativeKernel:
             len(rosters),
             arrays.roster_capacity,
             len(arrays.slots),
-            arrays.il_eligible.shape[1],
+            arrays.il_eligible.shape[-1],
             arrays.add_limit,
             arrays.waiver_days,
             int(arrays.next_day),
             int(arrays.weekly_lock),
             *(ctypes.c_void_p(a.ctypes.data) for a in buffers),
+            ctypes.byref(options),
             error,
             len(error),
         )
         if status:
             raise SolverError(f"management: {error.value.decode('utf-8', errors='replace')}")
-        return counts
+        return SeasonRun(counts, adds, decode_events(events[: int(emitted[0])], arrays))
+
+
+def decode_events(events: NDArray[np.int32], arrays: SeasonArrays) -> tuple[SeasonEvent, ...]:
+    kinds = (
+        "return_release",
+        "return_drop",
+        "activate",
+        "il",
+        "injury_add",
+        "upgrade",
+        "stream",
+        "lineup",
+    )
+    result: list[SeasonEvent] = []
+    for e in events:
+        active, injured, started = ((), (), ())
+        if kinds[int(e[2])] == "lineup":
+            active = tuple(int(p) for p in e[8 : 8 + int(e[5])])
+            start = 8 + arrays.roster_capacity
+            injured = tuple(int(p) for p in e[start : start + int(e[6])])
+            start += arrays.il_eligible.shape[-1]
+            started = tuple(int(p) for p in e[start : start + int(e[7])])
+        result.append(
+            SeasonEvent(
+                day=int(e[0]),
+                team=int(e[1]),
+                kind=kinds[int(e[2])],
+                dropped=int(e[3]) if e[3] >= 0 else None,
+                added=int(e[4]) if e[4] >= 0 else None,
+                active=active,
+                injured=injured,
+                started=started,
+            )
+        )
+    return tuple(result)
+
+
+def validate_tactics(
+    a: SeasonArrays, rosters: tuple[tuple[int, ...], ...], t: TacticalArrays | None
+) -> None:
+    if t is None:
+        return
+    if (
+        len(t.policy.streaming_slots) != len(rosters)
+        or any(k > len(r) for k, r in zip(t.policy.streaming_slots, rosters, strict=True))
+        or not 0 <= t.policy.reserve_adds <= a.add_limit
+        or t.candidate_limit < 1
+        or t.minimum_gain < 0
+        or t.opportunity_cost < 0
+        or not np.isfinite([t.minimum_gain, t.opportunity_cost]).all()
+    ):
+        raise DataError(
+            "management.policy: invalid streaming slots, reserve, or candidate parameters"
+        )
+    for array, dtype in (
+        (t.short_values, np.float64),
+        (t.long_values, np.float64),
+        (t.acquired_short, np.float64),
+        (t.acquired_long, np.float64),
+        (t.short_orders, np.int32),
+        (t.long_orders, np.int32),
+    ):
+        if (
+            array.shape != a.health.shape
+            or array.dtype != dtype
+            or not array.flags.c_contiguous
+            or not np.isfinite(array).all()
+        ):
+            raise DataError("management.policy: invalid forecast arrays")
+    if any(
+        np.any(order < 0) or np.any(order >= a.health.shape[-1])
+        for order in (t.short_orders, t.long_orders)
+    ):
+        raise DataError("management.policy: invalid candidate ordering")
 
 
 def validate_arrays(
@@ -143,7 +280,7 @@ def validate_arrays(
 ) -> None:
     if a.health.ndim != 3:
         raise DataError("management.health: requires sample, day, player axes")
-    if a.il_eligible.ndim != 2 or a.slots.ndim != 1:
+    if a.il_eligible.ndim != 3 or a.slots.ndim != 1:
         raise DataError("management: invalid eligibility or slot axes")
     samples, days, n = a.health.shape
     if (
@@ -161,7 +298,7 @@ def validate_arrays(
         (a.priority, np.float64, (n,)),
         (a.value, np.float64, (n,)),
         (a.orders, np.int32, (samples, days, n)),
-        (a.il_eligible, np.uint8, (n, a.il_eligible.shape[1])),
+        (a.il_eligible, np.uint8, (days, n, a.il_eligible.shape[-1])),
         (a.lock_days, np.uint8, (days,)),
     )
     for array, dtype, shape in specs:

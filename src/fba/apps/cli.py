@@ -5,13 +5,16 @@ import tempfile
 from pathlib import Path
 
 from fba.adapters.acquisition import Acquired, acquire
+from fba.adapters.annual import archive_source
 from fba.adapters.auction import auction_file, draft_template, prepare_auction
+from fba.adapters.backtest import backtest_file
 from fba.adapters.calculation import calculate_file, evaluate_file
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.migration import migrate_projection
 from fba.adapters.preparation import project
 from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot, publish
+from fba.apps.annual import finish_annual
 from fba.apps.auction import AuctionSession
 from fba.apps.build import assemble
 from fba.contracts.auction import SolverError
@@ -96,7 +99,9 @@ def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="fba")
     commands = root.add_subparsers(dest="command", required=True)
     for action in ("build", "annual"):
-        build_parser = commands.add_parser(action, help="Acquire a snapshot; annual also values it")
+        build_parser = commands.add_parser(
+            action, help="Acquire a snapshot; annual also values and evaluates it"
+        )
         for name in ("league", "season", "model", "output"):
             build_parser.add_argument(f"--{name}", required=True, type=Path)
         build_parser.add_argument("--version", required=True, type=int)
@@ -114,7 +119,7 @@ def parser() -> argparse.ArgumentParser:
     migration.add_argument("--model", required=True, type=Path)
     migration.add_argument("--calibration-snapshot", required=True, type=Path)
     migration.add_argument("--output", required=True, type=Path)
-    for name in ("calculate", "evaluate"):
+    for name in ("calculate", "evaluate", "backtest"):
         calculation = commands.add_parser(name, help="Compute from a frozen calculation input")
         calculation.add_argument("input", type=Path)
         calculation.add_argument("--output", required=True, type=Path)
@@ -171,11 +176,12 @@ def main() -> int:
             return 0
         if args.command in ("project", "annual"):
             if args.command == "annual":
+                archive_source(load_config(args.league, args.season, args.model))
                 with tempfile.TemporaryDirectory(prefix="fba-annual-") as folder:
                     snapshot = build(
                         args.league, args.season, args.model, Path(folder), args.version
                     )
-                    path = project(snapshot, args.model, args.output, args.previous)
+                    path = finish_annual(snapshot, args.model, args.output, args.previous)
             else:
                 path = project(args.snapshot, args.model, args.output, args.previous)
             print(json.dumps({"projection": str(path)}))
@@ -186,8 +192,12 @@ def main() -> int:
             )
             print(json.dumps({"input": str(path / "projection-input.json")}))
             return 0
-        if args.command in ("calculate", "evaluate"):
-            operation = calculate_file if args.command == "calculate" else evaluate_file
+        if args.command in ("calculate", "evaluate", "backtest"):
+            operation = {
+                "calculate": calculate_file,
+                "evaluate": evaluate_file,
+                "backtest": backtest_file,
+            }[args.command]
             result = operation(args.input, args.output)
             print(json.dumps({"result": str(result), "sha256": digest(read_bytes(result))}))
             return 0

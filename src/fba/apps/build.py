@@ -2,8 +2,10 @@ from collections import Counter
 
 from fba.adapters import espn, nba, normalized
 from fba.adapters.acquisition import Acquired
+from fba.adapters.annual import validate_archive
 from fba.adapters.codec import decode
 from fba.adapters.roster import import_roster
+from fba.contracts.archive import ForecastArchive
 from fba.contracts.base import DataError, Record
 from fba.contracts.config import ValidatedConfig
 from fba.contracts.data import (
@@ -33,6 +35,18 @@ class SourceData(Record):
     actual: tuple[ActualGames, ...]
 
 
+def data_sources(config: ValidatedConfig, sources: tuple[Acquired, ...]) -> tuple[Acquired, ...]:
+    result: list[Acquired] = []
+    for acquired in sources:
+        if acquired.source.role != "forecast_archive":
+            result.append(acquired)
+        else:
+            if acquired.source.adapter != "fba_forecast":
+                raise DataError(f"{acquired.source.id}: unsupported forecast archive adapter")
+            validate_archive(decode(ForecastArchive, acquired.data, acquired.source.id), config)
+    return tuple(result)
+
+
 def parse_sources(
     config: ValidatedConfig,
     sources: tuple[Acquired, ...],
@@ -46,7 +60,7 @@ def parse_sources(
     catalog: dict[str, ProviderPlayer] = {}
     counts: list[ScheduleCount] = []
     releases: list[Acquired] = []
-    for acquired in sources:
+    for acquired in data_sources(config, sources):
         source, data = acquired.source, acquired.data
         if source.adapter.startswith("espn_"):
             espn.validate_source_season(source)

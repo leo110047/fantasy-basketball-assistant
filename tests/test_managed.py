@@ -22,12 +22,15 @@ def kernel():
     native.close()
 
 
-def reference_manager(kernel):
+def reference_manager(kernel, case_index=3):
     root = Path(__file__).parent / "fixtures"
     spec = json.loads((root / "managed-reference.json").read_text())
+    spec["case"] = spec["cases"][case_index]
     data = np.load(root / "managed-reference.npz", allow_pickle=False)
     c = config()
-    parameters = c.model.fit.model_copy(update={"health_samples": 4, "health_seed": 92003})
+    parameters = c.model.fit.model_copy(
+        update={"health_samples": 4, "health_seed": 92000 + case_index}
+    )
     players = []
     managed = []
     for i, p in enumerate(spec["players"]):
@@ -66,7 +69,7 @@ def reference_manager(kernel):
         players=tuple(managed),
     )
     manager = ManagedSeason(c.league, parameters, inputs, tuple(players), kernel)
-    manager.health = data["health_3"].copy()
+    manager.health = data[f"health_{case_index}"].copy()
     # Recompute the public-status rankings from exactly this frozen health tape.
     forecasts = np.array(
         [[manager.forecast(d, status) for status in (False, True)] for d in range(manager.d)]
@@ -149,7 +152,7 @@ def small_arrays():
         priority=np.array([10.0, 2.0, 1.0]),
         value=np.array([10.0, 2.0, 1.0]),
         orders=np.tile(np.arange(3, dtype=np.int32), (1, 3, 1)),
-        il_eligible=np.ones((3, 1), dtype=np.uint8),
+        il_eligible=np.ones((3, 3, 1), dtype=np.uint8),
         lock_days=np.array([1, 0, 0], dtype=np.uint8),
         waiver_days=1,
         add_limit=1,
@@ -178,7 +181,7 @@ def test_injury_return_acquisition_delay_and_weekly_locked_seats(kernel):
 def test_injured_replacement_chain_releases_a_seat_and_shared_pool_is_unique(kernel):
     a = small_arrays()
     health = np.array([[[0, 1, 1], [0, 0, 1], [1, 1, 1]]], dtype=np.uint8)
-    a = replace(a, health=health, il_eligible=np.ones((3, 2), dtype=np.uint8), add_limit=2)
+    a = replace(a, health=health, il_eligible=np.ones((3, 3, 2), dtype=np.uint8), add_limit=2)
     assert kernel(a, ((0,),), (1, 2)).ravel().tolist() == [1.0, 1.0, 1.0]
     shared = replace(a, health=np.array([[[0, 0, 1]] * 3], dtype=np.uint8))
     result = kernel(shared, ((0,), (1,)), (2,))

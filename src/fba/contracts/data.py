@@ -139,6 +139,10 @@ class ActualGames(Record):
     games: Natural
 
 
+class ActualSeason(ActualGames):
+    totals: tuple[StatValue, ...]
+
+
 class CalibrationPair(Record):
     player_id: Text
     projected_games: Nonnegative

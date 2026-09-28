@@ -17,6 +17,7 @@ from fba.contracts.config import (
     PreparationModel,
     ResourceModel,
     SeasonConfig,
+    SeasonModel,
     ValidatedConfig,
 )
 from fba.core.config import validate_config
@@ -35,12 +36,16 @@ def load_one[T: Record](path: Path, model: type[T], schema: str) -> tuple[T, Con
     )
 
 
+def league_zone(timezone: str) -> ZoneInfo:
+    try:
+        return ZoneInfo(timezone)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise ConfigError(f"league.timezone: unknown timezone {timezone}") from exc
+
+
 def load_config(league: Path, season: Path, model: Path) -> ValidatedConfig:
     rules, league_ref = load_one(league, LeagueRules, "urn:fantasy-assistant:league:1")
-    try:
-        ZoneInfo(rules.timezone)
-    except (ZoneInfoNotFoundError, ValueError) as exc:
-        raise ConfigError(f"league.timezone: unknown timezone {rules.timezone}") from exc
+    league_zone(rules.timezone)
     year, season_ref = load_one(season, SeasonConfig, "urn:fantasy-assistant:season:1")
     for source in year.sources:
         if source.adapter.startswith("espn_"):
@@ -61,7 +66,8 @@ def load_config(league: Path, season: Path, model: Path) -> ValidatedConfig:
 def load_parameters(
     path: Path,
 ) -> tuple[
-    ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel, ConfigRef
+    ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel | SeasonModel,
+    ConfigRef,
 ]:
     data = read_bytes(path)
     try:

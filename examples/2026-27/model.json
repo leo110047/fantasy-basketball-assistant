@@ -1,5 +1,5 @@
 {
-  "format_version": 5,
+  "format_version": 6,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -303,6 +303,19 @@
       "reference": "Locked weekly.py candidate step 1/32 and management.py",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Use the reference candidate step 1/32 with the paired health-block improvement guard. Joint Sobol coordinates represent independent own and opponent statistic uncertainty. O is the simulated public injury designation; unclassified GP loss receives no IL credit. No championship probability claim."
+    }
+  },
+  "management": {
+    "long_forecast_days": 28,
+    "candidate_limit": 12,
+    "reserve_adds": 1,
+    "minimum_gain": 1e-09,
+    "opportunity_cost": 0.25,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "auction-desk/season_kernel.cpp and management.py; frozen 12-case season oracle",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Equivalent reference tactical policy: reserve one addition for injury replacements; compare 7-day and 28-day known-status forecasts. Streaming slot counts and upgrades are replay state."
     }
   }
 }

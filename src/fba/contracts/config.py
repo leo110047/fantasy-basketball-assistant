@@ -160,6 +160,7 @@ class Source(Record):
         "rosters",
         "official_schedule_counts",
         "historical_projections",
+        "forecast_archive",
     ]
     adapter: Text
     url: Text
@@ -364,8 +365,29 @@ class AuctionModel(PreparationModel):
     fit: FitParameters
 
 
+class ManagementParameters(Record):
+    long_forecast_days: PositiveInt
+    candidate_limit: PositiveInt
+    reserve_adds: Natural
+    minimum_gain: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    opportunity_cost: Nonnegative
+    evidence: Evidence
+
+
+class SeasonModel(AuctionModel):
+    format_version: Annotated[int, Field(ge=6, le=6)]
+    management: ManagementParameters
+
+
 class ModelDocument(
-    RootModel[ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel]
+    RootModel[
+        ModelConfig
+        | ResourceModel
+        | CalculationModel
+        | PreparationModel
+        | AuctionModel
+        | SeasonModel
+    ]
 ):
     pass
 
@@ -385,5 +407,12 @@ class ConfigBundle(Record):
 class ValidatedConfig(Record):
     league: LeagueRules
     season: SeasonConfig
-    model: ModelConfig | ResourceModel | CalculationModel | PreparationModel | AuctionModel
+    model: (
+        ModelConfig
+        | ResourceModel
+        | CalculationModel
+        | PreparationModel
+        | AuctionModel
+        | SeasonModel
+    )
     refs: ConfigBundle

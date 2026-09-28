@@ -217,7 +217,8 @@
             "schedule",
             "rosters",
             "official_schedule_counts",
-            "historical_projections"
+            "historical_projections",
+            "forecast_archive"
           ],
           "title": "Role",
           "type": "string"

@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from fba.adapters.annual import forecast_archive
 from fba.adapters.calculation import load_projection, publish_result, verify_calculation_input
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config, load_parameters
@@ -137,6 +138,7 @@ def project(root: Path, model_path: Path, output: Path, previous: Path | None) -
             verify_calculation_input(inputs, bundle / "projection-input.json")
             result = calculate(inputs, digest(canonical(inputs)))
             publish_result(result, bundle / "results", "calculation")
+            (bundle / "forecast.json").write_bytes(forecast_archive(inputs, result, bundle))
             (bundle / "difference.json").write_bytes(difference_report(result, inputs, previous))
             destination = output / bundle.name
             if destination.exists():
