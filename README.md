@@ -13,6 +13,8 @@ uv run fba annual --league /path/league.json --season /path/season.json \
 
 `annual` 完成抓取、凍結、投影、估值、競標開場與上一季評估，全部成功才發布。`opening-draft.json` 是以通用 Team 1 為我方的空白範本；正式選秀請依下方指令指定席次建立草稿。加 `--previous /path/previous-projection` 比較同季上一版公允價變化最大的 30 人。人工調整檔可從 `{"format_version":1,"adjustments":[]}` 開始。
 
+模型格式 7 以完整 NBA 名單限制整隊預期分鐘；輪替造成的缺賽不計為傷病。`team-minutes.json` 列出分配、池外球員與資料缺口。舊投影需從凍結快照重新 `project`。
+
 每次 `project`／`annual` 會產生 `forecast.json`，請保留供下季評估。在下季 `season.sources` 加入 `role: "forecast_archive"`、`adapter: "fba_forecast"`，指定上一季 `season_id` 與此檔的來源、時間、SHA-256；本機存檔使用 `delivery: "manual"`、`file:///` URL、`manual_file` 與 `manual_capture`。缺預測存檔時 `annual` 會停止，可先用 `build`／`project` 完成資料建置，不能宣稱換季驗收完成。
 
 `annual` 的 `auction/` 內已有競標輸入。建立我方草稿，再計算目前狀態；`--mine` 是隊伍編號，從 1 開始，產生的隊名可編輯。

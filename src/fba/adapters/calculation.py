@@ -12,6 +12,7 @@ from fba.adapters.snapshots import checked_path, load_snapshot
 from fba.contracts.base import DataError, Record
 from fba.contracts.config import ValidatedConfig
 from fba.contracts.projection import (
+    BudgetedInput,
     CalibratedData,
     EvaluationInput,
     FrozenCalculationInput,
@@ -66,6 +67,14 @@ def verify_calculation_input(
         raise DataError("projection.config: frozen hashes or values disagree")
     if isinstance(inputs, CalibratedData):
         validate_calibration_snapshot(inputs, path.parent)
+    if isinstance(inputs, BudgetedInput):
+        # Import here because source parsing also validates archived forecasts.
+        from fba.adapters.team_minutes import team_members
+
+        snapshot_root = checked_path(path.parent, inputs.calibration_snapshot)
+        snapshot = load_snapshot(snapshot_root)
+        if team_members(snapshot_root, snapshot, inputs.config) != inputs.team_members:
+            raise DataError("team_minutes: population differs from frozen sources")
 
 
 def validate_calibration_snapshot(inputs: CalibratedData, root: Path) -> None:

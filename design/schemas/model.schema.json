@@ -983,6 +983,95 @@
       "title": "SolverParameters",
       "type": "object"
     },
+    "TeamBudgetModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 7,
+          "minimum": 7,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketParameters"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes"
+      ],
+      "title": "TeamBudgetModel",
+      "type": "object"
+    },
+    "TeamMinuteParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "regulation_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Regulation Minutes",
+          "type": "integer"
+        },
+        "players_on_court": {
+          "exclusiveMinimum": 0,
+          "title": "Players On Court",
+          "type": "integer"
+        },
+        "overtime_minutes_per_game": {
+          "minimum": 0,
+          "title": "Overtime Minutes Per Game",
+          "type": "number"
+        },
+        "unmodeled_reserve_minutes": {
+          "minimum": 0,
+          "title": "Unmodeled Reserve Minutes",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "regulation_minutes",
+        "players_on_court",
+        "overtime_minutes_per_game",
+        "unmodeled_reserve_minutes",
+        "evidence"
+      ],
+      "title": "TeamMinuteParameters",
+      "type": "object"
+    },
     "Term": {
       "additionalProperties": false,
       "properties": {
@@ -1060,6 +1149,9 @@
     },
     {
       "$ref": "#/$defs/SeasonModel"
+    },
+    {
+      "$ref": "#/$defs/TeamBudgetModel"
     }
   ],
   "title": "ModelDocument"

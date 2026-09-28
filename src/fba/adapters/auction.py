@@ -9,8 +9,8 @@ from fba.contracts.auction import AuctionInput, AuctionPlayer, DraftState, Draft
 from fba.contracts.base import ConfigError, DataError, FormatVersion, Natural, Record, Text
 from fba.contracts.config import AuctionModel, CalculationModel
 from fba.contracts.data import Digest, Snapshot
-from fba.contracts.projection import CalculationResult, ProductionInput
-from fba.contracts.season import ManagedPlayer, ManagementInput, SeasonKernel
+from fba.contracts.projection import CalculationResult, ProductionInput, RoleProjected
+from fba.contracts.season import ManagedPlayer, ManagementInput, RoleManagedPlayer, SeasonKernel
 from fba.core.auction import CapRunner, calculate_auction, market_context, run_caps
 from fba.core.config import validate_config
 from fba.core.fit import FeatureRunner
@@ -94,6 +94,15 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
             or player.covariance != p.covariance
         ):
             raise DataError(f"auction.management.{player.id}: differs from frozen projection")
+    for player in inputs.management.players:
+        p = projected.get(player.id)
+        if isinstance(p, RoleProjected) and (
+            not isinstance(player, RoleManagedPlayer)
+            or player.unconstrained_games != p.unconstrained_games
+        ):
+            raise DataError(
+                f"auction.management.{player.id}: original participation differs from projection"
+            )
     return inputs, input_hash
 
 
@@ -114,8 +123,8 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
     if not isinstance(model, AuctionModel):
         raise ConfigError("model: auction requires format_version 5")
     # Auction settings cannot silently change the projection represented by these values.
-    for name in ("calibration", "projection", "valuation", "preparation"):
-        if getattr(model, name) != getattr(inputs.config.model, name, None):
+    for name in ("calibration", "projection", "valuation", "preparation", "team_minutes"):
+        if getattr(model, name, None) != getattr(inputs.config.model, name, None):
             raise ConfigError(f"model.{name}: differs from frozen projection; rebuild it first")
     config = validate_config(
         inputs.config.league,
@@ -167,20 +176,24 @@ def prepare_management(
         projected = results.get(player.id)
         full = team.full_season_games if team is not None else 0
         expected = projected.expected_games if projected is not None else 0.0
-        managed.append(
-            ManagedPlayer(
-                id=player.id,
-                expected_games=expected,
-                healthy_games=expected if p.return_on is not None else float(full),
-                season_games=float(full),
-                return_on=p.return_on,
-                game_days=team.dates if team else (),
-                means=projected.stats if projected else (0.0,) * len(axes),
-                covariance=projected.covariance
-                if projected
-                else tuple((0.0,) * len(axes) for _ in axes),
-            )
+        unconstrained = (
+            projected.unconstrained_games if isinstance(projected, RoleProjected) else expected
         )
+        record = ManagedPlayer(
+            id=player.id,
+            expected_games=expected,
+            healthy_games=unconstrained if p.return_on is not None else float(full),
+            season_games=float(full),
+            return_on=p.return_on,
+            game_days=team.dates if team else (),
+            means=projected.stats if projected else (0.0,) * len(axes),
+            covariance=projected.covariance
+            if projected
+            else tuple((0.0,) * len(axes) for _ in axes),
+        )
+        if isinstance(projected, RoleProjected):
+            record = RoleManagedPlayer(**record.model_dump(), unconstrained_games=unconstrained)
+        managed.append(record)
     return ManagementInput(
         stat_ids=axes, sampling_ids=tuple(p.id for p in players), players=tuple(managed)
     )

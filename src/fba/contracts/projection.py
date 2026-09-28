@@ -106,7 +106,47 @@ class PreparedInput(CalibratedData):
     history_pools: tuple[HistoryPool, ...]
 
 
-type ProductionInput = CalibratedInput | PreparedInput
+class MinuteEstimate(Record):
+    prior_id: Text
+    expected_games: Nonnegative
+    minutes: Nonnegative
+    source_ids: tuple[Text, ...]
+
+
+class TeamMember(Record):
+    id: Text
+    team_id: Text
+    catalog_id: Text | None
+    estimates: tuple[MinuteEstimate, ...]
+
+
+class BudgetedInput(PreparedInput):
+    format_version: Annotated[int, Field(ge=5, le=5)]
+    team_members: tuple[TeamMember, ...]
+
+
+class PlayerMinuteAllocation(Record):
+    member_id: Text
+    catalog_id: Text | None
+    expected_games_before: Nonnegative
+    expected_games_after: Nonnegative
+    minutes: Nonnegative
+    prior_coverage: Nonnegative
+
+
+class TeamMinuteAllocation(Record):
+    team_id: Text
+    members: PositiveInt
+    modeled_members: Natural
+    unmodeled_ids: tuple[Text, ...]
+    before: Nonnegative
+    budget: Nonnegative
+    allocations: tuple[PlayerMinuteAllocation, ...]
+    after: Nonnegative
+    reserve: Nonnegative
+
+
+type ProductionInput = CalibratedInput | PreparedInput | BudgetedInput
 
 
 class Projected(Record):
@@ -115,6 +155,10 @@ class Projected(Record):
     minutes: Nonnegative
     stats: tuple[Nonnegative, ...]
     covariance: tuple[tuple[Finite, ...], ...]
+
+
+class RoleProjected(Projected):
+    unconstrained_games: Nonnegative
 
 
 class CategoryScore(Record):
@@ -152,7 +196,7 @@ class CalculationResult(Record):
     algorithm: Text
     input_sha256: Digest
     config: ConfigBundle
-    projections: tuple[Projected, ...]
+    projections: tuple[RoleProjected | Projected, ...]
     valuation: Valuation
 
 

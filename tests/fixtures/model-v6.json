@@ -1,5 +1,5 @@
 {
-  "format_version": 7,
+  "format_version": 6,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -316,18 +316,6 @@
       "reference": "auction-desk/season_kernel.cpp and management.py; frozen 12-case season oracle",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Equivalent reference tactical policy: reserve one addition for injury replacements; compare 7-day and 28-day known-status forecasts. Streaming slot counts and upgrades are replay state."
-    }
-  },
-  "team_minutes": {
-    "regulation_minutes": 48,
-    "players_on_court": 5,
-    "overtime_minutes_per_game": 0.0,
-    "unmodeled_reserve_minutes": 0.0,
-    "evidence": {
-      "kind": "Assumption",
-      "reference": "https://official.nba.com/rule-no-5-scoring-and-timing/ ; https://official.nba.com/rule-no-3-players-substitutes-and-coaches/",
-      "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Regulation-only expected-minute budget; Allocate first to players with greater available configured prior weight; a zero-weight historical fallback uses residual capacity. Within each coverage group, retain per-appearance minutes and statistics; proportionally reduce playing opportunities to fit residual capacity. Treat these lost appearances as noninjury rotation loss. Prior coverage is an explicit source-reliability assumption, not measured uncertainty. No standard-deviation cuts or increases. Unmodeled players share the explicit residual; zero guaranteed reserve is an uncalibrated assumption, not a zero-minute forecast."
     }
   }
 }

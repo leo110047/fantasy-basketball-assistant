@@ -379,6 +379,19 @@ class SeasonModel(AuctionModel):
     management: ManagementParameters
 
 
+class TeamMinuteParameters(Record):
+    regulation_minutes: PositiveInt
+    players_on_court: PositiveInt
+    overtime_minutes_per_game: Nonnegative
+    unmodeled_reserve_minutes: Nonnegative
+    evidence: Evidence
+
+
+class TeamBudgetModel(SeasonModel):
+    format_version: Annotated[int, Field(ge=7, le=7)]
+    team_minutes: TeamMinuteParameters
+
+
 class ModelDocument(
     RootModel[
         ModelConfig
@@ -387,6 +400,7 @@ class ModelDocument(
         | PreparationModel
         | AuctionModel
         | SeasonModel
+        | TeamBudgetModel
     ]
 ):
     pass
@@ -414,5 +428,6 @@ class ValidatedConfig(Record):
         | PreparationModel
         | AuctionModel
         | SeasonModel
+        | TeamBudgetModel
     )
     refs: ConfigBundle

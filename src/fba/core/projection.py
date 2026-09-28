@@ -11,11 +11,6 @@ def prior(
 ) -> tuple[float, float, tuple[float, ...]]:
     if not player.priors or any(len(p.stats) != len(parameters.stat_ids) for p in player.priors):
         raise DataError(f"projection.{player.id}: missing or incompatible priors")
-    configured = {p.id: p.weight for p in parameters.prior_weights}
-    if len({p.id for p in player.priors}) != len(player.priors) or any(
-        p.id not in configured for p in player.priors
-    ):
-        raise DataError(f"projection.{player.id}: duplicate or unconfigured prior ID")
     for estimate in player.priors:
         if any(
             estimate.stats[parameters.stat_ids.index(pair.child)]
@@ -25,11 +20,8 @@ def prior(
             raise DataError(f"projection.{player.id}.{estimate.id}: nested count exceeds parent")
         if estimate.minutes == 0 and any(estimate.stats):
             raise DataError(f"projection.{player.id}.{estimate.id}: production with zero minutes")
-    # A sole source is retained even when its configured blend weight is zero.
-    weights = (1.0,) if len(player.priors) == 1 else tuple(configured[p.id] for p in player.priors)
-    total = fsum(weights)
-    if total <= 0:
-        raise DataError(f"projection.{player.id}: available priors have zero total weight")
+    weights = prior_weights(tuple(p.id for p in player.priors), parameters)
+    total = 1.0
     games = fsum(p.expected_games * w for p, w in zip(player.priors, weights, strict=True)) / total
     if player.games_cap is not None:
         games = min(games, player.games_cap)
@@ -62,14 +54,33 @@ def calibrate_availability(
     return tuple(
         p.model_copy(
             update={
-                "expected_games": round(
-                    min(
-                        season_games,
-                        max(0, calibration.intercept + calibration.slope * p.expected_games),
-                    ),
-                    decimals,
+                "expected_games": calibrated_games(
+                    p.expected_games, calibration, season_games, decimals
                 )
             }
         )
         for p in players
+    )
+
+
+def prior_weights(ids: tuple[str, ...], parameters: ProjectionParameters) -> tuple[float, ...]:
+    configured = {p.id: p.weight for p in parameters.prior_weights}
+    if len(set(ids)) != len(ids) or any(i not in configured for i in ids):
+        raise DataError("projection: duplicate or unconfigured prior ID")
+    weights = (1.0,) if len(ids) == 1 else tuple(configured[i] for i in ids)
+    total = fsum(weights)
+    if total <= 0:
+        raise DataError("projection: available priors have zero total weight")
+    return tuple(w / total for w in weights)
+
+
+def calibrated_games(
+    games: float, calibration: Calibration, season_games: int, decimals: int
+) -> float:
+    return round(
+        min(
+            season_games,
+            max(0, calibration.intercept + calibration.slope * round(games, decimals)),
+        ),
+        decimals,
     )

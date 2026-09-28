@@ -115,7 +115,14 @@
         },
         "projections": {
           "items": {
-            "$ref": "#/$defs/Projected"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/RoleProjected"
+              },
+              {
+                "$ref": "#/$defs/Projected"
+              }
+            ]
           },
           "title": "Projections",
           "type": "array"
@@ -1720,6 +1727,59 @@
       "title": "ResourceParameters",
       "type": "object"
     },
+    "RoleProjected": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "expected_games": {
+          "minimum": 0,
+          "title": "Expected Games",
+          "type": "number"
+        },
+        "minutes": {
+          "minimum": 0,
+          "title": "Minutes",
+          "type": "number"
+        },
+        "stats": {
+          "items": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Stats",
+          "type": "array"
+        },
+        "covariance": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "title": "Covariance",
+          "type": "array"
+        },
+        "unconstrained_games": {
+          "minimum": 0,
+          "title": "Unconstrained Games",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "expected_games",
+        "minutes",
+        "stats",
+        "covariance",
+        "unconstrained_games"
+      ],
+      "title": "RoleProjected",
+      "type": "object"
+    },
     "RosterImport": {
       "additionalProperties": false,
       "properties": {
@@ -2156,6 +2216,95 @@
       "title": "StatDefinition",
       "type": "object"
     },
+    "TeamBudgetModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 7,
+          "minimum": 7,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketParameters"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes"
+      ],
+      "title": "TeamBudgetModel",
+      "type": "object"
+    },
+    "TeamMinuteParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "regulation_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Regulation Minutes",
+          "type": "integer"
+        },
+        "players_on_court": {
+          "exclusiveMinimum": 0,
+          "title": "Players On Court",
+          "type": "integer"
+        },
+        "overtime_minutes_per_game": {
+          "minimum": 0,
+          "title": "Overtime Minutes Per Game",
+          "type": "number"
+        },
+        "unmodeled_reserve_minutes": {
+          "minimum": 0,
+          "title": "Unmodeled Reserve Minutes",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "regulation_minutes",
+        "players_on_court",
+        "overtime_minutes_per_game",
+        "unmodeled_reserve_minutes",
+        "evidence"
+      ],
+      "title": "TeamMinuteParameters",
+      "type": "object"
+    },
     "Term": {
       "additionalProperties": false,
       "properties": {
@@ -2286,6 +2435,9 @@
             },
             {
               "$ref": "#/$defs/SeasonModel"
+            },
+            {
+              "$ref": "#/$defs/TeamBudgetModel"
             }
           ],
           "title": "Model"

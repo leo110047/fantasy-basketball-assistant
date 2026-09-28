@@ -9,6 +9,7 @@ from fba.contracts.projection import (
 )
 from fba.core.distribution import moments
 from fba.core.projection import calibrate_availability, prior, validate_availability
+from fba.core.team_minutes import constrain_participation, minute_allocations, validate_minutes
 from fba.core.valuation import fit_ruler, value
 
 
@@ -43,6 +44,7 @@ def calculate(inputs: ProductionInput, input_sha256: str) -> CalculationResult:
     )
     if not isinstance(threshold, ThresholdCount):
         raise ConfigError("model.projection.threshold_stat: requires a threshold_count statistic")
+    allocations = minute_allocations(inputs)
     raw = project_population(inputs, model, threshold)
     axes = (*model.projection.stat_ids, model.projection.threshold_stat)
     # Replacement eligibility stays on the original GP scale, before availability calibration.
@@ -66,9 +68,13 @@ def calculate(inputs: ProductionInput, input_sha256: str) -> CalculationResult:
             validate_availability(player, projection.expected_games, teams[player.team_id])
         if player.games_cap is not None and projection.expected_games > player.games_cap:
             raise DataError(f"projection.{player.id}: calibrated games exceed explicit cap")
+    projections = constrain_participation(projections, allocations, model.valuation.result_decimals)
+    validate_minutes(projections, inputs, allocations)
     return CalculationResult(
         format_version=1,
-        algorithm="calibrated-prior-projection-v3",
+        algorithm="role-constrained-projection-v1"
+        if allocations
+        else "calibrated-prior-projection-v3",
         input_sha256=input_sha256,
         config=inputs.config.refs,
         projections=projections,
@@ -85,7 +91,9 @@ def calculate(inputs: ProductionInput, input_sha256: str) -> CalculationResult:
 
 
 def project_population(
-    inputs: ProductionInput, model: CalculationModel, threshold: ThresholdCount
+    inputs: ProductionInput,
+    model: CalculationModel,
+    threshold: ThresholdCount,
 ) -> tuple[Projected, ...]:
     teams = {t.id: t for t in inputs.teams}
     projected: list[Projected] = []

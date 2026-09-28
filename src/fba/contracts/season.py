@@ -19,10 +19,14 @@ class ManagedPlayer(Record):
     covariance: tuple[tuple[Finite, ...], ...]
 
 
+class RoleManagedPlayer(ManagedPlayer):
+    unconstrained_games: Nonnegative
+
+
 class ManagementInput(Record):
     stat_ids: tuple[Text, ...]
     sampling_ids: tuple[Text, ...]
-    players: tuple[ManagedPlayer, ...]
+    players: tuple[RoleManagedPlayer | ManagedPlayer, ...]
 
 
 class MarginalTask(Record):

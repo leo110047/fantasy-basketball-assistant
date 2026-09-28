@@ -9,13 +9,15 @@ from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config, load_parameters
 from fba.adapters.migration import frozen_calibration
 from fba.adapters.snapshots import artifact, publish_bundle
+from fba.adapters.team_minutes import team_members
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import PreparationModel
+from fba.contracts.config import PreparationModel, TeamBudgetModel
 from fba.contracts.data import ManualAdjustments, ReturnAt
-from fba.contracts.projection import CalculationResult, PreparedInput
+from fba.contracts.projection import BudgetedInput, CalculationResult, PreparedInput
 from fba.core.calculation import calculate
 from fba.core.config import validate_config
 from fba.core.preparation import prepare
+from fba.core.team_minutes import minute_allocations
 
 
 def projection_input(root: Path, model_path: Path) -> tuple[PreparedInput, dict[str, bytes]]:
@@ -76,6 +78,14 @@ def projection_input(root: Path, model_path: Path) -> tuple[PreparedInput, dict[
         notes=prepared.notes,
         history_pools=prepared.history_pools,
     )
+    if isinstance(model, TeamBudgetModel):
+        inputs = BudgetedInput.model_validate(
+            {
+                **inputs.model_dump(),
+                "format_version": 5,
+                "team_members": team_members(root, snapshot, config),
+            }
+        )
     return inputs, files
 
 
@@ -137,6 +147,13 @@ def project(root: Path, model_path: Path, output: Path, previous: Path | None) -
             )
             verify_calculation_input(inputs, bundle / "projection-input.json")
             result = calculate(inputs, digest(canonical(inputs)))
+            if isinstance(inputs, BudgetedInput):
+                (bundle / "team-minutes.json").write_text(
+                    json.dumps(
+                        [a.model_dump(mode="json") for a in minute_allocations(inputs)], indent=2
+                    )
+                    + "\n"
+                )
             publish_result(result, bundle / "results", "calculation")
             (bundle / "forecast.json").write_bytes(forecast_archive(inputs, result, bundle))
             (bundle / "difference.json").write_bytes(difference_report(result, inputs, previous))

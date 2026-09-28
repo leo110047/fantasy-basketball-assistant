@@ -7,7 +7,7 @@ from fba.adapters.codec import canonical, checked_json, digest, read_bytes
 from fba.adapters.config import load_parameters
 from fba.adapters.snapshots import artifact, checked_path, load_snapshot, publish_bundle
 from fba.contracts.base import ConfigError, DataError, VersionError
-from fba.contracts.config import CalculationModel, ResourceModel
+from fba.contracts.config import CalculationModel, ResourceModel, TeamBudgetModel
 from fba.contracts.data import Artifact, Snapshot
 from fba.contracts.projection import (
     CalibratedInput,
@@ -53,6 +53,10 @@ def migrate_projection(path: Path, model_path: Path, calibration_root: Path, out
     """Freeze the explicit new model and calibration with the original input for audit."""
     old, input_hash = legacy_input(path)
     model, ref = load_parameters(model_path)
+    if isinstance(model, TeamBudgetModel):
+        raise ConfigError(
+            "migration.model: complete-population models require project from the source snapshot"
+        )
     config = validate_config(
         old.config.league,
         old.config.season,

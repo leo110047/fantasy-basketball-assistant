@@ -26,7 +26,9 @@ from fba.core.roster import assign, completable
 
 def config():
     base = Path(__file__).parents[1] / "examples/2026-27"
-    return load_config(*(base / f"{n}.json" for n in ("league", "season", "model")))
+    return load_config(
+        base / "league.json", base / "season.json", Path(__file__).parent / "fixtures/model-v6.json"
+    )
 
 
 def player(i, positions=("PG",), utility=1.0, quote=1.0):

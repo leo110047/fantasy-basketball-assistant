@@ -14,6 +14,7 @@ from fba.contracts.config import (
     ResourceModel,
     SeasonConfig,
     SeasonModel,
+    TeamBudgetModel,
     ThresholdCount,
     ValidatedConfig,
 )
@@ -229,6 +230,8 @@ def validate_config(
             raise ConfigError("model.management.long_forecast_days: shorter than short forecast")
         if model.management.evidence.as_of > season.snapshot_as_of:
             raise ConfigError("model.management.evidence: after snapshot cutoff")
+    if isinstance(model, TeamBudgetModel):
+        validate_team_minutes(model, season)
     return ValidatedConfig(league=league, season=season, model=model, refs=refs)
 
 
@@ -381,3 +384,13 @@ def validate_offense(model: ResourceModel) -> None:
         or (p.scoring_stat in offense and any(t.stat_id not in offense for t in p.scoring_terms))
     ):
         raise ConfigError("model.projection.offense_stats: inconsistent resource dependencies")
+
+
+def validate_team_minutes(model: TeamBudgetModel, season: SeasonConfig) -> None:
+    p = model.team_minutes
+    if p.unmodeled_reserve_minutes >= p.players_on_court * (
+        p.regulation_minutes + p.overtime_minutes_per_game
+    ):
+        raise ConfigError("model.team_minutes: reserve leaves no minutes for modeled players")
+    if p.evidence.as_of > season.snapshot_as_of:
+        raise ConfigError("model.team_minutes.evidence: after snapshot cutoff")

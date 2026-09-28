@@ -28,6 +28,8 @@ def projection_bundle(tmp_path):
         name: json.loads((root / f"examples/2026-27/{name}.json").read_text())
         for name in ("league", "season", "model")
     }
+    # This fixture exercises the archived format-3/4 calculation path.
+    files["model"] = json.loads((Path(__file__).parent / "fixtures/model-v6.json").read_text())
     league = files["league"]
     league["teams"] = 2
     league["starter_slots"] = league["starter_slots"][:1]
@@ -271,7 +273,7 @@ def test_explicit_migration_preserves_sources_and_removes_sd_dependency(
 ):
     path = legacy_projection_bundle
     source_bytes = path.read_bytes()
-    model = json.loads((Path(__file__).parents[1] / "examples/2026-27/model.json").read_text())
+    model = json.loads((Path(__file__).parent / "fixtures/model-v6.json").read_text())
     model["valuation"].update(healthy_games=1, replacement_count=2)
     model["fit"]["category_floors"] = [
         c for c in model["fit"]["category_floors"] if c["id"] == "PTS"
@@ -329,7 +331,7 @@ def test_migration_rejects_source_changed_after_verification(
         return checked
 
     monkeypatch.setattr(migration, "load_calculation_input", change_after_load)
-    parameters = json.loads((Path(__file__).parents[1] / "examples/2026-27/model.json").read_text())
+    parameters = json.loads((Path(__file__).parent / "fixtures/model-v6.json").read_text())
     parameters["fit"]["category_floors"] = [
         c for c in parameters["fit"]["category_floors"] if c["id"] == "PTS"
     ]
