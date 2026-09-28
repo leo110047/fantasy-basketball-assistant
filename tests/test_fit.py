@@ -1,4 +1,6 @@
+import json
 from datetime import date, timedelta
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -6,7 +8,7 @@ from test_auction import config, inputs_for, player, state
 
 from fba.adapters.codec import canonical
 from fba.adapters.native import NativeKernel
-from fba.contracts.auction import Infeasible, Plan
+from fba.contracts.auction import AuctionPlayer, Infeasible, Plan, Sale
 from fba.contracts.base import DataError
 from fba.contracts.season import ManagedPlayer, ManagementInput
 from fba.core.auction import calculate_auction, market_context, portfolio_for
@@ -234,3 +236,92 @@ def test_fit_owned_and_unavailable_players_and_completed_roster(fitted_case):
         kernel=kernel,
     )
     assert full.fit is None and full.plan.purchases == ()
+
+
+def test_joint_statistic_draws_have_independent_own_and_opponent_axes(fitted_case):
+    inputs, draft, kernel = fitted_case
+    players, market = market_context(inputs, draft, "0" * 64)
+    portfolio = portfolio_for(inputs, players, market, draft)
+    base = portfolio.solve(canonical=True)
+    parameters = inputs.config.model.fit.model_copy(update={"samples": 8192})
+    fitted = FittedUtility(
+        portfolio, market, draft.mine, parameters, inputs.management, kernel, base
+    )
+    k = fitted.manager.k
+    correlation = np.corrcoef(fitted.draws.T, fitted.opponent_draws.T)[:k, k:]
+    assert np.abs(correlation).max() < 0.02
+    np.testing.assert_allclose(fitted.draws.std(axis=0), 1.0, atol=0.002)
+    np.testing.assert_allclose(fitted.opponent_draws.std(axis=0), 1.0, atol=0.002)
+    repeated = FittedUtility(
+        portfolio, market, draft.mine, parameters, inputs.management, kernel, base
+    )
+    np.testing.assert_array_equal(fitted.draws, repeated.draws)
+    np.testing.assert_array_equal(fitted.opponent_draws, repeated.opponent_draws)
+    for field in ("seed", "opponent_seed"):
+        changed = FittedUtility(
+            portfolio,
+            market,
+            draft.mine,
+            parameters.model_copy(update={field: getattr(parameters, field) + 1}),
+            inputs.management,
+            kernel,
+            base,
+        )
+        assert not np.array_equal(fitted.draws, changed.draws)
+        assert not np.array_equal(fitted.opponent_draws, changed.opponent_draws)
+
+
+def test_fitted_cap_seed_bound_on_frozen_draft_states():
+    from fba.apps.auction import AuctionSession
+
+    fixture = json.loads((Path(__file__).parent / "fixtures/fit-stability.json").read_bytes())
+    players = tuple(AuctionPlayer.model_validate_json(json.dumps(p)) for p in fixture["players"])
+    inputs = inputs_for(players).model_copy(
+        update={
+            "management": ManagementInput.model_validate_json(json.dumps(fixture["management"]))
+        }
+    )
+    sales = tuple(Sale.model_validate(s) for s in fixture["sales"])
+    selected = []
+    session = AuctionSession(4)
+    try:
+        for count in (0, 20, 80):
+            reference = None
+            for offset in (0, 1, 2, 3):
+                parameters = inputs.config.model.fit
+                model = inputs.config.model.model_copy(
+                    update={
+                        "fit": parameters.model_copy(
+                            update={
+                                field: getattr(parameters, field) + offset
+                                for field in ("seed", "opponent_seed", "health_seed")
+                            }
+                        )
+                    }
+                )
+                candidate = inputs.model_copy(
+                    update={"config": inputs.config.model_copy(update={"model": model})}
+                )
+                result = calculate_auction(
+                    candidate,
+                    state(candidate, sales[:count]),
+                    "0" * 64,
+                    "3" * 64,
+                    mode="fit",
+                    kernel=session.native(),
+                    runner=session.caps,
+                    feature_runner=session.features,
+                )
+                assert isinstance(result.plan, Plan) and result.fit is not None
+                selected.append(result.fit.selected_step)
+                caps = {c.player_id: c.amount for c in result.caps}
+                if reference is None:
+                    reference = caps
+                for pid, amount in caps.items():
+                    prior = reference[pid]
+                    assert (amount is None) == (prior is None)
+                    if amount is not None:
+                        assert abs(amount - prior) <= 2
+        assert any(selected), "The stability case must exercise an accepted fit update"
+    finally:
+        session.close()

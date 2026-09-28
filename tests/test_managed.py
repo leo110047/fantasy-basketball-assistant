@@ -212,6 +212,22 @@ def test_native_abi_rejects_invalid_dimensions(kernel, monkeypatch, dimension):
         kernel(small_arrays(), ((0,),), (1, 2))
 
 
+def test_native_abi_accepts_zero_error_buffer_capacity(kernel, monkeypatch):
+    function = kernel.function
+
+    def invalid(*args):
+        values = list(args)
+        values[0] = 0
+        values[-1] = 0
+        assert function(*values) == -1
+        assert values[-2].value == b""
+        return -1
+
+    monkeypatch.setattr(kernel, "function", invalid)
+    with pytest.raises(SolverError, match="^management: $"):
+        kernel(small_arrays(), ((0,),), (1, 2))
+
+
 @pytest.mark.parametrize(
     "pointer,value,message",
     [

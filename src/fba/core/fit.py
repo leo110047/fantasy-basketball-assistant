@@ -141,24 +141,21 @@ class FittedUtility:
         samples = int(log2(parameters.samples))
         if 2**samples != parameters.samples:
             raise DataError("fit.samples: must be a power of two")
-        self.draws = norm.ppf(
-            np.clip(
-                qmc.Sobol(self.manager.k, scramble=True, seed=parameters.seed).random_base2(
-                    samples
-                ),
-                1e-12,
-                1 - 1e-12,
-            )
-        )
-        self.opponent_draws = norm.ppf(
+        # Pair coordinates from one joint design; independently scrambled Sobol
+        # sequences are not independent when their rows are paired.
+        draws = norm.ppf(
             np.clip(
                 qmc.Sobol(
-                    self.manager.k, scramble=True, seed=parameters.opponent_seed
+                    self.manager.k * 2,
+                    scramble=True,
+                    seed=np.random.default_rng([parameters.seed, parameters.opponent_seed]),
                 ).random_base2(samples),
                 1e-12,
                 1 - 1e-12,
             )
         )
+        self.draws = draws[:, : self.manager.k]
+        self.opponent_draws = draws[:, self.manager.k :]
         self.opponent = np.empty((0, 0))
         self.opponent_blocks = np.empty((0, 0, 0))
         self.scale = np.empty(0)

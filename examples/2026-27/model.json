@@ -295,20 +295,14 @@
     "gradient_fraction": 0.03,
     "gradient_floor": 0.05,
     "steps": [
-      0.015625,
-      0.03125,
-      0.0625,
-      0.125,
-      0.25,
-      0.5,
-      1.0
+      0.03125
     ],
     "improvement_tolerance": 1e-09,
     "evidence": {
       "kind": "Assumption",
-      "reference": "Locked weekly.py and management.py",
+      "reference": "Locked weekly.py candidate step 1/32 and management.py",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Preserve conditional managed marginal linearization, stratified Markov health paths, Sobol moments and paired block step acceptance. O is the simulated public injury designation; unclassified GP loss receives no IL credit. No championship probability claim."
+      "reason": "Use the reference candidate step 1/32 with the paired health-block improvement guard. Joint Sobol coordinates represent independent own and opponent statistic uncertainty. O is the simulated public injury designation; unclassified GP loss receives no IL credit. No championship probability claim."
     }
   }
 }
