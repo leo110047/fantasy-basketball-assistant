@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import NamedTuple
 
 import numpy as np
@@ -17,6 +17,19 @@ class ManagedMoments(NamedTuple):
     mean: FloatArray
     covariance: FloatArray
     boxes: FloatArray
+
+
+def management_calendar(league: LeagueRules, game_days: tuple[date, ...]) -> tuple[date, ...]:
+    dates = sorted(set(game_days))
+    if not dates:
+        raise DataError("management.schedule: no scheduled games")
+    first = dates[0]
+    if league.lineup.lock_mode == "weekly" and league.lineup.lock_at == "period_start":
+        periods = tuple(w for w in league.matchups if w.start <= first <= w.end)
+        if len(periods) != 1:
+            raise DataError("management.schedule: first game must belong to one matchup period")
+        first = periods[0].start
+    return tuple(first + timedelta(days=i) for i in range((dates[-1] - first).days + 1))
 
 
 class ManagedSeason:
@@ -47,12 +60,7 @@ class ManagedSeason:
         self.n = len(self.ids)
         self.k = len(inputs.stat_ids)
         self.stat_ids = inputs.stat_ids
-        dates = sorted({d for p in self.players for d in p.game_days})
-        if not dates:
-            raise DataError("management.schedule: no scheduled games")
-        self.days = tuple(
-            dates[0] + timedelta(days=i) for i in range((dates[-1] - dates[0]).days + 1)
-        )
+        self.days = management_calendar(league, tuple(d for p in self.players for d in p.game_days))
         self.d = len(self.days)
         self.weeks = tuple(
             w for w in league.matchups if w.start <= self.days[-1] and w.end >= self.days[0]

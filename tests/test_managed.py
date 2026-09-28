@@ -362,3 +362,55 @@ def test_managed_contract_failures_and_local_memoization(kernel):
     )
     no_games = ManagedSeason(weekly, manager.parameters, sparse, players, kernel)
     assert no_games.arrays().lock_days.sum() == 2
+
+
+def test_weekly_period_lock_precedes_first_scheduled_game(kernel):
+    original, _, _ = reference_manager(kernel)
+    players = tuple(
+        AuctionPlayer(
+            id=p.id,
+            name=p.id,
+            positions=tuple(
+                pos
+                for bit, pos in enumerate(original.league.positions)
+                if original.masks[i] & (1 << bit)
+            ),
+            positions_confirmed=True,
+            active=True,
+            projected_price=1.0,
+            fair=1.0,
+            utility=float(original.priority[i]),
+        )
+        for i, p in enumerate(original.players)
+    )
+    first_period = original.weeks[0]
+    managed = tuple(
+        p.model_copy(update={"game_days": tuple(d for d in p.game_days if d > first_period.start)})
+        for p in original.players
+    )
+    source = ManagementInput(stat_ids=original.stat_ids, sampling_ids=original.ids, players=managed)
+    daily = ManagedSeason(original.league, original.parameters, source, players, kernel)
+    weekly = original.league.model_copy(
+        update={
+            "lineup": original.league.lineup.model_copy(
+                update={"lock_mode": "weekly", "lock_at": "period_start"}
+            )
+        }
+    )
+    manager = ManagedSeason(weekly, original.parameters, source, players, kernel)
+    lock_day = manager.weeks[0].start
+    assert daily.days[0] > lock_day, "fixture must start NBA games after period lock"
+    assert manager.days[0] == lock_day
+    roster = tuple(range(manager.league.bench_slots + len(manager.league.starter_slots)))
+    player = max(roster, key=lambda p: manager.priority[p])
+    manager.health[:] = True
+    for d, day in enumerate(manager.days):
+        manager.health[:, d, player] = day != lock_day
+    # Recovery after the period lock must not put this player into that week's lineup.
+    result = kernel(manager.arrays(), (roster,), ())
+    assert not result[:, 0, 0, player].any()
+    first_game = weekly.model_copy(
+        update={"lineup": weekly.lineup.model_copy(update={"lock_at": "first_game"})}
+    )
+    other = ManagedSeason(first_game, original.parameters, source, players, kernel)
+    assert other.days == daily.days
