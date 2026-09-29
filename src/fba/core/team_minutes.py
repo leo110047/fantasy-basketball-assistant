@@ -88,7 +88,7 @@ def allocate_team(
     values = tuple(member_minutes(m, players, inputs, full) for m in rows)
     demands = tuple(v for v in values if v is not None)
     weights = {p.id: p.weight for p in model.projection.prior_weights}
-    groups: dict[float, list[tuple[TeamMember, float, float]]] = {}
+    groups: dict[tuple[bool, float], list[tuple[TeamMember, float, float]]] = {}
     for member, value in zip(rows, values, strict=True):
         if value is None:
             continue
@@ -98,13 +98,19 @@ def allocate_team(
             else tuple(p.prior_id for p in member.estimates)
         )
         coverage = fsum(weights[i] for i in ids)
-        groups.setdefault(coverage, []).append((member, *value))
+        pinned = (
+            member.catalog_id is not None
+            and players[member.catalog_id].expected_games_override is not None
+        )
+        groups.setdefault((pinned, coverage), []).append((member, *value))
     remaining = budget - parameters.unmodeled_reserve_minutes
     allocated: list[PlayerMinuteAllocation] = []
-    for coverage in sorted(groups, reverse=True):
-        group = groups[coverage]
+    for pinned, coverage in sorted(groups, reverse=True):
+        group = groups[pinned, coverage]
         usage = fsum(gp * minutes / full for _, gp, minutes in group)
-        factor = min(1.0, remaining / usage) if usage else 1.0
+        if pinned and usage > remaining:
+            raise DataError(f"team_minutes.{team_id}: manual expected games exceed team budget")
+        factor = min(1.0, remaining / usage) if usage and not pinned else 1.0
         for member, gp, minutes in group:
             allocated.append(
                 PlayerMinuteAllocation(

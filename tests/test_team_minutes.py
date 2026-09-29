@@ -216,3 +216,35 @@ def test_fractional_prior_games_share_projection_rounding_order(budget_case):
         p for t in minute_allocations(i) for p in t.allocations if p.catalog_id == first.id
     )
     assert allocation.expected_games_before == player.unconstrained_games
+
+
+def test_manual_games_are_reserved_before_automatic_team_allocations(budget_case):
+    i = budget_case
+    players = tuple(
+        p.model_copy(
+            update={
+                "priors": tuple(q.model_copy(update={"minutes": 45.0}) for q in p.priors),
+                "expected_games_override": 3.0 if p.id == i.players[0].id else None,
+            }
+        )
+        for p in i.players
+    )
+    model = i.config.model.model_copy(
+        update={
+            "team_minutes": i.config.model.team_minutes.model_copy(
+                update={"unmodeled_reserve_minutes": 150.0}
+            )
+        }
+    )
+    i = i.model_copy(
+        update={"players": players, "config": i.config.model_copy(update={"model": model})}
+    )
+    result = calculate(i, "0" * 64)
+    fixed = next(p for p in result.projections if p.id == players[0].id)
+    assert fixed.expected_games == fixed.unconstrained_games == 3.0
+    allocation = next(t for t in minute_allocations(i) if t.team_id == players[0].team_id)
+    assert allocation.after == pytest.approx(90.0)
+    assert any(p.expected_games_after < p.expected_games_before for p in allocation.allocations)
+    impossible = tuple(p.model_copy(update={"expected_games_override": 4.0}) for p in players)
+    with pytest.raises(DataError, match="manual expected games exceed team budget"):
+        calculate(i.model_copy(update={"players": impossible}), "0" * 64)

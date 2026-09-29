@@ -192,7 +192,13 @@ def adjust_player(
         if isinstance(operation, Multiply):
             if operation.stat_id == model.preparation.minutes_stat:
                 priors = tuple(
-                    p.model_copy(update={"minutes": p.minutes * operation.factor}) for p in priors
+                    p.model_copy(
+                        update={
+                            "minutes": p.minutes * operation.factor,
+                            "stats": tuple(v * operation.factor for v in p.stats),
+                        }
+                    )
+                    for p in priors
                 )
             elif (
                 operation.stat_id in model.projection.stat_ids
@@ -295,6 +301,14 @@ def prepare_player(
         notes.extend(estimates)
         if estimate is not None:
             priors.append(estimate)
+    else:
+        notes.append(
+            PreparationNote(
+                player_id=pid,
+                kind="unavailable",
+                detail="Missing current-season forecast; any estimate uses historical data only",
+            )
+        )
     if priors and not history:
         raise DataError(f"preparation.{pid}: required individual or position history unavailable")
     if not priors:

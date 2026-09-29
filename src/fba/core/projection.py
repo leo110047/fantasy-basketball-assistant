@@ -21,13 +21,12 @@ def prior(
         if estimate.minutes == 0 and any(estimate.stats):
             raise DataError(f"projection.{player.id}.{estimate.id}: production with zero minutes")
     weights = prior_weights(tuple(p.id for p in player.priors), parameters)
-    total = 1.0
-    games = fsum(p.expected_games * w for p, w in zip(player.priors, weights, strict=True)) / total
+    games = fsum(p.expected_games * w for p, w in zip(player.priors, weights, strict=True))
     if player.games_cap is not None:
         games = min(games, player.games_cap)
-    minutes = fsum(p.minutes * w for p, w in zip(player.priors, weights, strict=True)) / total
+    minutes = fsum(p.minutes * w for p, w in zip(player.priors, weights, strict=True))
     stats = [
-        fsum(p.stats[i] * w for p, w in zip(player.priors, weights, strict=True)) / total
+        fsum(p.stats[i] * w for p, w in zip(player.priors, weights, strict=True))
         for i in range(len(parameters.stat_ids))
     ]
     stats[parameters.stat_ids.index(parameters.scoring_stat)] = fsum(

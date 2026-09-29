@@ -261,6 +261,42 @@ def test_failure_publishes_no_partial_projection(annual_case, tmp_path):
         load_config(root / "config/league.json", root / "config/season.json", model)
 
 
+@pytest.mark.parametrize("factor", [0.0, 1.5])
+def test_manual_minutes_preserve_per_minute_production(annual_case, factor):
+    _, _, config, snapshot = annual_case
+    baseline = prepare(snapshot, config)
+    operation = Multiply(
+        kind="multiply", stat_id=config.model.preparation.minutes_stat, factor=factor
+    )
+    changed = snapshot.model_copy(
+        update={
+            "adjustments": ManualAdjustments(
+                format_version=1, adjustments=(adjustment(snapshot, "1", operation, "minutes"),)
+            )
+        }
+    )
+    before = next(p for p in baseline.players if p.id == "1")
+    after = next(p for p in prepare(changed, config).players if p.id == "1")
+    for old, new in zip(before.priors, after.priors, strict=True):
+        assert new.minutes == old.minutes * factor
+        assert new.stats == pytest.approx(tuple(v * factor for v in old.stats))
+        assert new.expected_games == old.expected_games
+
+
+def test_missing_forecast_has_specific_warning_without_inventing_health(annual_case):
+    _, _, config, snapshot = annual_case
+    snapshot = snapshot.model_copy(
+        update={"forecasts": tuple(f for f in snapshot.forecasts if f.player_id != "1")}
+    )
+    prepared = prepare(snapshot, config)
+    player = next(p for p in prepared.players if p.id == "1")
+    assert tuple(p.id for p in player.priors) == (config.model.preparation.historical_prior_id,)
+    assert player.return_on is None and player.expected_games_override is None
+    warnings = [n for n in prepared.notes if n.player_id == "1" and n.kind == "unavailable"]
+    assert len(warnings) == 1
+    assert "Missing current-season forecast" in warnings[0].detail
+
+
 def test_future_and_midseason_adjustments_are_rejected(annual_case):
     _, _, config, snapshot = annual_case
     operation = Multiply(kind="multiply", stat_id="AST", factor=1.1)
