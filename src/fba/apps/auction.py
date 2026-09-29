@@ -115,8 +115,8 @@ class AuctionSession:
             * days
             * request.parameters.health_samples
         )
-        # Assumption: roughly eight million sample/team/days amortize one worker's setup.
-        workers = parallelism(self.workers, len(request.tasks), work, 8_000_000)
+        # Assumption: roughly four million sample/team/days amortize one worker's setup.
+        workers = parallelism(self.workers, len(request.tasks), work, 4_000_000)
         kernel = self.native()
         requests = tuple(
             request.model_copy(update={"tasks": request.tasks[i::workers]}) for i in range(workers)

@@ -51,6 +51,9 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
   }).sort((a,b) => (b.fair ?? -1) - (a.fair ?? -1) || a.id.localeCompare(b.id, "en"));
   el("count").textContent = `${shown.length} 位`;
   const body = el("players"), existing = new Map([...body.children].map(row => [row.dataset.player, row]));
+  // Remove departed rows first, so a sale does not move every following row.
+  const visible = new Set(shown.map(p => p.id));
+  for (const [id, row] of existing) if (!visible.has(id)) row.remove();
   const rows = shown.map(p => {
     let row = existing.get(p.id);
     if (!row) {

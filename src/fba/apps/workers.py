@@ -12,8 +12,8 @@ from typing import cast
 
 def worker_limit(value: str) -> int:
     if value == "auto":
-        # Assumption: reserve half the available logical CPUs for the desktop/coordinators.
-        return max(1, (process_cpu_count() or 1) // 2)
+        # Assumption: reserve one quarter of available logical CPUs for desktop/coordinators.
+        return max(1, (process_cpu_count() or 1) * 3 // 4)
     try:
         limit = int(value)
     except ValueError as exc:

@@ -25,7 +25,7 @@ def failing_worker(signal):
     raise TimeoutError("solver deadline")
 
 
-@pytest.mark.parametrize("cpus,expected", [(12, 6), (3, 1), (1, 1), (None, 1)])
+@pytest.mark.parametrize("cpus,expected", [(12, 9), (8, 6), (3, 2), (2, 1), (1, 1), (None, 1)])
 def test_auto_ceiling_reserves_desktop_capacity(monkeypatch, cpus, expected):
     monkeypatch.setattr("fba.apps.workers.process_cpu_count", lambda: cpus)
     assert worker_limit("auto") == expected
@@ -96,7 +96,7 @@ def test_cli_defaults_to_auto_and_explicit_value_is_a_ceiling(monkeypatch):
 
     monkeypatch.setattr("fba.apps.workers.process_cpu_count", lambda: 12)
     command = ["serve", "input.json", "--draft", "draft.json", "--log", "log.jsonl"]
-    assert parser().parse_args(command).workers == 6
+    assert parser().parse_args(command).workers == 9
     assert parser().parse_args([*command, "--workers", "3"]).workers == 3
 
 
