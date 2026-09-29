@@ -5,6 +5,7 @@ from fba.contracts.auction import (
     AuctionDetail,
     AuctionPlayer,
     AuctionResult,
+    CapSensitivity,
     Comparison,
     DraftState,
     ForecastScenario,
@@ -28,6 +29,15 @@ class CompareRequest(StateRequest):
     mode: Literal["equal", "fit"]
     player_id: Text
     price: PositiveInt
+
+
+class SensitivityRequest(StateRequest):
+    player_id: Text
+
+
+class SensitivityResult(Record):
+    state_sha256: Digest
+    sensitivity: CapSensitivity
 
 
 class JobView(Record):
@@ -81,9 +91,9 @@ class DeskHealth(Record):
 
 class DeskExecution(Record):
     format_version: FormatVersion
-    stage: Literal["market", "equal", "fit", "compare"]
+    stage: Literal["market", "equal", "fit", "compare", "sensitivity"]
     state: DraftState
     state_sha256: Digest
     elapsed_ns: Natural
     solver_calls: Natural | None
-    result: MarketUpdate | AuctionResult | Compared | DeskError
+    result: MarketUpdate | AuctionResult | Compared | SensitivityResult | DeskError

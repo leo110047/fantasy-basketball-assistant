@@ -46,6 +46,7 @@ class MarginalTask(Record):
 class MarginalFeature(Record):
     index: int
     values: tuple[Finite, ...]
+    blocks: tuple[tuple[Finite, ...], ...]
 
 
 class ManagementPolicy(Record):

@@ -24,6 +24,7 @@ from fba.contracts.desk import (
     DeskHealth,
     SaveDraft,
     SaveUnconfirmed,
+    SensitivityRequest,
     StateRequest,
 )
 
@@ -161,6 +162,8 @@ class DeskHandler(BaseHTTPRequestHandler):
                 result = desk.retry(decode(StateRequest, data, "request.retry").state_sha256)
             elif self.path == "/api/compare":
                 result = desk.comparison(decode(CompareRequest, data, "request.compare"))
+            elif self.path == "/api/sensitivity":
+                result = desk.sensitivity(decode(SensitivityRequest, data, "request.sensitivity"))
             else:
                 self.respond(DeskError(error="route: not found"), 404)
                 return

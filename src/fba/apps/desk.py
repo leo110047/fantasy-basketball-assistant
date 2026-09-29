@@ -28,6 +28,8 @@ from fba.contracts.desk import (
     JobView,
     SaveDraft,
     SaveUnconfirmed,
+    SensitivityRequest,
+    SensitivityResult,
 )
 from fba.core.auction import (
     ComparisonRunner,
@@ -38,6 +40,7 @@ from fba.core.auction import (
     portfolio_for,
 )
 from fba.core.roster import effective_players, validate_labels
+from fba.core.sensitivity import cap_sensitivity
 
 Calculator = Callable[[DraftState, str, Event], AuctionResult]
 
@@ -318,6 +321,36 @@ class AuctionDesk:
             self.require_state(sha)
             self.request()
         return self.results()
+
+    def sensitivity(self, request: SensitivityRequest) -> SensitivityResult:
+        with self.lock:
+            self.require_state(request.state_sha256)
+            state = self.desk.state
+            job = self.fit.current(request.state_sha256)
+            if job.status != "ready" or job.result is None:
+                raise DataError("sensitivity: current fit calculation is not ready")
+            fitted, cancelled = job.result, self.fit.cancelled
+        start = perf_counter_ns()
+        result = SensitivityResult(
+            state_sha256=request.state_sha256,
+            sensitivity=cap_sensitivity(
+                self.inputs, state, fitted, request.player_id, partial(check_current, cancelled)
+            ),
+        )
+        with self.lock:
+            self.require_state(request.state_sha256)
+        self.record(
+            DeskExecution(
+                format_version=1,
+                stage="sensitivity",
+                state=state,
+                state_sha256=request.state_sha256,
+                elapsed_ns=perf_counter_ns() - start,
+                solver_calls=result.sensitivity.solver_calls,
+                result=result,
+            )
+        )
+        return result
 
     def comparison(self, request: CompareRequest) -> Compared:
         with self.lock:

@@ -7,6 +7,7 @@ let boot, desk, jobs, selected = null, saving = false, comparing = false, compos
 let players = new Map(), watched = new Set(), compareRevision = 0, settingsDirty = false, inspected = null;
 let pollTimer, polling = false;
 let changingPrices = false, stale = false, legacyWatch = [];
+let sensitivityReply = null, sensitivityPending = false;
 let token = location.hash.slice(1);
 try {
   if (token) sessionStorage.setItem("fba-session", token);
@@ -119,12 +120,36 @@ function renderDetails(id) {
   if (p.projected_price == null) d.append(node("p", "Yahoo 報價缺失；未當成底價備案。", "warning"));
   const override = desk.state.overrides.find(o => o.player_id === id);
   if (override) d.append(node("p", `本次覆寫：市場 ${override.market == null ? "沿用來源" : money(override.market)} · 位置 ${override.positions?.join(" / ") ?? "沿用來源"} · ${override.reason}`, "warning"));
+  renderSensitivity(d,id);
   renderProjectionDetail(d, p);
   d.append(action("修改市場價／位置", () => editors.override(id)));
   d.append(action("指定為本輪", () => { nominate(id); el("playerDialog").close(); }));
 }
 function browse(id) {
   inspected = id; renderDetails(id); el("playerDialog").showModal();
+}
+function renderSensitivity(container, id) {
+  if (el("mode").value !== "fit") return;
+  const cap = result()?.caps.find(c => c.player_id === id);
+  if (!cap || cap.amount == null || cap.reason) return;
+  const button = action(sensitivityPending ? "健康抽樣計算中…" : "計算健康抽樣範圍", () => inspectSensitivity(id));
+  button.disabled = sensitivityPending || saving || stale;
+  container.append(button);
+  if (sensitivityReply?.state !== sha() || sensitivityReply?.player !== id) return;
+  if (sensitivityReply.error) { container.append(node("p", sensitivityReply.error, "error")); return; }
+  const value = sensitivityReply.value;
+  container.append(node("p", value.status === "ready" ? `健康抽樣 ${money(value.low)}–${money(value.high)} · 中央停止價 ${money(value.central)}` : "本輪保留加總估值，未採用健康管理調整；不提供抽樣範圍。"));
+  if (value.groups.length) container.append(node("p", `各組：${value.groups.map(money).join("、")}。固定參考陣容、梯度、尺度與採用步長，只改變健康分組均值；範圍含中央值。不是信賴區間，也不涵蓋預測或對手假設的全部誤差。`, "muted"));
+}
+async function inspectSensitivity(id) {
+  if (sensitivityPending || saving || stale) return;
+  const state = sha();
+  sensitivityPending = true; sensitivityReply = null; renderDetails(id);
+  try {
+    const reply = await api("sensitivity", {state_sha256:state, player_id:id});
+    if (reply.state_sha256 === state && sha() === state) sensitivityReply = {state,player:id,value:reply.sensitivity};
+  } catch(e) { if (sha() === state) sensitivityReply = {state,player:id,error:e.message}; }
+  finally { sensitivityPending = false; if (el("playerDialog").open) renderDetails(inspected); }
 }
 async function watch(id) {
   if (saving || stale) return;

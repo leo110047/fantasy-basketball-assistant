@@ -250,6 +250,17 @@ class ManagedFitSummary(FitSummary):
     method: Literal["paired_managed_marginal"]
     players: tuple[FittedPlayer, ...]
     policy: PricingParameters
+    sensitivity: tuple[tuple[FittedPlayer, ...], ...] | None = None
+
+
+class CapSensitivity(Record):
+    player_id: Text
+    status: Literal["ready", "baseline_retained"]
+    central: Natural
+    groups: tuple[Natural, ...]
+    low: Natural | None
+    high: Natural | None
+    solver_calls: Natural
 
 
 class AuctionResult(Record):

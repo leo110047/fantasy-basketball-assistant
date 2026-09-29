@@ -54,7 +54,12 @@ def marginal_batch(
         ) - manager.project_primary_boxes((task.rest, *task.opponents))
         features.append(
             MarginalFeature(
-                index=task.index, values=tuple(float(v) for v in difference.mean(axis=(0, 1)))
+                index=task.index,
+                values=tuple(float(v) for v in difference.mean(axis=(0, 1))),
+                blocks=tuple(
+                    tuple(float(v) for v in part.mean(axis=(0, 1)))
+                    for part in np.array_split(difference, manager.parameters.health_blocks)
+                ),
             )
         )
     return tuple(features)
@@ -203,6 +208,7 @@ class FittedUtility:
         self.opponent_draws = draws[:, self.manager.k :]
         self.opponent = np.empty((0, 0))
         self.opponent_blocks = np.empty((0, 0, 0))
+        self.block_features: FloatArray | None = None
         self.scale = np.empty(0)
         self.initial_pool = self.waiver_pool(base)
         self.anchor = tuple(self.manager.index[i] for i in base.players)
@@ -381,9 +387,30 @@ class FittedUtility:
                 )
             )
         )
+        self.block_features = np.zeros((self.parameters.health_blocks, *feature.shape))
         for value in values:
             feature[value.index] = value.values
+            self.block_features[:, value.index] = value.blocks
         return feature
+
+    def sensitivity(
+        self, gradient: FloatArray, scale: float, alpha: float
+    ) -> tuple[tuple[FittedPlayer, ...], ...]:
+        if not alpha:
+            return ()
+        if self.block_features is None:
+            raise DataError("fit: paired health-group marginal features are unavailable")
+        vectors = (1 - alpha) * self.portfolio.values + alpha * (
+            self.block_features @ gradient / scale * np.std(self.portfolio.values)
+        )
+        vectors = np.round(vectors, self.portfolio.parameters.result_decimals)
+        return tuple(
+            tuple(
+                FittedPlayer(id=p.id, utility=float(v) if p.utility is not None else None)
+                for p, v in zip(self.portfolio.players, vector, strict=True)
+            )
+            for vector in vectors
+        )
 
     def solve(
         self, base: Plan, runner: FeatureRunner | None = None
@@ -491,5 +518,6 @@ class FittedUtility:
                 method="paired_managed_marginal",
                 players=tuple(FittedPlayer(id=p.id, utility=p.utility) for p in selected.players),
                 policy=self.pricing,
+                sensitivity=self.sensitivity(gradient, scale, alpha),
             )
         return selected, best, summary
