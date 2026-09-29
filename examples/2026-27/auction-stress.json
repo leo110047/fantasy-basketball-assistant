@@ -1,0 +1,26 @@
+{
+  "format_version": 1,
+  "regimes": [
+    "market",
+    "premium",
+    "category"
+  ],
+  "orders": [
+    "market",
+    "targets",
+    "mixed"
+  ],
+  "seeds": [
+    2701,
+    2702
+  ],
+  "premium_per_team": 3,
+  "premium_multiplier": 1.6,
+  "maximum_sweeps": 2,
+  "evidence": {
+    "kind": "Assumption",
+    "reference": "Paired causal auction continuation stress grid",
+    "as_of": "2026-09-27T12:51:24.362612+00:00",
+    "reason": "Finite scenario sensitivity, not event probabilities. Frozen local utility and public-state rebidding; hidden opponent preferences and nomination order affect only the simulated environment."
+  }
+}

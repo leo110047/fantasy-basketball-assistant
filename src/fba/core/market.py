@@ -213,22 +213,22 @@ def require_distribution(
     return parameters
 
 
-def price_market(
+def market_factors(
     league: LeagueRules,
-    parameters: MarketParameters | SampledMarketParameters,
     players: tuple[AuctionPlayer, ...],
     state: DraftState,
     room: tuple[TeamBudget, ...],
-) -> MarketResult:
-    parameters = require_distribution(parameters)
+) -> tuple[dict[str, float | None], tuple[AuctionPlayer, ...], float, float]:
     anchors = opening_anchors(league, players)
     for override in state.overrides:
         if override.market is not None:
             anchors[override.player_id] = override.market
     sold = {s.player_id for s in state.sales}
-    remaining = sorted(
-        (p for p in players if p.id not in sold and anchors[p.id] is not None),
-        key=lambda p: (-(anchors[p.id] or 0), -(p.fair or 0), p.id),
+    remaining = tuple(
+        sorted(
+            (p for p in players if p.id not in sold and anchors[p.id] is not None),
+            key=lambda p: (-(anchors[p.id] or 0), -(p.fair or 0), p.id),
+        )
     )
     slots = sum(t.slots for t in room)
     surplus = sum(t.budget - t.slots * league.minimum_bid for t in room if t.slots)
@@ -237,6 +237,18 @@ def price_market(
     cash = sum(t.budget for t in room if t.slots)
     inflation = cash / denominator if denominator > 0 else 1.0
     average_surplus = max(surplus / max(slots, 1), np.finfo(float).eps)
+    return anchors, remaining, inflation, average_surplus
+
+
+def price_market(
+    league: LeagueRules,
+    parameters: MarketParameters | SampledMarketParameters,
+    players: tuple[AuctionPlayer, ...],
+    state: DraftState,
+    room: tuple[TeamBudget, ...],
+) -> MarketResult:
+    parameters = require_distribution(parameters)
+    anchors, remaining, inflation, average_surplus = market_factors(league, players, state, room)
     shift = normalization_shift(league.teams, parameters.volatility)
     eligible = bidders_by_position(league, parameters, players, room, average_surplus)
     prices: dict[str, MarketPrice] = {}

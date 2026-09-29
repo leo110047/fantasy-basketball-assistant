@@ -12,6 +12,7 @@ from fba.adapters.calculation import calculate_file, evaluate_file
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.migration import migrate_projection
+from fba.adapters.paths import paths_file
 from fba.adapters.preparation import project
 from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot, publish
 from fba.apps.annual import finish_annual
@@ -141,6 +142,17 @@ def parser() -> argparse.ArgumentParser:
     )
     auction.add_argument("--output", required=True, type=Path)
     auction.add_argument("--stage", choices=("market", "equal", "fit"), required=True)
+    paths = commands.add_parser(
+        "auction-paths", help="Paired offline auction continuation stress grid"
+    )
+    paths.add_argument("input", type=Path)
+    paths.add_argument("--draft", required=True, type=Path)
+    paths.add_argument("--settings", required=True, type=Path)
+    paths.add_argument("--output", required=True, type=Path)
+    paths.add_argument("--player", required=True)
+    paths.add_argument("--ceiling", required=True, type=int)
+    paths.add_argument("--mode", required=True, choices=("equal", "fit"))
+    paths.add_argument("--workers", default="auto", type=worker_limit)
     prepare = commands.add_parser(
         "prepare-auction", help="Freeze an auction from a valued projection"
     )
@@ -179,6 +191,25 @@ def main() -> int:
     try:
         if args.command == "serve":
             serve(args.input, args.draft, args.log, args.workers, args.port)
+            return 0
+        if args.command == "auction-paths":
+            session = AuctionSession(args.workers)
+            try:
+                path = paths_file(
+                    args.input,
+                    args.draft,
+                    args.settings,
+                    args.output,
+                    args.player,
+                    args.ceiling,
+                    args.mode,
+                    session.caps,
+                    session.features,
+                    session.native() if args.mode == "fit" else None,
+                )
+            finally:
+                session.close()
+            print(json.dumps({"result": str(path)}))
             return 0
         if args.command == "draft-template":
             print(json.dumps({"draft": str(draft_template(args.input, args.mine, args.output))}))
