@@ -377,12 +377,21 @@ el("settings").addEventListener("click", openSettings);
 el("settingsForm").addEventListener("input", () => { settingsDirty = true; });
 el("settingsDialog").addEventListener("cancel", dismissSettings);
 el("cancelSettings").addEventListener("click", dismissSettings);
-el("settingsForm").addEventListener("submit", async e => {
-  e.preventDefault(); if (saving) return;
+async function applySettings(event) {
+  event.preventDefault(); if (saving) return;
   const teams = [...el("teamNames").querySelectorAll("input")].map(i => ({id:i.dataset.team,name:i.value.trim()}));
-  if (await save({...desk.state, teams, mine:el("mine").value}, el("mine").value === desk.state.mine)) { settingsDirty = false; el("settingsDialog").close(); el("settings").focus(); }
-  else { el("settingsError").textContent = "請保留設定並檢查頁面錯誤。"; el("settingsError").hidden = false; }
-});
+  if (teams.some(team => !team.name)) {
+    el("settingsError").textContent = "隊伍名稱不能空白。"; el("settingsError").hidden = false; return;
+  }
+  const fields = [...el("settingsForm").elements];
+  fields.forEach(field => { field.disabled = true; });
+  try {
+    if (await save({...desk.state, teams, mine:el("mine").value}, el("mine").value === desk.state.mine)) { settingsDirty = false; el("settingsDialog").close(); el("settings").focus(); }
+    else { el("settingsError").textContent = "請保留設定並檢查頁面錯誤。"; el("settingsError").hidden = false; }
+  } catch (error) { el("settingsError").textContent = error.message; el("settingsError").hidden = false; }
+  finally { fields.forEach(field => { field.disabled = false; }); }
+}
+el("settingsForm").addEventListener("submit", applySettings);
 el("closePlayer").addEventListener("click", () => el("playerDialog").close());
 el("streamingCompare").addEventListener("click", inspectStreaming);
 el("help").addEventListener("click", () => el("helpDialog").showModal());
