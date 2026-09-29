@@ -33,6 +33,9 @@ def validate_replay(
     available = (*rostered, *inputs.free_agents)
     if len(set(available)) != len(available) or not set(available) <= ids:
         raise DataError("replay.ownership: duplicate or unknown players")
+    projected = {p.id for p in auction.players if p.utility is not None and p.active}
+    if not set(available) <= projected:
+        raise DataError("replay.ownership: held and free-agent players require usable projections")
     if any(
         len(t.roster) != capacity(league) or t.streaming_slots > len(t.roster) for t in inputs.teams
     ):

@@ -123,12 +123,18 @@ class ManagedSeason:
                 )
         self.priority = np.array([catalog[i].utility or 0.0 for i in self.ids])
         self.value = self.priority / np.maximum(self.availability, parameters.availability_floor)
-        if known_health is not None and known_health.shape != (
-            parameters.health_samples,
-            self.d,
-            self.n,
+        if known_health is not None and (
+            parameters.health_samples != 1 or known_health.shape != (1, self.d, self.n)
         ):
-            raise DataError("management.health: wrong observed health dimensions")
+            raise DataError("management.health: observations require one matching health timeline")
+        self.observed_available = (
+            None if known_health is None else np.logical_or.accumulate(known_health[0], axis=0)
+        )
+        back, hurt = self.rates()
+        decay = np.broadcast_to(1 - back - hurt, (self.d + 1, self.n)).copy()
+        decay[0] = 1.0
+        # Integer game-clock powers use ordered products, avoiding platform libm pow rounding.
+        self.decay = np.cumprod(decay, axis=0)
         self.health = self.health_paths() if known_health is None else known_health.copy()
         if len(league.positions) > np.iinfo(np.uint64).bits:
             raise DataError("league.positions: exceeds native position mask width")
@@ -209,14 +215,18 @@ class ManagedSeason:
         end = min(self.d, day + (self.parameters.forecast_days if horizon is None else horizon))
         scheduled = self.games[day:end]
         counts = np.cumsum(scheduled, axis=0) - scheduled
-        back, hurt = self.rates()
-        probabilities = self.availability + (float(status) - self.availability) * np.power(
-            1 - back - hurt, counts
+        probabilities = (
+            self.availability
+            + (float(status) - self.availability) * self.decay[counts, np.arange(self.n)]
         )
         probabilities = np.clip(probabilities, 0, 1)
+        pending = (self.returns > day) & (not status)
+        if self.observed_available is not None:
+            # Only the public prefix through this decision can retire a preseason estimate.
+            pending &= ~self.observed_available[day]
         for j, d in enumerate(range(day, end)):
-            probabilities[j, d < self.returns] = 0
-            after = (self.returns > day) & (self.returns <= d)
+            probabilities[j, pending & (d < self.returns)] = 0
+            after = pending & (self.returns <= d)
             probabilities[j, after] = self.availability[after]
         if eligible_from > day:
             probabilities[: eligible_from - day] = 0
@@ -307,16 +317,11 @@ class ManagedSeason:
             )
             for p in ids:
                 dates.setdefault((w, p), []).append(d)
-        back, hurt = self.rates()
         clock = self.games.cumsum(axis=0)
         for (w, p), days in dates.items():
             ticks = clock[days, p]
             lags = np.abs(ticks[:, None] - ticks[None, :])
-            variance = (
-                self.availability[p]
-                * (1 - self.availability[p])
-                * np.power(1 - back[p] - hurt[p], lags).sum()
-            )
+            variance = self.availability[p] * (1 - self.availability[p]) * self.decay[lags, p].sum()
             correction[w] += variance * np.outer(self.raw[p], self.raw[p])
         delta = realised - realised.mean(axis=0)
         correction -= np.einsum("swi,swj->wij", delta, delta) / max(

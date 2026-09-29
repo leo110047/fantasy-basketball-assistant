@@ -144,6 +144,8 @@ class NativeKernel:
             else 0
         )
         width = 8 + arrays.roster_capacity + arrays.il_eligible.shape[-1] + len(arrays.slots)
+        if capacity * width > np.iinfo(np.int32).max:
+            raise DataError("management.trace: native integer capacity exceeded")
         events = np.full((capacity, width), -1, dtype=np.int32)
         emitted = np.zeros(1, dtype=np.int32)
         flex = np.array(tactics.policy.streaming_slots if tactics else (), dtype=np.int32)
@@ -251,7 +253,7 @@ def validate_tactics(
         len(t.policy.streaming_slots) != len(rosters)
         or any(k > len(r) for k, r in zip(t.policy.streaming_slots, rosters, strict=True))
         or not 0 <= t.policy.reserve_adds <= a.add_limit
-        or t.candidate_limit < 1
+        or not 1 <= t.candidate_limit <= np.iinfo(np.int32).max
         or t.minimum_gain < 0
         or t.opportunity_cost < 0
         or not np.isfinite([t.minimum_gain, t.opportunity_cost]).all()
@@ -289,6 +291,7 @@ def validate_arrays(
     if a.il_eligible.ndim != 3 or a.slots.ndim != 1:
         raise DataError("management: invalid eligibility or slot axes")
     samples, days, n = a.health.shape
+    validate_native_integers(a, len(rosters))
     if (
         min(samples, days, n, a.week_count, a.roster_capacity, len(a.slots), len(rosters)) < 1
         or min(a.add_limit, a.waiver_days) < 0
@@ -336,3 +339,38 @@ def validate_arrays(
         or any(p < 0 or p >= n for p in (*owned, *pool))
     ):
         raise DataError("management.rosters: invalid ownership, index, or capacity")
+
+
+def validate_native_integers(a: SeasonArrays, teams: int) -> None:
+    samples, days, players = a.health.shape
+    limit = np.iinfo(np.int32).max
+    values = {
+        "samples": samples,
+        "days": days,
+        "players": players,
+        "teams": teams,
+        "week_count": a.week_count,
+        "roster_capacity": a.roster_capacity,
+        "slots": len(a.slots),
+        "injury_slots": a.il_eligible.shape[-1],
+        "add_limit": a.add_limit,
+        "waiver_days": a.waiver_days,
+    }
+    for name, value in values.items():
+        if (
+            not isinstance(value, (int, np.integer))
+            or isinstance(value, (bool, np.bool_))
+            or not 0 <= value <= limit
+        ):
+            raise DataError(f"management.{name}: outside native integer range")
+    # The current ABI also performs flattened offsets and release dates in signed int32.
+    offsets = (
+        days * players * max(1, a.il_eligible.shape[-1]),
+        teams * a.roster_capacity,
+        samples * teams * a.week_count * 3,
+        days + samples,
+        days + a.waiver_days,
+        days * (a.roster_capacity + 1),
+    )
+    if any(value > limit for value in offsets):
+        raise DataError("management: native integer range exceeded by offsets or rule arithmetic")

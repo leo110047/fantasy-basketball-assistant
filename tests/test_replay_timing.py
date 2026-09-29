@@ -59,6 +59,120 @@ def timing_manager(kernel, effective, schedule, utilities):
     )
 
 
+def test_public_availability_retires_stale_return_date_without_reading_future(kernel):
+    from datetime import timedelta
+
+    import numpy as np
+
+    from fba.contracts.auction import AuctionPlayer
+
+    original = timing_manager(kernel, "same_day", ((0, 1, 2), (0, 1, 2)), (10, 1))
+    players = tuple(
+        p.model_copy(update={"return_on": original.days[-1] + timedelta(days=2)})
+        for p in original.players
+    )
+    catalog = tuple(
+        AuctionPlayer(
+            id=p.id,
+            name=p.id,
+            positions=original.league.positions,
+            positions_confirmed=True,
+            active=True,
+            projected_price=1.0,
+            fair=1.0,
+            utility=10.0,
+        )
+        for p in players
+    )
+    health = np.zeros((1, original.d, original.n), dtype=bool)
+    health[0, 1, 0] = True
+
+    def observed(tape):
+        return ManagedSeason(
+            original.league,
+            original.parameters,
+            ManagementInput(stat_ids=original.stat_ids, sampling_ids=original.ids, players=players),
+            catalog,
+            kernel,
+            tape,
+        )
+
+    manager = observed(health)
+    assert manager.forecast(0, False, 1)[0] == 0
+    assert manager.forecast(1, True, 1)[0] == 1
+    # The old hint stays retired if a subsequent public report says unavailable again.
+    assert manager.forecast(2, False, 1)[0] == 0
+    assert manager.forecast(1, False, 2)[0] > manager.forecast(1, False, 2)[1]
+    changed = health.copy()
+    changed[0, 2:] = True
+    later = observed(changed)
+    for day in (0, 1):
+        for status in (False, True):
+            np.testing.assert_array_equal(
+                manager.forecast(day, status), later.forecast(day, status)
+            )
+
+
+def test_available_star_is_not_streamed_out_due_to_old_return_estimate(kernel):
+    from datetime import timedelta
+
+    source, auction = replay_fixture(kernel)
+    star = source.teams[0].roster[0]
+    source = source.model_copy(
+        update={
+            "health": tuple(
+                e.model_copy(update={"available": True, "status": "available"})
+                for e in source.health
+            ),
+            "upgrades": True,
+        }
+    )
+    auction = auction.model_copy(
+        update={
+            "players": tuple(
+                p.model_copy(update={"utility": 1e6}) if p.id == star else p
+                for p in auction.players
+            ),
+            "management": auction.management.model_copy(
+                update={
+                    "players": tuple(
+                        p.model_copy(
+                            update={
+                                "return_on": source.decision_times[-1].date() + timedelta(days=1)
+                            }
+                        )
+                        if p.id == star
+                        else p
+                        for p in auction.management.players
+                    ),
+                }
+            ),
+        }
+    )
+    result = replay(source, auction, "0" * 64, kernel)
+    index = result.player_ids.index(star)
+    assert not [e for e in result.events if e.team == 0 and e.dropped == index]
+
+
+def test_replay_rejects_missing_utility_in_rosters_and_free_agents(kernel):
+    import pytest
+
+    from fba.contracts.base import DataError
+
+    source, auction = replay_fixture(kernel)
+    for player_id in (source.teams[0].roster[0], source.free_agents[0]):
+        changed = auction.model_copy(
+            update={
+                "players": tuple(
+                    p.model_copy(update={"utility": None}) if p.id == player_id else p
+                    for p in auction.players
+                ),
+            }
+        )
+        with pytest.raises(DataError, match="projection"):
+            replay(source, changed, "0" * 64, kernel)
+
+
 @pytest.mark.parametrize("effective", ["same_day", "next_day"])
 @pytest.mark.parametrize("upgrades", [False, True])
 def test_acquisition_ignores_games_before_effective_date(kernel, effective, upgrades):

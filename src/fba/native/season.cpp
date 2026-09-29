@@ -119,6 +119,8 @@ class Simulation {
     Candidates short_candidates, long_candidates, replacement_candidates;
     Seats eligible_buffer;
     std::vector<int> vacant;
+    std::vector<int> weekly_games;
+    std::vector<double> weekly_priority;
 
     void emit(int kind, int old, int added, const std::vector<int>& started = {}) {
         const auto* o = x.options;
@@ -391,17 +393,27 @@ class Simulation {
         addition(kind);
     }
 
+    void week_priorities(int day) {
+        weekly_games.assign(x.N, 0);
+        weekly_priority.resize(x.N);
+        for (int d = day; d < x.D && x.week[d] == x.week[day]; ++d)
+            for (int p = 0; p < x.N; ++p) weekly_games[p] += x.games[d*x.N+p];
+        for (int p = 0; p < x.N; ++p) weekly_priority[p] = x.priority[p] * weekly_games[p];
+    }
+
+    void lock_lineup(Team& team, int day, const uint8_t* today) {
+        std::vector<int> playing;
+        for (auto seat : team.active) {
+            if (effective[seat.player] <= day && today[seat.player] && weekly_games[seat.player])
+                playing.push_back(seat.player);
+        }
+        team.locked = starters(playing, x.L, x.masks, x.slots, weekly_priority.data());
+    }
+
     void score(int t, int day, int sample, const uint8_t* today) {
         auto& team = teams[t];
         std::vector<int> playing;
-        if (x.weekly_lock && x.lock_days[day]) {
-            for (auto seat : team.active) {
-                if (effective[seat.player] <= day && today[seat.player])
-                    playing.push_back(seat.player);
-            }
-            team.locked = starters(playing, x.L, x.masks, x.slots, x.priority);
-            playing.clear();
-        }
+        if (x.weekly_lock && x.lock_days[day]) lock_lineup(team, day, today);
         for (auto seat : team.active) {
             int p = seat.player;
             bool locked = !x.weekly_lock || std::find(team.locked.begin(), team.locked.end(), p) != team.locked.end();
@@ -467,6 +479,7 @@ public:
             const auto* today = x.health + (size_t(sample)*x.D+day)*x.N;
             const auto* ranked = x.order + (size_t(sample)*x.D+day)*x.N;
             current_day = day; current_sample = sample;
+            if (x.weekly_lock && x.lock_days[day]) week_priorities(day);
             ++pool_generation; // Public health, waiver eligibility and rankings can change daily.
             if (!day || x.period[day] != x.period[day-1]) for (auto& team : teams) {
                 team.used = 0; team.injury_adds = 0; team.streamed.clear();

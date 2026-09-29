@@ -163,6 +163,63 @@ def small_arrays():
     )
 
 
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("add_limit", 2**32),
+        ("waiver_days", 2**31 - 1),
+        ("week_count", 2**32),
+        ("roster_capacity", 2**32),
+        ("add_limit", 1.5),
+        ("waiver_days", True),
+    ],
+)
+def test_native_rejects_unrepresentable_integer_rules_before_calling_abi(
+    kernel, monkeypatch, field, value
+):
+    def forbidden(*_args):
+        pytest.fail("invalid integer reached native ABI")
+
+    monkeypatch.setattr(kernel, "function", forbidden)
+    with pytest.raises(DataError, match="native.*integer|integer.*native"):
+        kernel(replace(small_arrays(), **{field: value}), ((0,),), (1, 2))
+
+
+def test_native_accepts_largest_safe_waiver_delay_and_add_limit(kernel):
+    a = replace(small_arrays(), waiver_days=2**31 - 1 - 3, add_limit=2**31 - 1)
+    assert kernel(a, ((0,),), (1, 2)).ravel().tolist() == [1.0, 2.0, 0.0]
+
+
+def test_weekly_lineup_uses_remaining_week_games_and_excludes_zero_game_players(kernel):
+    a = replace(
+        small_arrays(),
+        health=np.ones((1, 3, 3), dtype=np.uint8),
+        games=np.array([[0, 1, 1], [0, 0, 1], [0, 0, 1]], dtype=np.uint8),
+        priority=np.array([100.0, 3.0, 2.0]),
+        il_eligible=np.zeros((3, 3, 0), dtype=np.uint8),
+        roster_capacity=3,
+        weekly_lock=True,
+    )
+    result = kernel.run(a, ((0, 1, 2),), (), None, True)
+    assert result.counts.ravel().tolist() == [0.0, 0.0, 3.0]
+    assert all(e.started == (2,) for e in result.events if e.kind == "lineup")
+    daily = kernel(replace(a, weekly_lock=False), ((0, 1, 2),), ())
+    assert daily.ravel().tolist() == [0.0, 1.0, 2.0]
+
+
+def test_forecast_is_independent_of_platform_power_last_bit(kernel, monkeypatch):
+    manager, _, _ = reference_manager(kernel)
+    before = np.array([manager.forecast(d, False) for d in range(manager.d)])
+    power = np.power
+
+    def last_bit(*args, **kwargs):
+        return np.nextafter(power(*args, **kwargs), np.inf)
+
+    monkeypatch.setattr(np, "power", last_bit)
+    after = np.array([manager.forecast(d, False) for d in range(manager.d)])
+    np.testing.assert_array_equal(before, after)
+
+
 def test_injury_return_acquisition_delay_and_weekly_locked_seats(kernel):
     a = small_arrays()
     assert kernel(a, ((0,),), (1, 2)).ravel().tolist() == [1.0, 2.0, 0.0]
