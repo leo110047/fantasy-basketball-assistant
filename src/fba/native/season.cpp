@@ -163,12 +163,34 @@ class Simulation {
         }
     }
 
+    bool move_injury(Team& team, size_t index, std::vector<bool>& visited,
+                     const uint8_t* today) {
+        int p = team.injured[index].player;
+        for (int group = 0; group < x.I; ++group) {
+            if (visited[group] || !x.eligible[(current_day*x.N+p)*x.I+group]) continue;
+            visited[group] = true;
+            auto other = std::find_if(team.injured.begin(), team.injured.end(),
+                [&](Seat q) { return q.group == group && !today[q.player]; });
+            if (other != team.injured.end() &&
+                !move_injury(team, size_t(other-team.injured.begin()), visited, today)) continue;
+            team.injured[index].group = group;
+            return true;
+        }
+        return false;
+    }
+
     void returns(Team& team, int day, const uint8_t* today) {
         for (size_t i = 0; i < team.injured.size();) {
             auto seat = team.injured[i];
             int p = seat.player;
             // A changed public designation may make an occupied injury slot ineligible.
             if (!today[p] && x.eligible[(day*x.N+p)*x.I+seat.group]) { ++i; continue; }
+            if (!today[p]) {
+                std::vector<bool> visited(x.I, false);
+                team.injured[i].group = -1;
+                if (move_injury(team, i, visited, today)) { ++i; continue; }
+                team.injured[i].group = seat.group;
+            }
             team.injured.erase(team.injured.begin() + i);
             auto same = std::find_if(team.active.begin(), team.active.end(),
                                     [&](Seat q) { return q.origin == seat.origin; });
@@ -197,20 +219,17 @@ class Simulation {
             return x.value[p] != x.value[q] ? x.value[p] > x.value[q] : p < q;
         });
         for (int p : hurt) {
-            for (int group = 0; group < x.I; ++group) {
-                if (!x.eligible[(current_day*x.N+p)*x.I + group] || std::any_of(
-                    team.injured.begin(), team.injured.end(),
-                    [&](Seat q) { return q.group == group; })) continue;
-                auto held = std::find_if(team.active.begin(), team.active.end(),
-                                        [&](Seat q) { return q.player == p; });
-                Seat seat = *held;
-                seat.group = group;
-                team.injured.push_back(seat);
-                team.active.erase(held);
-                team.legal_dirty = true;
-                emit(Injury, p, -1);
-                break;
+            auto held = std::find_if(team.active.begin(), team.active.end(),
+                                    [&](Seat q) { return q.player == p; });
+            team.injured.push_back(*held);
+            std::vector<bool> visited(x.I, false);
+            if (!move_injury(team, team.injured.size()-1, visited, today)) {
+                team.injured.pop_back();
+                continue;
             }
+            team.active.erase(held);
+            team.legal_dirty = true;
+            emit(Injury, p, -1);
         }
     }
 
@@ -403,6 +422,15 @@ class Simulation {
         for (auto seat : team.active) {
             if (seat_seen[seat.origin]) throw std::runtime_error("Duplicate active seat");
             seat_seen[seat.origin] = true;
+        }
+        for (size_t i = 0; i < team.injured.size(); ++i) {
+            auto seat = team.injured[i];
+            if (seat.group < 0 || seat.group >= x.I ||
+                !x.eligible[(current_day*x.N+seat.player)*x.I+seat.group])
+                throw std::runtime_error("Invalid injury slot eligibility");
+            if (std::any_of(team.injured.begin(), team.injured.begin()+i,
+                            [&](Seat other) { return other.group == seat.group; }))
+                throw std::runtime_error("Duplicate injury slot");
         }
     }
 

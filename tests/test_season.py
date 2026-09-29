@@ -193,6 +193,83 @@ def test_changed_public_designation_releases_ineligible_injury_slot(kernel):
     assert all(not e.injured for e in result.events if e.kind == "lineup" and e.day >= 1)
 
 
+def test_injury_designation_transfers_without_releasing_replacement_or_spending_add(kernel):
+    from test_managed import small_arrays
+
+    a = small_arrays()
+    eligible = np.ones((3, 3, 2), dtype=np.uint8)
+    eligible[1, 0, 0] = 0
+    a = replace(a, il_eligible=eligible, add_limit=2)
+    a.health[0, 1, 0] = 0
+    result = kernel.run(a, ((0,),), (1, 2), None, True)
+    assert result.adds.sum() == 1
+    assert not [e for e in result.events if e.day == 1 and e.kind != "lineup"]
+    lineup = next(e for e in result.events if e.day == 1 and e.kind == "lineup")
+    assert lineup.active == (1,)
+    assert lineup.injured == (0,)
+    assert lineup.started == (1,)
+
+
+def test_injury_transfer_can_reassign_an_occupied_flexible_slot(kernel):
+    from test_managed import small_arrays
+
+    a = small_arrays()
+    health = np.ones((1, 3, 4), dtype=np.uint8)
+    health[0, :2, :2] = 0
+    eligible = np.ones((3, 4, 2), dtype=np.uint8)
+    eligible[1, 0, 0] = 0  # first player now requires the second injury slot
+    a = replace(
+        a,
+        health=health,
+        games=np.ones((3, 4), dtype=np.uint8),
+        masks=np.ones(4, dtype=np.uint64),
+        priority=np.array([4.0, 3.0, 2.0, 1.0]),
+        value=np.array([4.0, 3.0, 2.0, 1.0]),
+        orders=np.tile(np.arange(4, dtype=np.int32), (1, 3, 1)),
+        il_eligible=eligible,
+        roster_capacity=2,
+        add_limit=4,
+    )
+    result = kernel.run(a, ((0, 1),), (2, 3), None, True)
+    assert result.adds.sum() == 2
+    assert not [e for e in result.events if e.day == 1 and e.kind != "lineup"]
+    lineup = next(e for e in result.events if e.day == 1 and e.kind == "lineup")
+    assert set(lineup.active) == {2, 3}
+    assert set(lineup.injured) == {0, 1}
+
+
+@pytest.mark.parametrize("changed_day", [0, 1])
+def test_injury_slot_matching_handles_every_three_player_assignment(kernel, changed_day):
+    from itertools import permutations
+
+    from test_managed import small_arrays
+
+    health = np.ones((1, 3, 6), dtype=np.uint8)
+    health[0, :2, :3] = 0
+    for assignment in permutations(range(3)):
+        eligible = np.ones((3, 6, 3), dtype=np.uint8)
+        eligible[changed_day, :3] = 0
+        eligible[changed_day, np.arange(3), assignment] = 1
+        a = replace(
+            small_arrays(),
+            health=health,
+            games=np.ones((3, 6), dtype=np.uint8),
+            masks=np.ones(6, dtype=np.uint64),
+            priority=np.arange(6, 0, -1, dtype=float),
+            value=np.arange(6, 0, -1, dtype=float),
+            orders=np.tile(np.arange(6, dtype=np.int32), (1, 3, 1)),
+            il_eligible=eligible,
+            roster_capacity=3,
+            add_limit=6,
+        )
+        result = kernel.run(a, ((0, 1, 2),), (3, 4, 5), None, True)
+        assert result.adds.sum() == 3
+        assert not [e for e in result.events if e.day == 1 and e.kind != "lineup"]
+        assert all(
+            set(e.injured) == {0, 1, 2} for e in result.events if e.kind == "lineup" and e.day < 2
+        )
+
+
 def test_shared_pool_candidate_limit_preserves_unsorted_input_order(kernel):
     from test_managed import small_arrays
 
