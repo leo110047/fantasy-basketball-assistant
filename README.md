@@ -4,6 +4,8 @@
 
 需要 `uv` 和 C++17 編譯器。`scripts/check` 建立鎖定的 Python 環境並跑全部檢查。
 
+臨時目錄禁止執行的部署，可將相同原始碼與工具鏈編譯出的 `season.so` 放在安裝套件的 `fba/native/<system>-<machine>/`（例如 `darwin-arm64`）。啟動仍會重編譯並逐位元核對，一致才載入封裝檔；不一致會停止計算。編譯產物不進 Git。
+
 CI 用 20 個新成交狀態，在同一環境比較並行與單程序參考路徑：結果必須完全相同，暖機後 p95 不得慢超過 10%。選秀前仍須在使用的 Mac 完整重播 140 筆成交與撤銷，檢查絕對秒數門檻；CI 的相對比較不代表已通過此項驗收。
 
 換季時複製 `examples/2026-27/`，更新規則、日期、來源與快照截止時間，放入 Yahoo CSV、明確的球員 ID 對照及人工調整檔。核對設定裡標記的 `Assumption`；欄位由 `design/schemas/` 定義。報價空白或 `-` 保持缺值，不按姓名猜配球員。
@@ -63,4 +65,4 @@ uv run fba migrate-projection /path/old-input.json --model /path/model.json \
 
 重播輸入格式 1 使用固定賽程；格式 2 的 `decision_times` 須涵蓋設定賽季的每個聯盟當地日期，並提供 `schedules`（無更新時為 `[]`）。每筆賽程更新含 `player_id`、`published_at`、`games: [{"day":"YYYY-MM-DD","tipoff":"帶時區的開賽時間"}]`、`source_artifact`，完整替換該球員賽程，保留已結束日期；來源檔同樣使用 `{"format_version":1,"observations":[...]}` 並凍結雜湊。決策只讀當時已公布的更新，實績按最後實際賽程提供；取消的原日期不要填假 DNP，改期或新增日期須提供實績。
 
-歷史季前資料不足時只能標為 `retrospective`，不能宣稱當時已知；目前真實歷史資料仍缺完整公開時間證明。每週輔助的預留介面在 `design/contracts.pyi`。交付報告、原始資料與快照留在 Git 外。
+歷史季前資料不足時只能標為 `retrospective`，不能宣稱當時已知；目前真實歷史資料仍缺完整公開時間證明。`design/contracts.pyi` 引用正式資料型別，另保留尚未實作的每週輔助介面。交付報告、原始資料與快照留在 Git 外。

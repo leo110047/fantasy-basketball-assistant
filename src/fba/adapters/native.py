@@ -1,5 +1,6 @@
 import ctypes
 import hashlib
+import platform
 import shutil
 import subprocess
 import tempfile
@@ -41,10 +42,12 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
         "-shared",
         str(source),
         "-o",
-        str(path),
+        path.name,
     )
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
+        result = subprocess.run(
+            command, cwd=build.name, capture_output=True, text=True, timeout=60, check=False
+        )
     except (OSError, subprocess.TimeoutExpired) as exc:
         build.cleanup()
         raise SolverError(f"management: native compilation failed: {exc}") from exc
@@ -52,6 +55,22 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
         build.cleanup()
         raise SolverError(f"management: native compilation failed: {result.stderr}")
     return build, path
+
+
+def verified_load_path(compiled: Path) -> Path:
+    target = f"{platform.system().lower()}-{platform.machine().lower()}"
+    packaged = Path(__file__).parents[1] / "native" / target / "season.so"
+    if not packaged.exists():
+        return compiled
+    if (
+        hashlib.sha256(compiled.read_bytes()).digest()
+        != hashlib.sha256(packaged.read_bytes()).digest()
+    ):
+        raise SolverError(
+            "management: packaged native bytes differ from the fresh build; "
+            "repackage with the same source and local toolchain"
+        )
+    return packaged
 
 
 class NativeOptions(ctypes.Structure):
@@ -79,15 +98,16 @@ class NativeKernel:
     def __init__(self, compiled: NativeArtifact | None = None) -> None:
         self.build: tempfile.TemporaryDirectory[str] | None = None
         source = Path(__file__).parents[1] / "native/season.cpp"
-        if compiled is None:
-            self.build, path = compile_kernel()
-            compiled = NativeArtifact(
-                path=str(path),
-                source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
-                binary_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-            )
-        self.artifact = compiled
         try:
+            if compiled is None:
+                self.build, path = compile_kernel()
+                path = verified_load_path(path)
+                compiled = NativeArtifact(
+                    path=str(path),
+                    source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    binary_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                )
+            self.artifact = compiled
             if (
                 hashlib.sha256(source.read_bytes()).hexdigest() != compiled.source_sha256
                 or hashlib.sha256(Path(compiled.path).read_bytes()).hexdigest()

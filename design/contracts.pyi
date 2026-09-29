@@ -1,313 +1,116 @@
-"""Stage 0 interface design only; not a runtime module or implementation."""
+"""Runtime contracts are re-exported; only weekly advice below remains design-only.
+
+The future advisor shares core.projection, core.valuation and core.managed/season
+with the auction and replay. Its adapter must freeze and verify all source bytes,
+filter observations by published_at <= as_of, and reject missing required inputs.
+No provider lookup or future replay outcomes may enter the decision function.
+"""
+
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Generic, Literal, NewType, TypeAlias, TypeVar
+from typing import Literal
 
-PlayerId = NewType('PlayerId', str)
-TeamId = NewType('TeamId', str)
-StatId = NewType('StatId', str)
-CategoryId = NewType('CategoryId', str)
-Sha256 = NewType('Sha256', str)
-PeriodId = NewType('PeriodId', str)
-T = TypeVar('T')
-
-@dataclass(frozen=True)
-class ConfigRef:
-    schema_id: str
-    input_sha256: Sha256
-    effective_sha256: Sha256
-
-@dataclass(frozen=True)
-class ConfigBundle:
-    league: ConfigRef
-    season: ConfigRef
-    model: ConfigRef
-
-# Runtime config models own the generated schemas in stage 1.
-# These names denote immutable instances, never JSON dicts.
-class LeagueRules: ...
-class SeasonConfig: ...
-class ModelConfig: ...
-
-@dataclass(frozen=True)
-class ParsedConfig:
-    league: LeagueRules
-    season: SeasonConfig
-    model: ModelConfig
-    refs: ConfigBundle
-
-class ValidatedConfig(ParsedConfig): ...
-
-@dataclass(frozen=True)
-class Provenance:
-    source_id: str
-    raw_sha256: Sha256
-    published_at: datetime
-    effective_at: datetime
-    retrieved_at: datetime
-    delivery: Literal['fetch', 'manual']
-    assumption: str | None
-
-@dataclass(frozen=True)
-class KnownQuote:
-    amount: float
-    provenance: Provenance
-
-@dataclass(frozen=True)
-class MissingQuote:
-    reason: str
-
-Quote: TypeAlias = KnownQuote | MissingQuote
-
-@dataclass(frozen=True)
-class ProviderIdentity:
-    provider: str
-    provider_player_id: str
-    provenance: Provenance
-
-@dataclass(frozen=True)
-class Player:
-    id: PlayerId
-    name: str
-    identities: tuple[ProviderIdentity, ...]
-    positions: tuple[str, ...]
-    position_provenance: Provenance
-    nba_team_id: str | None
-    team_provenance: Provenance
-    projected_quote: Quote
-    average_quote: Quote
-    history_status: Literal['available', 'no_previous_season_history', 'incomplete']
-
-@dataclass(frozen=True)
-class StatValue:
-    stat_id: StatId
-    value: float
-
-@dataclass(frozen=True)
-class Game:
-    id: str
-    home_team_id: str
-    away_team_id: str
-    tipoff: datetime
-    local_date: date
-    status: Literal['scheduled', 'completed', 'postponed', 'cancelled']
-    provenance: Provenance
-
-@dataclass(frozen=True)
-class PlayerGame:
-    player_id: PlayerId
-    game_id: str
-    team_at_game: str
-    stats: tuple[StatValue, ...]
-    provenance: Provenance
-
-@dataclass(frozen=True)
-class ForecastObservation:
-    player_id: PlayerId
-    per_game: tuple[StatValue, ...]
-    expected_games: float
-    provenance: Provenance
-
-@dataclass(frozen=True)
-class SnapshotArtifact:
-    relative_path: str
-    sha256: Sha256
-    bytes: int
-    media_type: str
-    provenance: Provenance
-
-@dataclass(frozen=True)
-class Calibration:
-    training_season_id: str
-    training_cutoff: datetime
-    training_inputs: tuple[Sha256, ...]
-    method: str
-    coefficients: tuple[float, ...]
-    sample_size: int
-
-@dataclass(frozen=True)
-class Snapshot:
-    format_version: int
-    version: str
-    sha256: Sha256
-    as_of: datetime
-    config: ConfigBundle
-    artifacts: tuple[SnapshotArtifact, ...]
-    players: tuple[Player, ...]
-    schedule: tuple[Game, ...]
-    history: tuple[PlayerGame, ...]
-    forecasts: tuple[ForecastObservation, ...]
-    calibration: Calibration
-
-@dataclass(frozen=True)
-class Sale:
-    id: str
-    sequence: int
-    player_id: PlayerId
-    buyer: TeamId
-    amount: int
-
-@dataclass(frozen=True)
-class Team:
-    id: TeamId
-    name: str
-
-@dataclass(frozen=True)
-class PlayerOverride:
-    player_id: PlayerId
-    market: KnownQuote | None
-    positions: tuple[str, ...] | None
-    provenance: Provenance
-
-@dataclass(frozen=True)
-class DraftState:
-    format_version: int
-    draft_id: str
-    revision: int
-    config: ConfigBundle
-    snapshot_sha256: Sha256
-    mine: TeamId
-    teams: tuple[Team, ...]
-    sales: tuple[Sale, ...]
-    watch: tuple[PlayerId, ...]
-    overrides: tuple[PlayerOverride, ...]
-
-@dataclass(frozen=True)
-class Projection:
-    player_id: PlayerId
-    stat_axis: tuple[StatId, ...]
-    means: tuple[float, ...]
-    covariance: tuple[tuple[float, ...], ...]
-    expected_games: float
-    healthy_games: float
-    evidence: tuple[Provenance, ...]
-
-@dataclass(frozen=True)
-class CategoryValue:
-    category_id: CategoryId
-    value: float
-
-@dataclass(frozen=True)
-class Valuation:
-    player_id: PlayerId
-    fair: float
-    utility: float
-    z: tuple[CategoryValue, ...]
-
-@dataclass(frozen=True)
-class Draws:
-    algorithm: str
-    seed: int
-    sha256: Sha256
-    player_axis: tuple[PlayerId, ...]
-    values: tuple[tuple[float, ...], ...]
-
-@dataclass(frozen=True)
-class MarketPrice:
-    player_id: PlayerId
-    expected: Quote
-    acquisition: Quote
-    planning_cost: int | None  # Only absent with an explicit MissingQuote reason.
-
-@dataclass(frozen=True)
-class SlotAssignment:
-    slot_id: str
-    player_id: PlayerId
-
-@dataclass(frozen=True)
-class Plan:
-    players: tuple[PlayerId, ...]
-    assignments: tuple[SlotAssignment, ...]
-    cost: int
-    utility: float
-
-@dataclass(frozen=True)
-class Infeasible:
-    reason: str
-    constraint_paths: tuple[str, ...]
-
-@dataclass(frozen=True)
-class Cap:
-    player_id: PlayerId
-    amount: int
-    buy_plan: Plan
-    skip_plan: Plan | Infeasible
-
-@dataclass(frozen=True)
-class UnavailableCap:
-    player_id: PlayerId
-    reason: str
-
-@dataclass(frozen=True)
-class AuctionResult:
-    market: tuple[MarketPrice, ...]
-    caps: tuple[Cap | UnavailableCap, ...]
-    plan: Plan | Infeasible
-    nomination_ids: tuple[PlayerId, ...]
+from fba.contracts.auction import Assignment as Assignment
+from fba.contracts.auction import AuctionInput as AuctionInput
+from fba.contracts.auction import AuctionResult as AuctionResult
+from fba.contracts.auction import Cap as Cap
+from fba.contracts.auction import DraftOverride as DraftOverride
+from fba.contracts.auction import DraftState as DraftState
+from fba.contracts.auction import DraftTeam as DraftTeam
+from fba.contracts.auction import Infeasible as Infeasible
+from fba.contracts.auction import MarketPrice as MarketPrice
+from fba.contracts.auction import Plan as Plan
+from fba.contracts.auction import Sale as Sale
+from fba.contracts.auction import SolverError as SolverError
+from fba.contracts.backtest import HealthObservation as HealthObservation
+from fba.contracts.backtest import ScheduleObservation as ScheduleObservation
+from fba.contracts.base import ConfigError as ConfigError
+from fba.contracts.base import DataError as DataError
+from fba.contracts.base import IdentityError as IdentityError
+from fba.contracts.base import VersionError as VersionError
+from fba.contracts.config import ConfigBundle as ConfigBundle
+from fba.contracts.config import ConfigRef as ConfigRef
+from fba.contracts.config import LeagueRules as LeagueRules
+from fba.contracts.config import ModelDocument as ModelDocument
+from fba.contracts.config import SeasonConfig as SeasonConfig
+from fba.contracts.config import ValidatedConfig as ValidatedConfig
+from fba.contracts.data import Artifact as Artifact
+from fba.contracts.data import Calibration as Calibration
+from fba.contracts.data import Digest as Digest
+from fba.contracts.data import Forecast as Forecast
+from fba.contracts.data import Game as Game
+from fba.contracts.data import Identity as Identity
+from fba.contracts.data import Player as Player
+from fba.contracts.data import PlayerGame as PlayerGame
+from fba.contracts.data import Provenance as Provenance
+from fba.contracts.data import Snapshot as Snapshot
+from fba.contracts.data import StatValue as StatValue
+from fba.contracts.projection import CalculationResult as CalculationResult
+from fba.contracts.projection import CategoryScore as CategoryScore
+from fba.contracts.projection import PlayerValue as PlayerValue
+from fba.contracts.projection import Projected as Projected
+from fba.contracts.season import ManagementInput as ManagementInput
+from fba.contracts.season import SeasonEvent as SeasonEvent
 
 @dataclass(frozen=True)
 class InjuryPlacement:
-    player_id: PlayerId
+    player_id: str
     group_id: str
 
 @dataclass(frozen=True)
 class AddsUsed:
-    period_id: PeriodId
+    period_id: str
     injury: int
     upgrade: int
     stream: int
 
 @dataclass(frozen=True)
 class Roster:
-    team_id: TeamId
-    active: tuple[PlayerId, ...]
+    team_id: str
+    active: tuple[str, ...]
     injured: tuple[InjuryPlacement, ...]
-    locked_lineup: tuple[SlotAssignment, ...]
+    locked_lineup: tuple[Assignment, ...]
     lock_until: datetime
     adds_used: AddsUsed
 
 @dataclass(frozen=True)
-class Availability:
-    player_id: PlayerId
-    designation: str
-    playability: Literal['available', 'out', 'unknown']
-    expected_return: datetime | None
-    provenance: Provenance
-
-@dataclass(frozen=True)
 class KnownAtDay:
     as_of: datetime
-    # As-of identities, eligible positions and NBA teams; no external lookup.
+    # As-of eligibility and team identities; frozen source artifacts are required.
     players: tuple[Player, ...]
     schedule: tuple[Game, ...]
-    availability: tuple[Availability, ...]
-    projections: tuple[Projection, ...]
+    schedule_updates: tuple[ScheduleObservation, ...]
+    health: tuple[HealthObservation, ...]
+    projections: tuple[Projected, ...]
+    management: ManagementInput
+    artifacts: tuple[Artifact, ...]
 
 @dataclass(frozen=True)
 class AddDrop:
-    team_id: TeamId
-    add: PlayerId
-    drop: PlayerId | None
+    team_id: str
+    add: str
+    drop: str | None
     effective_at: datetime
-    purpose: Literal['injury', 'upgrade', 'stream']
+    purpose: Literal["injury", "upgrade", "stream"]
 
 @dataclass(frozen=True)
 class ILMove:
-    team_id: TeamId
-    player_id: PlayerId
+    team_id: str
+    player_id: str
     target_group: str | None
     effective_at: datetime
 
 @dataclass(frozen=True)
 class WaiverRelease:
-    player_id: PlayerId
+    player_id: str
     eligible_at: datetime
 
 @dataclass(frozen=True)
 class SeasonState:
     day: date
+    # Includes both mine and opponent, with IL and adds used in the shared period.
     rosters: tuple[Roster, ...]
-    free_agents: tuple[PlayerId, ...]
+    free_agents: tuple[str, ...]
     pending: tuple[AddDrop, ...]
     waivers: tuple[WaiverRelease, ...]
 
@@ -315,80 +118,36 @@ class SeasonState:
 class DailyDecision:
     adds: tuple[AddDrop, ...]
     il_moves: tuple[ILMove, ...]
-    lineups: tuple[tuple[SlotAssignment, ...], ...]
+    lineups: tuple[tuple[Assignment, ...], ...]
 
 @dataclass(frozen=True)
 class WeeklyAdviceInput:
     config: ValidatedConfig
-    snapshot_sha256: Sha256
-    mine: TeamId
-    opponent: TeamId
+    snapshot_sha256: Digest
+    mine: str
+    opponent: str
     week_id: str
     state: SeasonState
     known: KnownAtDay
 
 @dataclass(frozen=True)
 class ProbabilityChange:
-    category_id: CategoryId
+    category_id: str
     before: float
     after: float
     delta: float
 
 @dataclass(frozen=True)
 class WeeklyAdvice:
+    config: ConfigBundle
+    input_sha256: Digest
+    as_of: datetime
     adds: tuple[AddDrop, ...]
     il_moves: tuple[ILMove, ...]
     daily_plan: tuple[DailyDecision, ...]
     categories: tuple[ProbabilityChange, ...]
     assumptions: tuple[str, ...]
 
-@dataclass(frozen=True)
-class ComputationIdentity:
-    format_version: int
-    config: ConfigBundle
-    snapshot_sha256: Sha256
-    state_sha256: Sha256
-    revision: int
-    algorithm_version: str
-    method: str
-    draws_sha256: Sha256
-
-@dataclass(frozen=True)
-class Result(Generic[T]):
-    identity: ComputationIdentity
-    value: T
-
-@dataclass(frozen=True)
-class StageTiming:
-    stage: str
-    elapsed_ns: int
-    solver_calls: int
-
-@dataclass(frozen=True)
-class ExecutionRecord:
-    result_sha256: Sha256
-    machine: str
-    runtime_versions: tuple[str, ...]
-    timings: tuple[StageTiming, ...]
-
-class ConfigError(ValueError):
-    field_path: str
-class DataError(ValueError):
-    artifact: str
-    row: int | None
-class IdentityError(DataError):
-    unresolved: tuple[str, ...]
-class SolverError(RuntimeError): ...
-class CalculationTimeout(SolverError): ...
-class VersionError(ValueError): ...
-
-def validate_config(config: ParsedConfig) -> ValidatedConfig: ...
-def project(config: ValidatedConfig, snapshot: Snapshot) -> tuple[Projection, ...]: ...
-def value(config: ValidatedConfig, projections: tuple[Projection, ...]) -> tuple[Valuation, ...]: ...
-def price_market(config: ValidatedConfig, players: tuple[Player, ...], state: DraftState, values: tuple[Valuation, ...], draws: Draws) -> tuple[MarketPrice, ...]: ...
-def solve_portfolio(config: ValidatedConfig, players: tuple[Player, ...], state: DraftState, values: tuple[Valuation, ...], market: tuple[MarketPrice, ...]) -> Plan | Infeasible: ...
-def calculate_auction(config: ValidatedConfig, snapshot: Snapshot, state: DraftState, draws: Draws) -> Result[AuctionResult]: ...
-def choose_actions(config: ValidatedConfig, state: SeasonState, known: KnownAtDay) -> DailyDecision: ...
-def choose_lineup(config: ValidatedConfig, roster: Roster, known: KnownAtDay) -> tuple[SlotAssignment, ...]: ...
-def score_week(config: ValidatedConfig, totals: tuple[tuple[StatValue, ...], ...]) -> tuple[tuple[CategoryValue, ...], ...]: ...
-def advise_week(request: WeeklyAdviceInput, draws: Draws) -> Result[WeeklyAdvice]: ...
+# Pure, deterministic for identical frozen input and model-configured random seeds.
+# Past-week evaluation supplies the same as-of request, then scores unseen outcomes.
+def advise_week(request: WeeklyAdviceInput) -> WeeklyAdvice: ...
