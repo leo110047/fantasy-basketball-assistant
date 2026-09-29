@@ -95,7 +95,8 @@ def standings(
 ) -> tuple[Standing, ...]:
     rows: list[Standing] = []
     for team in teams:
-        games = tuple(o for o in outcomes if team.id in (o.home, o.away))
+        # A bye advances a playoff bracket but is not a played regular-season matchup.
+        games = tuple(o for o in outcomes if o.away is not None and team.id in (o.home, o.away))
         wins = float(sum(o.winner == team.id for o in games))
         ties = sum(o.winner is None for o in games)
         losses = len(games) - int(wins) - ties
@@ -103,6 +104,7 @@ def standings(
             wins += ties / 2
         if league.scoring.week_tie == "loss":
             losses += ties
+            ties = 0
         rows.append(
             Standing(
                 team_id=team.id,

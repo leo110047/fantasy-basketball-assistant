@@ -64,9 +64,37 @@ def test_regular_tie_record_and_seeding_rules(kernel, rule):
     )
     table = standings(league, source.teams, (tie,))
     assert [r.team_id for r in table] == [a.id, b.id]
-    assert table[0].wins == (0.5 if rule == "half_win" else 0)
-    assert table[0].losses == (1 if rule == "loss" else 0)
-    assert table[0].ties == 1
+    for row in table:
+        assert row.wins == (0.5 if rule == "half_win" else 0)
+        assert row.losses == (1 if rule == "loss" else 0)
+        assert row.ties == (0 if rule == "loss" else 1)
+
+
+def test_regular_bye_does_not_change_record_points_or_seeding(kernel):
+    from fba.core.scoring import playoff_round, standings
+
+    source, auction = replay_fixture(kernel)
+    league, axes = source.config.league, auction.management.stat_ids
+    a, b = source.teams
+    values = auction.management.players[0].means
+    tied = matchup(league, axes, source.pairings[0], values, values)
+    baseline = standings(league, source.teams, (tied,))
+    # Give the lower seed a bye: it must neither earn a win nor gain category points.
+    pairing = Pairing(week_id=league.matchups[0].id, home=b.id, away=None)
+    bye = matchup(league, axes, pairing, values, ())
+    assert bye.winner == b.id and bye.categories == ()
+    assert standings(league, source.teams, (tied, bye)) == baseline
+    assert tuple(r.team_id for r in baseline) == (a.id, b.id)
+    assert standings(league, source.teams, (bye,)) == standings(league, source.teams, ())
+    assert playoff_round(
+        league,
+        league.playoffs.week_ids[0],
+        [b.id, None],
+        lambda p: matchup(league, axes, p, values, ()),
+        {a.id: a.seed, b.id: b.seed},
+        baseline,
+        [],
+    ) == [b.id]
 
 
 def test_playoff_bracket_reseeding_ties_and_invalid_bracket(kernel):

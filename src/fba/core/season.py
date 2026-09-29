@@ -156,7 +156,7 @@ def replay(
     )
     return ReplayResult(
         format_version=1,
-        algorithm="causal-management-v1",
+        algorithm="causal-management-v2",
         config=inputs.config.refs,
         input_sha256=input_sha256,
         auction_sha256=inputs.auction_sha256,
