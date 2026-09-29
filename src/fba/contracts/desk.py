@@ -7,6 +7,7 @@ from fba.contracts.auction import (
     AuctionResult,
     Comparison,
     DraftState,
+    ForecastScenario,
     MarketUpdate,
 )
 from fba.contracts.base import FormatVersion, Natural, PositiveInt, Record, Text
@@ -56,6 +57,7 @@ class DeskBootstrap(Record):
     players: tuple[AuctionPlayer, ...]
     details: tuple[AnnotatedAuctionDetail | AuctionDetail, ...] | None
     teams: tuple[TeamLabel, ...] | None
+    scenarios: tuple[ForecastScenario, ...] | None
     desk: DeskState
 
 

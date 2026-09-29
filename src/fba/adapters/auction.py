@@ -2,9 +2,10 @@ from pathlib import Path
 from time import perf_counter_ns
 
 from fba.adapters.auction_metadata import auction_teams, freeze_team_sources, label_sources
-from fba.adapters.calculation import load_calculation_input, load_projection, publish_result
+from fba.adapters.calculation import load_calculation_input, publish_result
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_parameters
+from fba.adapters.forecast_scenarios import freeze_scenarios, valued_projection, verify_scenarios
 from fba.adapters.preparation import prepare_snapshot
 from fba.adapters.snapshots import artifact, load_snapshot, publish_bundle
 from fba.contracts.auction import (
@@ -188,10 +189,10 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
         raise ConfigError("model: auction requires format_version 5")
     require_distribution(model.market)
     if inputs.details is not None and inputs.details != auction_details(
-        snapshot, result, inputs.config, annotated=inputs.format_version == 3
+        snapshot, result, inputs.config, annotated=inputs.format_version >= 3
     ):
         raise DataError("auction.details: differs from frozen sources or calculation")
-    if inputs.format_version == 3:
+    if inputs.format_version >= 3:
         if any(
             artifacts.get(f"source/teams/{a.path}") != a.sha256
             for a in label_sources(snapshot, inputs.config)
@@ -203,6 +204,7 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
         }
         if inputs.teams != auction_teams(snapshot, inputs.config, files):
             raise DataError("auction.teams: differs from frozen sources")
+    verify_scenarios(inputs, path.parent)
     validate_management(inputs, result, model)
     return inputs, input_hash
 
@@ -260,19 +262,13 @@ def validate_management(
                 )
 
 
-def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
-    inputs, projection_hash = load_projection(projection / "projection-input.json")
-    paths = tuple((projection / "results").glob("calculation-*.json"))
-    if len(paths) != 1:
-        raise DataError("auction.projection: requires exactly one calculation result")
-    payload = read_bytes(paths[0])
-    calculation = decode(CalculationResult, payload, str(paths[0]))
-    if (
-        paths[0].name != f"calculation-{digest(payload)}.json"
-        or calculation.input_sha256 != projection_hash
-        or calculation.config != inputs.config.refs
-    ):
-        raise DataError("auction.projection: calculation hash or input linkage mismatch")
+def prepare_auction(
+    projection: Path,
+    model_path: Path,
+    output: Path,
+    scenario_sources: tuple[tuple[str, Path], ...] = (),
+) -> Path:
+    inputs, _, calculation, payload = valued_projection(projection)
     model, ref = load_parameters(model_path)
     if not isinstance(model, AuctionModel):
         raise ConfigError("model: auction requires format_version 5")
@@ -310,8 +306,12 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
     files["source/calculation.json"] = payload
     files["source/snapshot.json"] = read_bytes(snapshot_root / "snapshot.json")
     files.update(freeze_team_sources(snapshot, config, snapshot_root))
+    scenarios, scenario_files = freeze_scenarios(
+        scenario_sources, config, digest(files["source/snapshot.json"]), players
+    )
+    files.update(scenario_files)
     auction = AuctionInput(
-        format_version=3,
+        format_version=4,
         config=config,
         artifacts=tuple(artifact(p, data) for p, data in sorted(files.items())),
         snapshot_sha256=digest(files["source/snapshot.json"]),
@@ -319,6 +319,7 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
         players=players,
         details=auction_details(snapshot, calculation, config, annotated=True),
         teams=auction_teams(snapshot, config, files),
+        scenarios=scenarios,
         management=prepare_management(
             inputs, calculation, players, model.health if isinstance(model, HealthModel) else None
         ),

@@ -147,6 +147,13 @@ def parser() -> argparse.ArgumentParser:
     prepare.add_argument("projection", type=Path)
     prepare.add_argument("--model", required=True, type=Path)
     prepare.add_argument("--output", required=True, type=Path)
+    prepare.add_argument(
+        "--scenario",
+        action="append",
+        nargs=2,
+        metavar=("NAME", "PROJECTION"),
+        help="Named alternate valued projection; repeat to compare scenarios",
+    )
     draft = commands.add_parser(
         "draft-template", help="Create an empty draft with editable team labels"
     )
@@ -192,7 +199,12 @@ def main() -> int:
                 finally:
                     session.close()
             else:
-                path = prepare_auction(args.projection, args.model, args.output)
+                path = prepare_auction(
+                    args.projection,
+                    args.model,
+                    args.output,
+                    tuple((name, Path(path)) for name, path in args.scenario or ()),
+                )
             print(json.dumps({"result": str(path)}))
             return 0
         if args.command in ("project", "annual"):

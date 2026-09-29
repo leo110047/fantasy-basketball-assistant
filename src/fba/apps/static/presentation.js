@@ -73,3 +73,9 @@ export function comparisonLabel(comparison) {
   if (comparison.skip.reason) return "目前組隊需要買入此人";
   return comparison.delta > 0 ? "買入方案的模型效用較高" : comparison.delta < 0 ? "不買方案的模型效用較高" : "兩種方案的模型效用相同";
 }
+export function forecastRange(player) {
+  if (!player.scenarios?.length) return {status:"absent"};
+  const values = [player.fair, ...player.scenarios.map(s => s.fair)];
+  if (values.some(v => v == null)) return {status:"incomplete"};
+  return {status:"ready",low:Math.min(...values),high:Math.max(...values)};
+}

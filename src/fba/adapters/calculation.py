@@ -32,14 +32,18 @@ def load_calculation_input[T: FrozenCalculationInput](path: Path, model: type[T]
 
 def load_projection(path: Path) -> tuple[ProductionInput, str]:
     data = read_bytes(path)
-    try:
-        inputs = TypeAdapter[ProductionInput](ProductionInput).validate_json(
-            checked_json(data, str(path))
-        )
-    except ValidationError as exc:
-        raise DataError(f"{path}: {exc}") from exc
+    inputs = decode_projection(data, str(path))
     verify_calculation_input(inputs, path)
     return inputs, digest(data)
+
+
+def decode_projection(data: bytes, source: str) -> ProductionInput:
+    try:
+        return TypeAdapter[ProductionInput](ProductionInput).validate_json(
+            checked_json(data, source)
+        )
+    except ValidationError as exc:
+        raise DataError(f"{source}: {exc}") from exc
 
 
 def verify_calculation_input(

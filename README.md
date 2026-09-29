@@ -59,6 +59,8 @@ uv run fba migrate-projection /path/old-input.json --model /path/model.json \
   --calibration-snapshot /path/snapshot-SHA256 --output /path/converted
 ```
 
+`prepare-auction` 可重複加上 `--scenario "情境名稱" /path/alternate-projection`，比較已建置的替代模型。所有情境須使用相同名單、聯盟、賽季與凍結快照；模型設定、計算結果及來源雜湊隨競標輸入保存。球員明細顯示各情境與基準的公允價範圍，缺估值時明確標示無法計算；這不是信賴區間，情境不會改動正式價格或停損價。
+
 `evaluate` 對已結束賽季輸出排名相關、前 N 命中（N = 隊數 × 名單格數）、估值誤差與出賽誤差。估值誤差比較預測與季末實績按同一規則換算的價值，取兩份前 N 名聯集的絕對差中位數；它不是成交價誤差或停止價可信區間。
 
 `backtest` 使用模型格式 6 與 `design/schemas/replay.schema.json`：凍結的競標投影、完整起始名單、自由球員、對戰表、每日決策時間、帶公布時間的傷情和逐場實績。傷情檔是 `{"format_version":1,"observations":[...]}`，實績檔是 `{"format_version":1,"boxes":[...]}`；每筆指定 `source_artifact`，原檔需列入帶來源與雜湊的 `artifacts`。實績必須包含明列的零數據 DNP。輸出逐日先發／IL／加人紀錄、週勝負、排名及季後賽結果；串流與傷兵補人共用設定額度。

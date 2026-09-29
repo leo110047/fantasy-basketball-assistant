@@ -13,6 +13,7 @@ from fba.contracts.base import (
 )
 from fba.contracts.config import (
     ConfigBundle,
+    ConfigRef,
     FitParameters,
     LeagueRules,
     ManagementParameters,
@@ -107,26 +108,42 @@ class AnnotatedAuctionDetail(AuctionDetail):
     healthy_games_threshold: Nonnegative
 
 
+class ScenarioPrice(Record):
+    player_id: Text
+    fair: Nonnegative | None
+
+
+class ForecastScenario(Record):
+    name: Text
+    model: ConfigRef
+    projection_sha256: Digest
+    calculation_sha256: Digest
+    prices: tuple[ScenarioPrice, ...]
+
+
 class AuctionInput(FrozenCalculationInput):
-    format_version: Annotated[int, Field(ge=1, le=3)]
+    format_version: Annotated[int, Field(ge=1, le=4)]
     snapshot_sha256: Digest
     calculation_sha256: Digest
     players: tuple[AuctionPlayer, ...]
     management: ManagementInput | None
     details: tuple[AnnotatedAuctionDetail | AuctionDetail, ...] | None = None
     teams: tuple[TeamLabel, ...] | None = None
+    scenarios: tuple[ForecastScenario, ...] | None = None
 
     @model_validator(mode="after")
     def detail_version(self) -> Self:
         if (self.format_version >= 2) != (self.details is not None):
             raise ValueError("auction.details: required in format_version 2 or later")
-        if (self.format_version == 3) != (self.teams is not None):
-            raise ValueError("auction.teams: required only in format_version 3")
+        if (self.format_version >= 3) != (self.teams is not None):
+            raise ValueError("auction.teams: required in format_version 3 or later")
+        if (self.format_version == 4) != (self.scenarios is not None):
+            raise ValueError("auction.scenarios: required only in format_version 4")
         if any(
-            isinstance(detail, AnnotatedAuctionDetail) != (self.format_version == 3)
+            isinstance(detail, AnnotatedAuctionDetail) != (self.format_version >= 3)
             for detail in self.details or ()
         ):
-            raise ValueError("auction.details: annotations require format_version 3")
+            raise ValueError("auction.details: annotations require format_version 3 or later")
         return self
 
 

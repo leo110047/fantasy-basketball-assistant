@@ -152,7 +152,7 @@ def test_player_details_are_derived_from_frozen_sources_and_cannot_be_changed(fr
     path, _, _ = frozen_auction
     original = path.read_bytes()
     inputs, _ = load_auction(path)
-    assert inputs.format_version == 3 and inputs.details is not None
+    assert inputs.format_version == 4 and inputs.details is not None
     snapshot = decode(Snapshot, (path.parent / "source/snapshot.json").read_bytes(), "test")
     calculation = decode(
         CalculationResult, (path.parent / "source/calculation.json").read_bytes(), "test"
@@ -182,6 +182,7 @@ def test_legacy_input_does_not_silently_claim_source_metadata(frozen_auction):
     legacy = {**current, "format_version": 1}
     legacy.pop("details")
     legacy.pop("teams")
+    legacy.pop("scenarios")
     path.write_text(json.dumps(legacy))
     loaded, source_hash = load_auction(path)
     assert source_hash == digest(path.read_bytes()) and loaded.details is None

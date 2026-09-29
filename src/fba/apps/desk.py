@@ -253,6 +253,7 @@ class AuctionDesk:
                 ),
                 details=self.inputs.details,
                 teams=self.inputs.teams,
+                scenarios=self.inputs.scenarios,
                 desk=self.desk,
             )
 

@@ -17,11 +17,13 @@ export const quantity = value => value == null ? "—" : Number(value).toFixed(N
 export function catalogue(bootstrap) {
   const details = new Map((bootstrap.details ?? []).map(d => [d.player_id, d]));
   const teams = new Map((bootstrap.teams ?? []).map(t => [t.id,t]));
+  const scenarios = (bootstrap.scenarios ?? []).map(s => ({...s,byId:new Map(s.prices.map(p => [p.player_id,p.fair]))}));
   const labels = new Map(bootstrap.league.categories.map(c => [c.id, c.label ?? c.id]));
   return new Map(bootstrap.players.map(p => {
     const detail = details.get(p.id) ?? null;
     const strengths = (detail?.categories ?? []).filter(c => c.z > 0).sort((a,b) => b.z - a.z || a.id.localeCompare(b.id, "en")).slice(0,3).map(c => labels.get(c.id) ?? c.id);
-    return [p.id, {...p, detail, strengths, team:teams.get(detail?.team_id) ?? null}];
+    return [p.id, {...p, detail, strengths, team:teams.get(detail?.team_id) ?? null,
+      scenarios:scenarios.map(s => ({name:s.name,fair:s.byId.get(p.id),model:s.model,projection_sha256:s.projection_sha256,calculation_sha256:s.calculation_sha256}))}];
   }));
 }
 export function forecastWarning(player) {
@@ -33,6 +35,19 @@ function adjustmentText(adjustment) {
   if (op.kind === "multiply") return `${op.stat_id} × ${quantity(op.factor)}`;
   if (op.kind === "expected_games") return `出賽 ${quantity(op.games)} 場`;
   return `預期回歸 ${op.return_at.split("T")[0]}`;
+}
+function renderForecastRange(container, player) {
+  const range = forecastRange(player);
+  if (range.status === "absent") { container.append(node("p", "未提供替代預測情境，無法顯示情境範圍。", "muted")); return; }
+  container.append(node("h3", "預測情境比較"));
+  container.append(node("p", range.status === "ready" ? `公允價範圍 ${money(range.low)}–${money(range.high)}` : "有情境缺少估值，無法提供完整範圍。"));
+  container.append(node("p", "包含目前基準與列出的設定情境；不是信賴區間，也不是停損價的誤差範圍。", "muted"));
+  container.append(node("p", `目前基準：${money(player.fair)}`));
+  for (const scenario of player.scenarios) {
+    const row = node("p", `${scenario.name}：${money(scenario.fair)}`, "detail-sources");
+    row.title = `模型 ${scenario.model.input_sha256}\n預測 ${scenario.projection_sha256}\n結果 ${scenario.calculation_sha256}`;
+    container.append(row);
+  }
 }
 export function renderProjectionDetail(container, player) {
   const detail = player.detail;
@@ -46,6 +61,7 @@ export function renderProjectionDetail(container, player) {
     const cell = node("div", ""); cell.append(node("dt", stat.id), node("dd", quantity(stat.value))); stats.append(cell);
   }
   if (detail.stats.length) container.append(node("p", "每場數據", "muted"), stats);
+  renderForecastRange(container, player);
   if (player.strengths.length) container.append(node("p", `相對強項：${player.strengths.join("、")}`));
   if (player.team) container.append(node("p", `NBA 球隊：${player.team.name ?? player.team.abbreviation}（${player.team.abbreviation}）`));
   if (detail.history_games != null) container.append(node("p", `歷史逐場資料 ${detail.history_games} 場 · 個人樣本門檻 ${detail.history_minimum} 場`, "muted"));
@@ -182,4 +198,4 @@ export function renderComparison(value, players, data) {
   }
   el("comparison").replaceChildren(node("strong", comparisonLabel(c)), node("p", c.delta == null ? "至少一個分支無合法方案" : `組隊效用差 ${c.delta.toFixed(3)}；不是勝率。`, "muted"), grid);
 }
-import {priceRows, rowTags, comparisonLabel, normalized, floorBackup} from "/presentation.js";
+import {priceRows, rowTags, comparisonLabel, normalized, floorBackup, forecastRange} from "/presentation.js";

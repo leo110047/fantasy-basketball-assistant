@@ -6,7 +6,7 @@ def test_price_table_search_filters_csv_and_comparison_contract():
     module = Path(__file__).parents[1] / "src/fba/apps/static/presentation.js"
     script = r"""
 import assert from 'node:assert/strict';
-const {matches,valueGap,priceRows,priceCSV,rowTags,comparisonLabel,floorBackup} =
+const {matches,valueGap,priceRows,priceCSV,rowTags,comparisonLabel,floorBackup,forecastRange} =
   await import(process.argv[1]);
 const make = (id,name,fair,positions=['PG']) =>
   ({id,name,fair,positions,positions_confirmed:true,detail:null});
@@ -73,6 +73,11 @@ assert(!rowTags(annotated).includes('出賽風險'));
 assert.equal(comparisonLabel({buy:{players:[]},skip:{players:[]},delta:1}),'買入方案的模型效用較高');
 assert.equal(comparisonLabel({buy:{reason:'x'},skip:{players:[]},delta:null}),'此價格買入後無法完成組隊');
 assert.equal(comparisonLabel({buy:{players:[]},skip:{reason:'x'},delta:null}),'目前組隊需要買入此人');
+assert.deepEqual(forecastRange({fair:20,scenarios:[]}),{status:'absent'});
+assert.deepEqual(forecastRange({fair:20,scenarios:[{fair:10},{fair:30}]}),{status:'ready',low:10,high:30});
+assert.deepEqual(forecastRange({fair:40,scenarios:[{fair:10},{fair:30}]}),{status:'ready',low:10,high:40});
+assert.deepEqual(forecastRange({fair:20,scenarios:[{fair:null},{fair:30}]}),{status:'incomplete'});
+assert.deepEqual(forecastRange({fair:null,scenarios:[{fair:30}]}),{status:'incomplete'});
 """
     result = subprocess.run(
         ["node", "--input-type=module", "--eval", script, module.as_uri()],

@@ -152,7 +152,9 @@ def test_auction_policy_change_requires_a_new_projection(
     payload = canonical(result)
     (tmp_path / "results" / f"calculation-{digest(payload)}.json").write_bytes(payload)
     # Isolate the frozen-input read; the real adapter must reject before publishing anything.
-    monkeypatch.setattr("fba.adapters.auction.load_projection", lambda _: (inputs, "0" * 64))
+    monkeypatch.setattr(
+        "fba.adapters.forecast_scenarios.load_projection", lambda _: (inputs, "0" * 64)
+    )
     data = inputs.config.model.model_dump(mode="json")
     data["team_constraints"][policy] = "audit"
     model = tmp_path / "model.json"

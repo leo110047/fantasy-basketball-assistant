@@ -53,6 +53,7 @@ def test_version_two_remains_readable_without_claiming_new_metadata(frozen_aucti
     current = json.loads(path.read_bytes())
     current["format_version"] = 2
     current.pop("teams")
+    current.pop("scenarios")
     for row in current["details"]:
         for key in AnnotatedAuctionDetail.model_fields.keys() - AuctionDetail.model_fields.keys():
             del row[key]
