@@ -271,8 +271,10 @@ def test_joint_statistic_draws_have_independent_own_and_opponent_axes(fitted_cas
         assert not np.array_equal(fitted.opponent_draws, changed.opponent_draws)
 
 
-def test_fitted_cap_seed_bound_on_frozen_draft_states():
+@pytest.mark.parametrize("managed", [False, True])
+def test_fitted_cap_seed_bound_on_frozen_draft_states(managed):
     from fba.apps.auction import AuctionSession
+    from fba.contracts.auction import ManagedFitSummary
 
     fixture = json.loads((Path(__file__).parent / "fixtures/fit-stability.json").read_bytes())
     players = tuple(AuctionPlayer.model_validate_json(json.dumps(p)) for p in fixture["players"])
@@ -281,6 +283,18 @@ def test_fitted_cap_seed_bound_on_frozen_draft_states():
             "management": ManagementInput.model_validate_json(json.dumps(fixture["management"]))
         }
     )
+    if managed:
+        from test_pricing_management import managed_input
+
+        parameters = inputs.config.model.fit
+        inputs = managed_input(inputs)
+        inputs = inputs.model_copy(
+            update={
+                "config": inputs.config.model_copy(
+                    update={"model": inputs.config.model.model_copy(update={"fit": parameters})}
+                )
+            }
+        )
     sales = tuple(Sale.model_validate(s) for s in fixture["sales"])
     selected = []
     session = AuctionSession(4)
@@ -313,6 +327,27 @@ def test_fitted_cap_seed_bound_on_frozen_draft_states():
                     feature_runner=session.features,
                 )
                 assert isinstance(result.plan, Plan) and result.fit is not None
+                assert isinstance(result.fit, ManagedFitSummary) == managed
+                if managed and count == 20 and offset == 0:
+                    shuffled = candidate.model_copy(
+                        update={
+                            "players": tuple(reversed(candidate.players)),
+                            "management": candidate.management.model_copy(
+                                update={"players": tuple(reversed(candidate.management.players))}
+                            ),
+                        }
+                    )
+                    repeated = calculate_auction(
+                        shuffled,
+                        state(shuffled, sales[:count]),
+                        "0" * 64,
+                        "3" * 64,
+                        mode="fit",
+                        kernel=session.native(),
+                        runner=session.caps,
+                        feature_runner=session.features,
+                    )
+                    assert canonical(result) == canonical(repeated)
                 selected.append(result.fit.selected_step)
                 caps = {c.player_id: c.amount for c in result.caps}
                 if reference is None:

@@ -312,7 +312,7 @@
       "kind": "Assumption",
       "reference": "auction-desk/season_kernel.cpp and management.py; frozen 12-case season oracle",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Equivalent reference tactical policy: reserve one addition for injury replacements; compare 7-day and 28-day known-status forecasts. Streaming slot counts and upgrades are replay state."
+      "reason": "Equivalent reference tactical policy: reserve one addition for injury replacements; compare 7-day and 28-day known-status forecasts. Streaming slot counts and upgrades are replay state. Free-agent acquisition priority rotates daily by (day + health sample) modulo team count, including the modeled opponents; Yahoo waiver priority and FAAB are not modeled."
     }
   },
   "team_minutes": {
