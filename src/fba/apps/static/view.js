@@ -37,7 +37,7 @@ export function renderRoom(data, players) {
   el("buyer").value = buyer;
 }
 
-export function renderTable(data, players, result, watched, browse, nominate, watch) {
+export function renderTable(data, players, result, watched, browse, nominate, watch, unavailable, busy) {
   const sold = new Set(data.state.sales.map(s => s.player_id));
   const prices = new Map(data.market.market.prices.map(p => [p.player_id, p]));
   const caps = new Map(result?.caps.map(c => [c.player_id, c]) ?? []);
@@ -67,10 +67,11 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
     const cells = row.children, star = cells[0].firstChild, choose = cells[5].firstChild;
     const quote = prices.get(p.id), cap = caps.get(p.id), held = sold.has(p.id);
     text(star, watched.has(p.id) ? "★" : "☆");
+    star.disabled = busy;
     star.setAttribute("aria-label", `追蹤 ${p.name}`); star.setAttribute("aria-pressed", String(watched.has(p.id)));
     text(cells[1].lastChild, p.positions.join(" / "));
     text(cells[2], money(p.fair)); text(cells[3], held ? "已成交" : money(quote?.expected));
-    text(cells[4], held ? "—" : result ? `${money(cap?.amount)}${cap?.conditional ? " *" : ""}` : "更新中");
+    text(cells[4], held ? "—" : result ? `${money(cap?.amount)}${cap?.conditional ? " *" : ""}` : unavailable);
     cells[4].title = cap?.reason ?? (cap?.conditional ? "需確認位置／報價" : "");
     choose.disabled = held; choose.setAttribute("aria-label", `指定 ${p.name} 為本輪`);
     return row;
@@ -84,9 +85,9 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
 function text(element, value) { if (element.textContent !== value) element.textContent = value; }
 
 
-export function renderPlan(result, players, market, nominate) {
+export function renderPlan(result, players, market, nominate, unavailable) {
   el("plan").replaceChildren(); el("nominations").replaceChildren();
-  if (!result) { el("planNote").textContent = "更新中；完成後顯示目前狀態的方案。"; return; }
+  if (!result) { el("planNote").textContent = `${unavailable}；完成後顯示目前狀態的方案。`; return; }
   if (result.plan.reason) { el("planNote").textContent = `無合法方案：${result.plan.reason}`; return; }
   el("planNote").textContent = `尚需 ${result.plan.purchases.length} 人 · 預計支出 ${money(result.plan.cost)}${result.fit ? ` · 陣容調整步長 ${result.fit.selected_step}${result.fit.method === "paired_managed_marginal" ? ` · 管理情境估計（傷兵替補${result.fit.policy.streaming_slots ? "、串流" : ""}${result.fit.policy.upgrades ? "、升級" : ""}）` : ""}` : ""}`;
   const quotes = new Map(market.prices.map(p => [p.player_id,p]));

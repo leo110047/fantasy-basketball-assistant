@@ -98,14 +98,20 @@ def effective_players(
     return tuple(by_id[k] for k in sorted(by_id))
 
 
-def validate_draft(
-    league: LeagueRules, players: tuple[AuctionPlayer, ...], state: DraftState
-) -> tuple[TeamBudget, ...]:
-    unique(tuple(t.id for t in state.teams), "draft.teams")
+def validate_labels(players: tuple[AuctionPlayer, ...], state: DraftState) -> None:
     if any(not team.name.strip() for team in state.teams):
         raise DataError("draft.teams: names must not be blank")
     if len({team.name.strip().casefold() for team in state.teams}) != len(state.teams):
         raise DataError("draft.teams: duplicate names")
+    unique(state.watch, "draft.watch")
+    require_members(state.watch, {p.id for p in players}, "draft.watch")
+
+
+def validate_draft(
+    league: LeagueRules, players: tuple[AuctionPlayer, ...], state: DraftState
+) -> tuple[TeamBudget, ...]:
+    unique(tuple(t.id for t in state.teams), "draft.teams")
+    validate_labels(players, state)
     unique(tuple(s.id for s in state.sales), "draft.sales.id")
     unique(tuple(s.player_id for s in state.sales), "draft.sales.player_id")
     if len(state.teams) != league.teams or state.mine not in {t.id for t in state.teams}:

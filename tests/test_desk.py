@@ -300,6 +300,81 @@ def test_only_successfully_saved_changes_cancel_the_old_work(desk):
     assert desk.results().fit.status == "updating"
 
 
+def test_team_names_and_watch_lists_keep_ready_numerical_results(desk, monkeypatch):
+    wait_for(lambda: desk.results().equal.status == desk.results().fit.status == "ready")
+    before = desk.bootstrap().desk
+    previous = desk.results()
+
+    def forbidden(*args):
+        pytest.fail("metadata-only save restarted a calculation")
+
+    monkeypatch.setattr(desk.equal, "calculate", forbidden)
+    monkeypatch.setattr(desk.fit, "calculate", forbidden)
+    monkeypatch.setattr(desk, "market", forbidden)
+    teams = tuple(t.model_copy(update={"name": f"New {t.name}"}) for t in before.state.teams)
+    candidate = before.state.model_copy(update={"teams": teams, "watch": ("000", "001")})
+    saved = desk.save(SaveDraft(expected_sha256=before.market.state_sha256, draft=candidate))
+    desk.start_calculations(saved.market.state_sha256)
+    current = desk.results()
+    assert current.equal.status == current.fit.status == "ready"
+    for old, new in ((previous.equal, current.equal), (previous.fit, current.fit)):
+        assert old.result.model_copy(update={"state_sha256": current.state_sha256}) == new.result
+    assert decode(DraftState, desk.path.read_bytes(), "backup").watch == ("000", "001")
+    # Restoring an older backup preserves its explicitly empty watch list.
+    restored = desk.save(SaveDraft(expected_sha256=current.state_sha256, draft=before.state))
+    assert restored.state.watch == ()
+
+
+def test_metadata_change_during_calculation_keeps_work_and_current_labels(desk):
+    from threading import Event
+
+    entered, release = Event(), Event()
+    records, calls = [], []
+    before = desk.bootstrap().desk
+
+    def calculate(draft, sha, cancelled):
+        calls.append(sha)
+        entered.set()
+        assert release.wait(5)
+        assert not cancelled.is_set()
+        return calculate_auction(desk.inputs, draft, desk.input_hash, sha)
+
+    job = LatestCalculation(calculate, records.append, "equal")
+    try:
+        job.request(before.state, before.market.state_sha256)
+        assert entered.wait(5)
+        candidate = before.state.model_copy(update={"revision": 1, "watch": ("001",)})
+        sha = digest(canonical(candidate))
+        assert job.relabel(candidate, sha)
+        release.set()
+        wait_for(lambda: job.current(sha).status == "ready")
+        assert calls == [before.market.state_sha256]
+        assert records[0].state == candidate
+        assert records[0].result.state_sha256 == sha
+    finally:
+        release.set()
+        job.close()
+
+
+def test_metadata_save_before_new_calculation_starts_does_not_reuse_old_work(desk):
+    sold = desk.save(sell_request(desk))
+    candidate = sold.state.model_copy(update={"watch": ("001",)})
+    saved = desk.save(SaveDraft(expected_sha256=sold.market.state_sha256, draft=candidate))
+    desk.start_calculations(saved.market.state_sha256)
+    wait_for(lambda: desk.results().equal.status == desk.results().fit.status == "ready")
+    assert desk.results().equal.result.plan.players.count("000") == 1
+    assert desk.results().equal.result.state_sha256 == saved.market.state_sha256
+
+
+@pytest.mark.parametrize("watch", [("missing",), ("000", "000")])
+def test_invalid_watch_lists_cannot_be_imported(desk, watch):
+    before = desk.bootstrap().desk
+    candidate = before.state.model_copy(update={"watch": watch})
+    with pytest.raises(ConfigError, match="draft.watch"):
+        desk.save(SaveDraft(expected_sha256=before.market.state_sha256, draft=candidate))
+    assert desk.bootstrap().desk == before
+
+
 def test_service_shares_background_pool_and_comparison_never_queues_behind_it(desk, monkeypatch):
     import fba.apps.server as server
     from fba.core.auction import comparison_plans

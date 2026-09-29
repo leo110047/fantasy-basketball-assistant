@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from concurrent.futures import CancelledError
 from functools import partial
 from pathlib import Path
 from threading import Condition, Event, Lock, Thread
@@ -38,9 +37,20 @@ from fba.core.auction import (
     market_context,
     portfolio_for,
 )
-from fba.core.roster import effective_players
+from fba.core.roster import effective_players, validate_labels
 
 Calculator = Callable[[DraftState, str, Event], AuctionResult]
+
+
+def same_calculation(before: DraftState, after: DraftState) -> bool:
+    return (
+        before.config == after.config
+        and before.input_sha256 == after.input_sha256
+        and before.mine == after.mine
+        and tuple(t.id for t in before.teams) == tuple(t.id for t in after.teams)
+        and before.sales == after.sales
+        and before.overrides == after.overrides
+    )
 
 
 class LatestCalculation:
@@ -60,6 +70,7 @@ class LatestCalculation:
         self.cancelled = Event()
         self.generation = 0
         self.identity = ""
+        self.latest: tuple[DraftState, str] | None = None
         self.view = JobView(status="updating", result=None, error=None)
         self.stopping = False
         self.thread = Thread(target=self.run, name=f"desk-{mode}")
@@ -71,9 +82,28 @@ class LatestCalculation:
             self.cancelled = Event()
             self.generation += 1
             self.identity = sha
+            self.latest = (state, sha)
             self.pending = (state, sha, self.generation, self.cancelled)
             self.view = JobView(status="updating", result=None, error=None)
             self.condition.notify()
+
+    def relabel(self, state: DraftState, sha: str) -> bool:
+        with self.condition:
+            if (
+                self.latest is None
+                or self.cancelled.is_set()
+                or not same_calculation(self.latest[0], state)
+            ):
+                return False
+            self.latest = (state, sha)
+            self.identity = sha
+            if self.pending is not None:
+                self.pending = (state, sha, self.generation, self.cancelled)
+            if self.view.result is not None:
+                self.view = self.view.model_copy(
+                    update={"result": self.view.result.model_copy(update={"state_sha256": sha})}
+                )
+            return True
 
     def invalidate(self) -> None:
         with self.condition:
@@ -97,29 +127,37 @@ class LatestCalculation:
                 self.pending = None
             started = perf_counter_ns()
             try:
-                result = self.calculate(state, sha, cancelled)
-                if cancelled.is_set():
-                    continue
-                self.record(
-                    DeskExecution(
-                        format_version=1,
-                        stage=self.mode,
-                        state=state,
-                        state_sha256=sha,
-                        elapsed_ns=perf_counter_ns() - started,
-                        solver_calls=result.solver_calls,
-                        result=result,
-                    )
-                )
-                view = JobView(status="ready", result=result, error=None)
+                outcome: AuctionResult | Exception = self.calculate(state, sha, cancelled)
             except Exception as exc:
-                if isinstance(exc, CancelledError) and cancelled.is_set():
-                    continue
-                # This is the process boundary: report the failure, keep the saved ledger.
-                view = self.failure(state, sha, started, exc)
+                outcome = exc
             with self.condition:
-                if generation == self.generation:
-                    self.view = view
+                if generation != self.generation or cancelled.is_set():
+                    continue
+                assert self.latest is not None
+                state, sha = self.latest
+                self.view = self.finish(state, sha, started, outcome)
+
+    def finish(
+        self, state: DraftState, sha: str, started: int, outcome: AuctionResult | Exception
+    ) -> JobView:
+        if isinstance(outcome, Exception):
+            return self.failure(state, sha, started, outcome)
+        result = outcome.model_copy(update={"state_sha256": sha})
+        try:
+            self.record(
+                DeskExecution(
+                    format_version=1,
+                    stage=self.mode,
+                    state=state,
+                    state_sha256=sha,
+                    elapsed_ns=perf_counter_ns() - started,
+                    solver_calls=result.solver_calls,
+                    result=result,
+                )
+            )
+        except Exception as exc:
+            return self.failure(state, sha, started, exc)
+        return JobView(status="ready", result=result, error=None)
 
     def failure(self, state: DraftState, sha: str, started: int, exc: Exception) -> JobView:
         error = f"{type(exc).__name__}: {exc}"
@@ -221,7 +259,17 @@ class AuctionDesk:
             if request.draft.draft_id != self.desk.state.draft_id:
                 raise DataError("draft: imported backup belongs to a different draft")
             candidate = request.draft.model_copy(update={"revision": self.desk.state.revision + 1})
-            updated, entry = self.market(candidate)
+            validate_labels(self.inputs.players, candidate)
+            if same_calculation(self.desk.state, candidate):
+                sha = digest(canonical(candidate))
+                updated = DeskState(
+                    format_version=1,
+                    state=candidate,
+                    market=self.desk.market.model_copy(update={"state_sha256": sha}),
+                )
+                entry = None
+            else:
+                updated, entry = self.market(candidate)
             try:
                 payload = save_draft(self.path, candidate, self.payload)
             except SaveUnconfirmed:
@@ -229,21 +277,26 @@ class AuctionDesk:
                 raise
             self.accept_saved(updated, payload)
             try:
-                self.record(entry)
+                if entry is not None:
+                    self.record(entry)
             except DataError as exc:
                 raise SaveUnconfirmed(f"draft saved; execution log failed: {exc}") from exc
             return self.desk
 
     def accept_saved(self, updated: DeskState, payload: bytes) -> None:
+        relabel = same_calculation(self.desk.state, updated.state)
         self.payload = payload
         self.desk = updated
         for job in (self.equal, self.fit):
-            job.invalidate()
+            if not relabel or not job.relabel(updated.state, updated.market.state_sha256):
+                job.invalidate()
 
     def start_calculations(self, sha: str) -> None:
         with self.lock:
             if self.desk.market.state_sha256 == sha:
-                self.request()
+                for job in (self.equal, self.fit):
+                    if job.identity != sha:
+                        job.request(self.desk.state, sha)
 
     def require_state(self, sha: str) -> None:
         if self.desk.market.state_sha256 != sha:

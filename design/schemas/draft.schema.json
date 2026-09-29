@@ -204,6 +204,15 @@
       },
       "title": "Overrides",
       "type": "array"
+    },
+    "watch": {
+      "default": [],
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Watch",
+      "type": "array"
     }
   },
   "required": [

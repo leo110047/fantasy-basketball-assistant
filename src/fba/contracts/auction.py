@@ -80,6 +80,7 @@ class DraftState(Record):
     teams: tuple[DraftTeam, ...]
     sales: tuple[Sale, ...]
     overrides: tuple[DraftOverride, ...]
+    watch: tuple[Text, ...] = ()  # Older backups contain no saved watch list.
 
 
 class AuctionInput(FrozenCalculationInput):
