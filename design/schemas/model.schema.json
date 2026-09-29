@@ -635,7 +635,7 @@
     },
     "ModelConfig": {
       "additionalProperties": false,
-      "description": "Stage 1 accepts only settings consumed by snapshot construction.",
+      "description": "Model format 1: calibration settings for snapshot construction.",
       "properties": {
         "format_version": {
           "maximum": 1,

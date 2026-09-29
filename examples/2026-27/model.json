@@ -177,7 +177,7 @@
     "competition_bid": 3,
     "evidence": {
       "kind": "Assumption",
-      "reference": "Auction market constraints: floor-aware cash scaling, bounded quote normalization, identity-independent bidder sampling",
+      "reference": "Auction market constraints: floor-aware cash scaling, bounded quote normalization, exact bid distributions",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Independent lognormal bidder willingness with exact discrete bid-distribution expectations, bounded quote anchors, remaining-cash inflation and floor-first nomination. Volatility and wealth response remain uncalibrated assumptions. Planning cost is the nearest legal integer bid to expected acquisition cost, with half increments rounded up; it is a point estimate, not a success guarantee."
     },
@@ -312,7 +312,7 @@
       "kind": "Assumption",
       "reference": "auction-desk/season_kernel.cpp and management.py; frozen 12-case season oracle",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Equivalent reference tactical policy: reserve one addition for injury replacements; compare 7-day and 28-day known-status forecasts. Streaming slot counts and upgrades are replay state. Free-agent acquisition priority rotates daily by (day + health sample) modulo team count, including the modeled opponents; Yahoo waiver priority and FAAB are not modeled."
+      "reason": "Reserve the configured injury additions and compare the configured short- and long-horizon known-status forecasts. Streaming and upgrade policies are supplied per simulation. Free-agent acquisition priority rotates daily by (day + health sample) modulo team count, including modeled opponents; Yahoo waiver priority and FAAB are not modeled."
     }
   },
   "team_minutes": {
@@ -405,7 +405,7 @@
     ],
     "evidence": {
       "kind": "Assumption",
-      "reference": "Restored streaming-seat policy comparison under the shared management kernel",
+      "reference": "Paired streaming-seat policy comparison under the shared management kernel",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Compare configured candidate seat limits under paired health paths and the same opponents and free-agent pool. All health groups must improve before recommending more seats. This on-demand sensitivity study does not automatically change the pricing policy and is not calibrated real-world win probability."
     }

@@ -1,27 +1,43 @@
 # Fantasy Basketball Assistant
 
-設定驅動的本機 Yahoo 拍賣籃球助手。提供年度資料建置、投影估值、本機競標桌、逐日管理重播及預測回測。
+設定驅動的本機 Yahoo 拍賣籃球助手：建置年度資料、計算估值與停止價、重播季中管理。競標時離線讀取凍結資料，Yahoo 成交需手動登錄。
 
-需要 `uv` 和 C++17 編譯器。`scripts/check` 建立鎖定的 Python 環境並跑全部檢查。
+## 安裝
 
-臨時目錄禁止執行的部署，可將相同原始碼與工具鏈編譯出的 `season.so` 放在安裝套件的 `fba/native/<system>-<machine>/`（例如 `darwin-arm64`）。啟動仍會重編譯並逐位元核對，一致才載入封裝檔；不一致會停止計算。編譯產物不進 Git。
+使用 macOS 或 Linux；需要 `uv`、可由 `c++` 呼叫的 C++17 編譯器。完整測試另需 `node`。
 
-CI 用 20 個新成交狀態，在同一環境比較並行與單程序參考路徑：結果必須完全相同，暖機後 p95 不得慢超過 10%。選秀前仍須在使用的 Mac 完整重播 140 筆成交與撤銷，檢查絕對秒數門檻；CI 的相對比較不代表已通過此項驗收。
+```sh
+uv sync --locked
+```
 
-換季時複製 `examples/2026-27/`，更新規則、日期、來源與快照截止時間，放入 Yahoo CSV、明確的球員 ID 對照及人工調整檔。核對設定裡標記的 `Assumption`；欄位由 `design/schemas/` 定義。報價空白或 `-` 保持缺值，不按姓名猜配球員。
+Python 版本由 `.python-version` 指定，套件版本由 `uv.lock` 鎖定。以下命令均在專案目錄執行，`/path/...` 請換成實際路徑。資料、草稿、備份與報告放在專案外。
+
+## 每年換季
+
+複製 [examples/2026-27](examples/2026-27/)，更新下列內容。範例未附球員資料或上一季預測存檔，不能直接執行完整年度建置。
+
+| 檔案 | 需確認的內容 |
+|---|---|
+| `league.json` | 隊數、預算、位置、類別、加人額度、IL、對戰週與季後賽；核對標為 `Assumption` 的規則 |
+| `season.json` | 賽季日期、快照截止時間、來源網址與賽季代碼、名單及對照檔路徑 |
+| `model.json` | 預測權重、出賽校正、球隊資源限制與管理策略；保留各參數的依據 |
+
+依 `season.json` 指定的位置放入 Yahoo CSV、明確的球員 ID 對照與人工調整檔。報價空白或 `-` 保持缺值；身分對不到時停止並列出名單，不按姓名猜配。無人工調整時使用 `{"format_version":1,"adjustments":[]}`。欄位格式見 [design/schemas](design/schemas/)。
+
+完整年度建置需要上一季的 `forecast.json`：在 `season.sources` 設定唯一的 `role: "forecast_archive"`、`adapter: "fba_forecast"` 來源，指定上一季 `season_id`。本機檔案使用 `delivery: "manual"`、`file:///` URL、`manual_file`，並在 `manual_capture` 記錄抓取時間與 SHA-256。
 
 ```sh
 uv run fba annual --league /path/league.json --season /path/season.json \
   --model /path/model.json --output /path/annual --version 1
 ```
 
-`annual` 完成抓取、凍結、投影、估值、競標開場與上一季評估，全部成功才發布。`opening-draft.json` 是以通用 Team 1 為我方的空白範本；正式選秀請依下方指令指定席次建立草稿。加 `--previous /path/previous-projection` 比較同季上一版公允價變化最大的 30 人。人工調整檔可從 `{"format_version":1,"adjustments":[]}` 開始。
+成功後輸出投影資料夾，內含快照、估值、`forecast.json`、`previous-evaluation.json`、`auction/` 與加總模式開場結果。保留整個資料夾，尤其是供下一季使用的 `forecast.json`。加上 `--previous /path/previous-projection` 可比較同季上一版公允價變化最大的 30 人。
 
-模型格式 12 的 `team_constraints.minutes`、`team_constraints.offense` 可各自設為 `audit`（只檢查）或 `enforce`（套用校正），範例皆為 `enforce`。兩種模式都檢查完整 NBA 名單與來源，並輸出 `team-minutes.json`、`team-offense.json`；`audit` 的超額會保留在報告中。輪替缺賽不計為傷病；`health.injury_share` 的 0.5 比例、沿用上季進攻用量及缺資料分鐘保留用量仍是模型假設。變更政策或升級舊模型後，需從凍結快照重新 `project`。
+缺上一季預測存檔時，`annual` 會停止；可先依序執行 `build`、`project`、`prepare-auction` 建立競標輸入，上一季評估仍未完成。各命令參數見 `uv run fba COMMAND --help`。
 
-每次 `project`／`annual` 會產生 `forecast.json`，請保留供下季評估。在下季 `season.sources` 加入 `role: "forecast_archive"`、`adapter: "fba_forecast"`，指定上一季 `season_id` 與此檔的來源、時間、SHA-256；本機存檔使用 `delivery: "manual"`、`file:///` URL、`manual_file` 與 `manual_capture`。缺預測存檔時 `annual` 會停止，可先用 `build`／`project` 完成資料建置，不能宣稱換季驗收完成。
+## 選秀當天
 
-`annual` 的 `auction/` 內已有競標輸入。建立我方草稿，再計算目前狀態；`--mine` 是隊伍編號，從 1 開始，產生的隊名可編輯。
+使用 `annual` 產出的 `auction/auction-input-SHA256/auction-input.json`。`--mine` 是從 1 起算的席次；隊名可在介面修改。
 
 ```sh
 uv run fba draft-template /path/auction-input-SHA256/auction-input.json \
@@ -30,45 +46,51 @@ uv run fba serve /path/auction-input-SHA256/auction-input.json \
   --draft /path/draft.json --log /path/auction.jsonl --workers auto
 ```
 
-開啟 `serve` 顯示的完整網址。指定本輪球員、買家與實際成交價後登錄；可撤銷上一筆、匯出／匯入備份，以及設定我方隊伍與隊名。成交經後端驗證後直接保存到草稿檔，重新整理與重啟服務都會保留。同一草稿一次只開一個服務；每次重啟請使用新網址。
+開啟 `serve` 顯示的完整網址。Yahoo 成交後，指定球員、買家與成交價再登錄。介面支援撤銷、歷史成交更正、價格表 CSV、草稿備份匯出／匯入；快捷鍵及價格欄位說明見「使用說明」。
 
-`--workers` 是整個服務共用的工作程序上限；省略時使用 `auto`，以可用邏輯 CPU 數的四分之三為上限，至少 1 個（Assumption）。實際批次數依候選人數、健康路徑、賽程與對手數調整；小工作少用程序，閒置程序等待。也可指定整數上限。新成交會取消過時的待辦工作，已開始的球員模擬或求解會完成當前步驟後停止。
+- 市場與預算先更新，停止價完成前顯示「更新中」。計算失敗時成交仍保留，可重試；若顯示「保存未確認」，先重新整理核對紀錄。
+- 成交直接保存到草稿，重載與重啟後保留。同一草稿只開一個服務；手動編輯前先停止服務。重啟後使用新網址。
+- `--workers auto` 以可用邏輯 CPU 的四分之三為程序上限，至少 1 個；實際批次數依計算量調整，閒置程序等待。可指定整數降低上限。新成交會取消舊的待辦計算，已開始的工作在檢查點停止。
+- 被替換的草稿保留在同層 `.<草稿檔名>.history/`，不自動刪除。復原前先停止服務並保留目前草稿；`.pending` 暫存須核對後才能使用。
 
-服務運行期間透過介面修改草稿；手動編輯檔案前先停止服務。
+`auction.jsonl` 記錄計算狀態、設定／資料雜湊、結果與耗時；瀏覽器 console 的 `fba timing` 記錄畫面完成時間。
 
-每次保存會將被替換的檔案保留在草稿旁的 `.<草稿檔名>.history/`，包含保存間隙的外部修改。需復原時先停止服務、保留現有草稿，再從歷史檔選擇正確版本；`.pending` 是中斷留下的暫存，需人工核對。歷史檔不會自動刪除；服務啟動時會檢查 macOS／Linux 本機檔案系統是否支援必要的保存操作。
+## 模型設定與數字解讀
 
-`market.format_version: 2` 直接計算出價分布，不使用市場抽樣數或種子；規劃成本取平均取得成本最近的合法整數價，半格進位。波動與財力反應仍是假設，規劃價不保證買得到。舊市場設定請加入此版本、刪除 `samples`、`seed`、`normalization_samples`、`normalization_seed`，再以新模型執行 `prepare-auction`。
+- `team_constraints.minutes`／`offense`：`audit` 只記錄超額，`enforce` 套用校正；範例皆為 `enforce`。兩者都檢查完整隊伍名單，輸出 `team-minutes.json`／`team-offense.json`。輪替缺賽不計為傷病；傷病占比與上季進攻用量仍是假設。
+- 依陣容調整共用傷兵替補、串流與永久升級模擬。加人額度與期間讀聯盟設定，策略讀 `pricing`／`management`。停止價是目前預算與陣容下的局部估計，受健康及對手行為假設影響。
+- 市場直接計算出價分布；規劃成本取平均取得成本最近的合法整數價，半格進位。波動與財力反應尚未校準，規劃價不保證成交。
+- 「串流格數比較」讀 `streaming_comparison.slots`；全部健康分組都改善才建議增加格數。建議不會自動改寫 `pricing.streaming_slots`。球員詳情的健康抽樣範圍是分組敏感度，不是信賴區間。
+- 預測評估的「估值誤差」是預測與季末實績按同一把估值尺換算後，兩份前 N 名聯集的金額絕對差中位數；N＝隊數 × 名單格數。它不衡量成交價或停止價準確度。
 
-市場與預算先更新，停損價在背景重算；「更新中」不顯示舊停損價。計算失敗不影響已保存成交，可按重試。成交若顯示「保存未確認」，先重新整理核對紀錄，避免重複登錄。買／不買比較沿用目前選取模式的估值。依陣容調整把傷兵替補、串流與永久升級納入共同模擬；加人額度與期間讀取聯盟設定，管理策略讀取 `pricing` 與 `management`。停止價仍是局部估計，受傷病與對手策略假設影響，並非實戰勝率。 在球員明細按「計算健康抽樣範圍」，可查看固定陣容參考與步長的分組敏感度；按需計算，不會每筆成交重算所有球員範圍。
+設定變更後須重新建置對應結果。舊市場設定改用 `market.format_version: 2` 時，刪除 `samples`、`seed`、`normalization_samples`、`normalization_seed` 後重新 `prepare-auction`；投影模型或球隊資源政策變更時，從凍結快照重新 `project`。
 
-「串流格數比較」使用 `streaming_comparison.slots`（模型格式 13），共用聯盟加人額度、健康樣本與對手；所有健康分組都改善才建議增加格數。建議不會自動改寫 `pricing.streaming_slots`，可操作候選依實際移除損失排序。
+## 離線計算與研究
 
-服務僅限本機、離線讀取凍結輸入。`auction.jsonl` 保存各次計算的草稿、設定／資料雜湊、結果與耗時；瀏覽器 console 的 `fba timing` 記錄畫面完成時間。草稿、日誌與備份請放在專案外。
+使用新的輸出目錄，避免覆寫既有結果。完整參數見各命令的 `--help`。
 
-只需結果檔時：`uv run fba auction /path/auction-input.json --draft /path/draft.json --stage equal --workers 8 --output /path/results`。`--stage` 可選 `market`、`equal`、`fit`。
+| 命令 | 輸入與用途 |
+|---|---|
+| `rebuild`／`inspect` | 從快照離線重建／檢視來源清單 |
+| `project` | 從快照與模型設定建立投影、估值及 `forecast.json` |
+| `prepare-auction` | 從投影資料夾建立競標輸入；可重複加入 `--scenario NAME PROJECTION` 比較替代模型 |
+| `calculate` | 從 `projection-input.json` 重算估值 |
+| `auction` | 從競標輸入與草稿輸出 `market`、`equal` 或 `fit` 結果 |
+| `evaluate` | 從評估輸入輸出排名相關、前 N 命中、估值誤差及出賽誤差 |
+| `backtest` | 從重播輸入輸出逐日先發、IL、加人紀錄、週勝負與季後賽結果 |
+| `auction-paths` | 依研究設定比較買入／跳過後的整場競標路徑 |
+| `migrate-projection` | 以明確的新模型與校正快照轉換舊投影輸入 |
 
-既有快照可完全離線重建；結果拒絕覆寫，請使用新的輸出目錄。
+預測情境必須共用名單、聯盟、賽季與來源快照，只改模型。公允價範圍顯示在球員詳情，不改動正式價格或停止價。
 
-```sh
-uv run fba project /path/snapshot-SHA256 --model /path/model.json --output /path/annual
-uv run fba prepare-auction /path/projection-input-SHA256 \
-  --model /path/model.json --output /path/auction
-uv run fba calculate /path/projection-input.json --output /path/results
-uv run fba evaluate /path/evaluation-input.json --output /path/results
-uv run fba backtest /path/replay-input.json --output /path/results
-uv run fba migrate-projection /path/old-input.json --model /path/model.json \
-  --calibration-snapshot /path/snapshot-SHA256 --output /path/converted
-```
+`backtest` 輸入見 [replay.schema.json](design/schemas/replay.schema.json)。傷情／賽程原檔使用 `observations`，實績原檔使用 `boxes`，皆需 `format_version: 1`，並由 `source_artifact` 對應凍結的來源檔；型別見 [contracts/backtest.py](src/fba/contracts/backtest.py)。實際賽程中的未出場須明列零數據，取消的日期不得填假 DNP。重播格式 2 的 `decision_times` 涵蓋賽季每日，`schedules` 可為空；更新完整替換該球員賽程，保留已結束日期，僅在公布後生效。缺當時公開資料證明時標為 `retrospective`。
 
-`prepare-auction` 可重複加上 `--scenario "情境名稱" /path/alternate-projection`，比較已建置的替代模型。所有情境須使用相同名單、聯盟、賽季與凍結快照；模型設定、計算結果及來源雜湊隨競標輸入保存。球員明細顯示各情境與基準的公允價範圍，缺估值時明確標示無法計算；這不是信賴區間，情境不會改動正式價格或停損價。
+`auction-paths` 的研究設定範例為 [auction-stress.json](examples/2026-27/auction-stress.json)，包含 18 組配對情境。`--ceiling` 是本次提名的最高出價；跳過後仍可能再買。後續沿用凍結的局部估值，依公開成交調整預算；任一路徑未填滿全部隊伍即標為未完成，情境比例不是勝率。此研究不在現場成交流程執行。
 
-`evaluate` 對已結束賽季輸出排名相關、前 N 命中（N = 隊數 × 名單格數）、估值誤差與出賽誤差。估值誤差比較預測與季末實績按同一規則換算的價值，取兩份前 N 名聯集的絕對差中位數；它不是成交價誤差或停止價可信區間。
+## 開發與驗證
 
-`backtest` 使用模型格式 6 與 `design/schemas/replay.schema.json`：凍結的競標投影、完整起始名單、自由球員、對戰表、每日決策時間、帶公布時間的傷情和逐場實績。傷情檔是 `{"format_version":1,"observations":[...]}`，實績檔是 `{"format_version":1,"boxes":[...]}`；每筆指定 `source_artifact`，原檔需列入帶來源與雜湊的 `artifacts`。實績必須包含明列的零數據 DNP。輸出逐日先發／IL／加人紀錄、週勝負、排名及季後賽結果；串流與傷兵補人共用設定額度。
+`scripts/check` 建立鎖定環境，執行格式、lint、型別、死碼、依賴與測試檢查。資料型別由 `src/fba/contracts/` 定義，`design/schemas/` 由型別產生；[design/contracts.pyi](design/contracts.pyi) 引用正式型別，另定義尚未實作的每週輔助介面。
 
-重播輸入格式 1 使用固定賽程；格式 2 的 `decision_times` 須涵蓋設定賽季的每個聯盟當地日期，並提供 `schedules`（無更新時為 `[]`）。每筆賽程更新含 `player_id`、`published_at`、`games: [{"day":"YYYY-MM-DD","tipoff":"帶時區的開賽時間"}]`、`source_artifact`，完整替換該球員賽程，保留已結束日期；來源檔同樣使用 `{"format_version":1,"observations":[...]}` 並凍結雜湊。決策只讀當時已公布的更新，實績按最後實際賽程提供；取消的原日期不要填假 DNP，改期或新增日期須提供實績。
+CI 比較同機器上 20 個新狀態的並行與單程序結果，要求完全一致，暖機後並行 p95 不得慢超過 10%。選秀前的絕對秒數驗收另以使用的 Mac 重播 140 筆成交與撤銷；驗收報告不放 Git。
 
-歷史季前資料不足時只能標為 `retrospective`，不能宣稱當時已知；目前真實歷史資料仍缺完整公開時間證明。`design/contracts.pyi` 引用正式資料型別，另保留尚未實作的每週輔助介面。交付報告、原始資料與快照留在 Git 外。
-
-研究用整場競標壓力測試：`uv run fba auction-paths /path/auction-input.json --draft /path/draft.json --settings examples/2026-27/auction-stress.json --player PLAYER_ID --ceiling 30 --mode fit --output /path/results`。設定決定對手假設、提名順序、種子及重試輪數，範例共 18 組配對。`ceiling` 是本次提名的最高出價，跳過不代表永久排除該球員；後續沿用凍結的局部估值，依公開成交重新分配預算。輸出包含完整成交與出價紀錄；任一路徑未填滿全部隊伍即標為未完成，情境比例不是勝率。此研究不在現場成交流程執行。
+若部署環境禁止從暫存目錄載入原生程式，可在安裝套件 `fba/native/<system>-<machine>/season.so` 放入相同原始碼與工具鏈的產物。啟動仍需本機編譯器重新編譯並逐位元核對，一致才載入；編譯產物不放 Git。

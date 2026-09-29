@@ -211,7 +211,7 @@ class CalibrationMethod(Record):
 
 
 class ModelConfig(Record):
-    """Stage 1 accepts only settings consumed by snapshot construction."""
+    """Model format 1: calibration settings for snapshot construction."""
 
     format_version: FormatVersion
     calibration: CalibrationMethod
