@@ -99,7 +99,7 @@ class NativeKernel:
             self.close()
             raise SolverError(f"management: cannot load verified native kernel: {exc}") from exc
         function = self.library.fba_season
-        function.argtypes = [ctypes.c_int] * 12 + [ctypes.c_void_p] * 17 + [ctypes.c_int]
+        function.argtypes = [ctypes.c_int] * 13 + [ctypes.c_void_p] * 17 + [ctypes.c_int]
         function.restype = ctypes.c_int
         self.function = cast(NativeCall, function)
 
@@ -119,7 +119,11 @@ class NativeKernel:
         pool: tuple[int, ...],
         tactics: TacticalArrays | None,
         trace: bool,
+        *,
+        primary_only: bool = False,
     ) -> SeasonRun:
+        if primary_only and trace:
+            raise DataError("management: primary-only scoring cannot produce a full trace")
         validate_arrays(arrays, rosters, pool)
         validate_tactics(arrays, rosters, tactics)
         samples, days, n = arrays.health.shape
@@ -129,7 +133,8 @@ class NativeKernel:
         sizes = np.array([len(r) for r in rosters], dtype=np.int32)
         free = np.zeros(n, dtype=np.uint8)
         free[list(pool)] = 1
-        counts = np.zeros((samples, len(rosters), arrays.week_count, n))
+        scored_teams = 1 if primary_only else len(rosters)
+        counts = np.zeros((samples, scored_teams, arrays.week_count, n))
         adds = np.zeros((samples, len(rosters), arrays.week_count, 3), dtype=np.int32)
         capacity = (
             days
@@ -191,6 +196,7 @@ class NativeKernel:
             arrays.waiver_days,
             int(arrays.next_day),
             int(arrays.weekly_lock),
+            scored_teams,
             *(ctypes.c_void_p(a.ctypes.data) for a in buffers),
             ctypes.byref(options),
             error,

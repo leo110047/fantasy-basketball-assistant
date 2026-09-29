@@ -13,7 +13,7 @@ from fba.contracts.auction import (
     Plan,
 )
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import AuctionModel
+from fba.contracts.config import AuctionModel, ManagedPricingModel
 from fba.contracts.season import SeasonKernel
 from fba.core.fit import FeatureRunner, FittedUtility
 from fba.core.market import price_market
@@ -218,6 +218,12 @@ def calculate_auction(
                 inputs.management,
                 kernel,
                 base,
+                inputs.config.model.pricing
+                if isinstance(inputs.config.model, ManagedPricingModel)
+                else None,
+                inputs.config.model.management
+                if isinstance(inputs.config.model, ManagedPricingModel)
+                else None,
             )
             portfolio, base, fit = fitted.solve(base, feature_runner)
     caps = caps_for(portfolio, market, base, runner)

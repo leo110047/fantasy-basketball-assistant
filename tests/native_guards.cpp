@@ -5,7 +5,8 @@
 
 static void reject(const Input& input, const std::function<void(Simulation&)>& corrupt,
                    const char* expected) {
-    Simulation simulation(input);
+    MatchingCounts matching;
+    Simulation simulation(input, matching);
     simulation.validate_team(0);
     simulation.validate_ownership();
     corrupt(simulation);

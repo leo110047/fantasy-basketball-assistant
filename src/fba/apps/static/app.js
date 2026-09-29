@@ -43,7 +43,8 @@ function status() {
     el(`${stage}Status`).textContent = `${label}：${text}`;
   }
   el("retry").hidden = ![jobs?.equal, jobs?.fit].some(j => j?.status === "failed");
-  el("compare").disabled = saving || comparing || !selected || jobs?.state_sha256 !== sha() || jobs?.equal.status !== "ready";
+  const own = desk.market.market.room.find(t => t.id === desk.state.mine);
+  el("compare").disabled = saving || comparing || !selected || !own.slots || jobs?.state_sha256 !== sha() || jobs?.[el("mode").value]?.status !== "ready";
 }
 function renderNominee() {
   const p = players.get(selected), current = result();
@@ -166,12 +167,12 @@ async function poll() {
 }
 async function comparison(event) {
   event.preventDefault(); if (comparing || saving) return;
-  invalidateComparison(); const revision = compareRevision, state = sha(), player = selected;
+  invalidateComparison(); const revision = compareRevision, state = sha(), player = selected, mode = el("mode").value;
   comparing = true; controls(); const began = performance.now();
   try {
     const price = integer(el("comparePrice").value);
-    const value = await api("compare", {state_sha256:state, player_id:player, price});
-    if (revision === compareRevision && state === sha() && player === selected && !saving) {
+    const value = await api("compare", {state_sha256:state, player_id:player, price, mode});
+    if (revision === compareRevision && state === sha() && player === selected && mode === el("mode").value && !saving) {
       renderComparison(value, players, desk);
       requestAnimationFrame(() => requestAnimationFrame(() => {
         if (revision === compareRevision) measure("compare", state, began);

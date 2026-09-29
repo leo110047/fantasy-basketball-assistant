@@ -16,7 +16,13 @@ def managed_batch(
     kernel = NativeKernel(compiled)
     try:
         manager = ManagedSeason(
-            request.league, request.parameters, request.management, request.players, kernel
+            request.league,
+            request.parameters,
+            request.management,
+            request.players,
+            kernel,
+            pricing=request.pricing,
+            tactics=request.tactics,
         )
         manager.set_pool(request.pool)
         return marginal_batch(manager, request.tasks)

@@ -85,7 +85,7 @@ export function renderPlan(result, players, market, nominate) {
   el("plan").replaceChildren(); el("nominations").replaceChildren();
   if (!result) { el("planNote").textContent = "更新中；完成後顯示目前狀態的方案。"; return; }
   if (result.plan.reason) { el("planNote").textContent = `無合法方案：${result.plan.reason}`; return; }
-  el("planNote").textContent = `尚需 ${result.plan.purchases.length} 人 · 預計支出 ${money(result.plan.cost)}${result.fit ? ` · 陣容調整步長 ${result.fit.selected_step}` : ""}`;
+  el("planNote").textContent = `尚需 ${result.plan.purchases.length} 人 · 預計支出 ${money(result.plan.cost)}${result.fit ? ` · 陣容調整步長 ${result.fit.selected_step}${result.fit.method === "paired_managed_marginal" ? ` · 管理情境估計（傷兵替補${result.fit.policy.streaming_slots ? "、串流" : ""}${result.fit.policy.upgrades ? "、升級" : ""}）` : ""}` : ""}`;
   const quotes = new Map(market.prices.map(p => [p.player_id,p]));
   el("plan").replaceChildren(...result.plan.players.map(id => {
     const row = node("div", "", "plan-row"), owned = !result.plan.purchases.includes(id);

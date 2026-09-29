@@ -6,21 +6,35 @@ from scipy.special import expit
 from scipy.stats import norm, qmc
 
 from fba.contracts.auction import (
+    AuctionPlayer,
     FitStep,
     FitSummary,
+    FittedPlayer,
     Infeasible,
+    ManagedFitSummary,
     MarginalRequest,
     MarketResult,
     Plan,
     SolverError,
 )
 from fba.contracts.base import DataError
-from fba.contracts.config import FitParameters
+from fba.contracts.config import FitParameters, ManagementParameters, PricingParameters
 from fba.contracts.season import ManagementInput, MarginalFeature, MarginalTask, SeasonKernel
-from fba.core.managed import FloatArray, ManagedSeason
+from fba.core.managed import FloatArray, ManagedMoments, ManagedSeason
 from fba.core.portfolio import Portfolio
 from fba.core.roster import capacity, completable
 from fba.core.scoring import categories
+
+type CompletionCache = dict[tuple[tuple[str, ...], ...], bool]
+
+
+def benchmark_completable(
+    portfolio: Portfolio, players: tuple[AuctionPlayer, ...], cache: CompletionCache
+) -> bool:
+    positions = tuple(sorted(tuple(sorted(p.positions)) for p in players))
+    if positions not in cache:
+        cache[positions] = completable(portfolio.league, players)
+    return cache[positions]
 
 
 class FeatureRunner(Protocol):
@@ -28,12 +42,14 @@ class FeatureRunner(Protocol):
 
 
 def marginal_batch(
-    manager: ManagedSeason, tasks: tuple[MarginalTask, ...]
+    manager: ManagedSeason,
+    tasks: tuple[MarginalTask, ...],
 ) -> tuple[MarginalFeature, ...]:
     features: list[MarginalFeature] = []
     for task in tasks:
         difference = (
-            manager.project((*task.rest, task.player)).boxes - manager.project(task.rest).boxes
+            paired_project(manager, (*task.rest, task.player), task.opponents).boxes
+            - paired_project(manager, task.rest, task.opponents).boxes
         )
         features.append(
             MarginalFeature(
@@ -43,14 +59,27 @@ def marginal_batch(
     return tuple(features)
 
 
+def paired_project(
+    manager: ManagedSeason, roster: tuple[int, ...], opponents: tuple[tuple[int, ...], ...]
+) -> ManagedMoments:
+    if not opponents:
+        return manager.project(roster)
+    return manager.project_primary((roster, *opponents))
+
+
 def matrix_root(covariance: FloatArray) -> FloatArray:
     values, vectors = np.linalg.eigh((covariance + covariance.T) / 2)
     return (vectors * np.sqrt(np.maximum(values, 0))) @ vectors.T
 
 
 def opponent_rosters(
-    portfolio: Portfolio, market: MarketResult, own_id: str, complete: tuple[str, ...]
+    portfolio: Portfolio,
+    market: MarketResult,
+    own_id: str,
+    complete: tuple[str, ...],
+    completion_cache: CompletionCache | None = None,
 ) -> tuple[tuple[str, ...], ...]:
+    cache = {} if completion_cache is None else completion_cache
     by_id = {p.id: p for p in portfolio.players}
     prices = {p.player_id: p for p in market.prices}
     ordered = sorted(
@@ -75,7 +104,9 @@ def opponent_rosters(
                     p
                     for p in ordered
                     if p.id not in used
-                    and completable(portfolio.league, tuple(by_id[i] for i in roster) + (p,))
+                    and benchmark_completable(
+                        portfolio, tuple(by_id[i] for i in roster) + (p,), cache
+                    )
                 ),
                 None,
             )
@@ -97,12 +128,24 @@ class FittedUtility:
         management: ManagementInput,
         kernel: SeasonKernel,
         base: Plan,
+        pricing: PricingParameters | None = None,
+        tactics: ManagementParameters | None = None,
     ) -> None:
         self.portfolio, self.market, self.own_id = portfolio, market, own_id
         self.parameters = parameters
         self.management = management
+        self.pricing, self.tactic_parameters = pricing, tactics
+        self.opponent_rosters: tuple[tuple[int, ...], ...] = ()
+        self.rival_cache: dict[tuple[int, ...], tuple[tuple[int, ...], ...]] = {}
+        self.completion_cache: CompletionCache = {}
         self.manager = ManagedSeason(
-            portfolio.league, parameters, management, portfolio.players, kernel
+            portfolio.league,
+            parameters,
+            management,
+            portfolio.players,
+            kernel,
+            pricing=pricing,
+            tactics=tactics,
         )
         self.league = portfolio.league
         samples = int(log2(parameters.samples))
@@ -131,7 +174,9 @@ class FittedUtility:
         self.reference(base.players)
 
     def waiver_pool(self, base: Plan) -> tuple[int, ...]:
-        opponents = opponent_rosters(self.portfolio, self.market, self.own_id, base.players)
+        opponents = opponent_rosters(
+            self.portfolio, self.market, self.own_id, base.players, self.completion_cache
+        )
         held = (
             set(base.players)
             | {i for r in opponents for i in r}
@@ -155,12 +200,18 @@ class FittedUtility:
         )
 
     def reference(self, complete: tuple[str, ...]) -> None:
-        rosters = opponent_rosters(self.portfolio, self.market, self.own_id, complete)
+        rosters = opponent_rosters(
+            self.portfolio, self.market, self.own_id, complete, self.completion_cache
+        )
         held = {self.manager.index[i] for r in rosters for i in r}
         self.manager.set_pool(tuple(i for i in self.initial_pool if i not in held))
-        projected = self.manager.project_many(
-            tuple(tuple(self.manager.index[i] for i in r) for r in rosters)
-        )
+        self.opponent_rosters = tuple(tuple(self.manager.index[i] for i in r) for r in rosters)
+        if self.pricing is None:
+            projected = self.manager.project_many(self.opponent_rosters)
+        else:
+            own = tuple(self.manager.index[i] for i in complete)
+            joint = self.manager.project_many((own, *self.opponent_rosters))
+            projected = ManagedMoments(joint.mean[1:], joint.covariance[1:], joint.boxes[:, 1:])
         means = projected.mean.reshape(-1, self.manager.k)
         covariances = projected.covariance.reshape(-1, self.manager.k, self.manager.k)
         index = np.arange(len(self.draws)) % len(means)
@@ -183,8 +234,28 @@ class FittedUtility:
             self.opponent.std(axis=0), [floors[c.id] for c in self.league.categories]
         )
 
+    def rivals(self, roster: tuple[int, ...]) -> tuple[tuple[int, ...], ...]:
+        roster = tuple(sorted(roster))
+        if roster not in self.rival_cache:
+            complete = tuple(self.manager.ids[i] for i in roster)
+            rosters = opponent_rosters(
+                self.portfolio, self.market, self.own_id, complete, self.completion_cache
+            )
+            self.rival_cache[roster] = tuple(
+                tuple(self.manager.index[i] for i in r) for r in rosters
+            )
+        return self.rival_cache[roster]
+
+    def candidate_rivals(self, rest: tuple[int, ...], player: int) -> tuple[tuple[int, ...], ...]:
+        rivals = self.rivals(rest)
+        return self.rivals((*rest, player)) if any(player in r for r in rivals) else rivals
+
+    def project(self, roster: tuple[int, ...]) -> ManagedMoments:
+        rivals = self.opponent_rosters if self.pricing else ()
+        return paired_project(self.manager, roster, rivals)
+
     def context(self, roster: tuple[int, ...]) -> tuple[FloatArray, FloatArray]:
-        result = self.manager.project(roster)
+        result = self.project(roster)
         mean = result.mean.mean(axis=0)
         covariance = result.covariance.mean(axis=0) + np.cov(result.mean, rowvar=False, bias=True)
         return mean, self.draws @ matrix_root(covariance).T
@@ -201,7 +272,7 @@ class FittedUtility:
         )
 
     def block_scores(self, roster: tuple[int, ...], noise: FloatArray) -> FloatArray:
-        boxes = self.manager.project(roster).boxes
+        boxes = self.project(roster).boxes
         means = np.array(
             [
                 part.mean(axis=(0, 1))
@@ -237,13 +308,15 @@ class FittedUtility:
         losses: list[tuple[int, float]] = []
         for pid in base.purchases:
             p = self.manager.index[pid]
-            rest = self.manager.project(tuple(i for i in self.anchor if i != p))
+            rest = self.project(tuple(i for i in self.anchor if i != p))
             losses.append((p, float((mean - rest.mean.mean(axis=0)) @ gradient)))
         preferred = tuple(p for p, _ in sorted(losses, key=lambda pair: (pair[1], pair[0])))
         feature = np.zeros((len(self.portfolio.players), self.manager.k))
         tasks: list[MarginalTask] = []
         for i, player in enumerate(self.portfolio.players):
             if not player.active or player.utility is None or player.id in self.portfolio.owned:
+                continue
+            if self.pricing is not None and not self.portfolio.available[i]:
                 continue
             p = self.manager.index[player.id]
             q = (
@@ -260,7 +333,8 @@ class FittedUtility:
                 )
             )
             rest = tuple(i for i in self.anchor if i != q)
-            tasks.append(MarginalTask(index=i, player=p, rest=rest))
+            rivals = self.candidate_rivals(rest, p) if self.pricing else ()
+            tasks.append(MarginalTask(index=i, player=p, rest=rest, opponents=rivals))
         values = (
             marginal_batch(self.manager, tuple(tasks))
             if runner is None
@@ -272,6 +346,8 @@ class FittedUtility:
                     players=self.portfolio.players,
                     pool=self.manager.pool,
                     tasks=tuple(tasks),
+                    pricing=self.pricing,
+                    tactics=self.tactic_parameters,
                 )
             )
         )
@@ -301,6 +377,8 @@ class FittedUtility:
         ]
         for step in self.parameters.steps:
             vector = (1 - step) * self.portfolio.values + step * managed
+            if self.pricing is not None:
+                vector = np.round(vector, self.portfolio.parameters.result_decimals)
             players = tuple(
                 p.model_copy(update={"utility": float(v) if p.utility is not None else None})
                 for p, v in zip(self.portfolio.players, vector, strict=True)
@@ -328,6 +406,12 @@ class FittedUtility:
             accepted = proposed_score > score + self.parameters.improvement_tolerance and bool(
                 np.all(delta > self.parameters.improvement_tolerance)
             )
+            if self.pricing is not None and proposal.players == best.players:
+                # An unchanged roster has unchanged managed outcomes; retain its new marginal
+                # prices instead of silently discarding management value when no swap is needed.
+                accepted = proposed_score >= score - self.parameters.improvement_tolerance and bool(
+                    np.all(delta >= -self.parameters.improvement_tolerance)
+                )
             steps.append(
                 FitStep(
                     step=step,
@@ -346,14 +430,18 @@ class FittedUtility:
                     step,
                 )
         selected.calls = calls
-        return (
-            selected,
-            best,
-            FitSummary(
-                anchor=base.players,
-                selected_step=alpha,
-                steps=tuple(steps),
-                samples=len(self.draws),
-                health_samples=self.parameters.health_samples,
-            ),
+        summary = FitSummary(
+            anchor=base.players,
+            selected_step=alpha,
+            steps=tuple(steps),
+            samples=len(self.draws),
+            health_samples=self.parameters.health_samples,
         )
+        if self.pricing is not None:
+            summary = ManagedFitSummary(
+                **summary.model_dump(),
+                method="paired_managed_marginal",
+                players=tuple(FittedPlayer(id=p.id, utility=p.utility) for p in selected.players),
+                policy=self.pricing,
+            )
+        return selected, best, summary

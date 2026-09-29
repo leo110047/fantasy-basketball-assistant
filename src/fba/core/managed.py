@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 
 from fba.contracts.auction import AuctionPlayer
 from fba.contracts.base import DataError
-from fba.contracts.config import FitParameters, LeagueRules, ManagementParameters
+from fba.contracts.config import FitParameters, LeagueRules, ManagementParameters, PricingParameters
 from fba.contracts.season import (
     ManagementInput,
     ManagementPolicy,
@@ -49,8 +49,14 @@ class ManagedSeason:
         players: tuple[AuctionPlayer, ...],
         kernel: SeasonKernel,
         known_health: NDArray[np.bool_] | None = None,
+        pricing: PricingParameters | None = None,
+        tactics: ManagementParameters | None = None,
     ) -> None:
         self.league, self.parameters, self.kernel = league, parameters, kernel
+        if (pricing is None) != (tactics is None):
+            raise DataError("management.pricing: policy and tactical parameters are both required")
+        self.pricing, self.tactic_parameters = pricing, tactics
+        self.pricing_tactics: TacticalArrays | None = None
         by_id = {p.id: p for p in inputs.players}
         if len(by_id) != len(inputs.players) or len(set(inputs.stat_ids)) != len(inputs.stat_ids):
             raise DataError("management: duplicate player or statistic axes")
@@ -143,6 +149,7 @@ class ManagedSeason:
         self.orders = np.argsort(-ranked, axis=-1, kind="stable").astype(np.int32)
         self.pool: tuple[int, ...] = ()
         self.cache: dict[tuple[tuple[int, ...], ...], ManagedMoments] = {}
+        self.primary_cache: dict[tuple[tuple[int, ...], ...], ManagedMoments] = {}
         self.lineups: dict[tuple[int, ...], tuple[int, ...]] = {}
         self.controls: dict[tuple[int, ...], tuple[FloatArray, FloatArray]] = {}
 
@@ -352,10 +359,42 @@ class ManagedSeason:
             raise DataError("management.roster: duplicate players or capacity exceeded")
         if rosters in self.cache:
             return self.cache[rosters]
-        counts = self.kernel(self.arrays(), rosters, self.pool)
+        counts = self.run_counts(rosters)
         result = self.summarize(rosters, counts)
         self.cache[rosters] = result
         return result
+
+    def project_primary(self, rosters: tuple[tuple[int, ...], ...]) -> ManagedMoments:
+        rosters = tuple(tuple(sorted(r)) for r in rosters)
+        if rosters in self.cache:
+            result = self.cache[rosters]
+            return ManagedMoments(result.mean[0], result.covariance[0], result.boxes[:, 0])
+        if rosters not in self.primary_cache:
+            counts = self.run_counts(rosters, primary_only=True)
+            result = self.summarize(rosters[:1], counts[:, :1])
+            self.primary_cache[rosters] = ManagedMoments(
+                result.mean[0], result.covariance[0], result.boxes[:, 0]
+            )
+        return self.primary_cache[rosters]
+
+    def run_counts(
+        self, rosters: tuple[tuple[int, ...], ...], *, primary_only: bool = False
+    ) -> FloatArray:
+        if self.pricing is not None and self.tactic_parameters is not None:
+            policy = ManagementPolicy(
+                streaming_slots=tuple(min(self.pricing.streaming_slots, len(r)) for r in rosters),
+                reserve_adds=self.tactic_parameters.reserve_adds,
+                upgrades=self.pricing.upgrades,
+            )
+            if self.pricing_tactics is None:
+                self.pricing_tactics = self.tactics(policy, self.tactic_parameters)
+            tactics = self.pricing_tactics.with_policy(policy)
+            counts = self.kernel.run(
+                self.arrays(), rosters, self.pool, tactics, False, primary_only=primary_only
+            ).counts
+        else:
+            counts = self.kernel(self.arrays(), rosters, self.pool)
+        return counts
 
     def summarize(self, rosters: tuple[tuple[int, ...], ...], counts: FloatArray) -> ManagedMoments:
         physical = counts @ self.raw
@@ -376,3 +415,4 @@ class ManagedSeason:
         if pool != self.pool:
             self.pool = pool
             self.cache.clear()
+            self.primary_cache.clear()

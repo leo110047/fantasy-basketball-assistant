@@ -13,7 +13,7 @@ uv run fba annual --league /path/league.json --season /path/season.json \
 
 `annual` 完成抓取、凍結、投影、估值、競標開場與上一季評估，全部成功才發布。`opening-draft.json` 是以通用 Team 1 為我方的空白範本；正式選秀請依下方指令指定席次建立草稿。加 `--previous /path/previous-projection` 比較同季上一版公允價變化最大的 30 人。人工調整檔可從 `{"format_version":1,"adjustments":[]}` 開始。
 
-模型格式 8 以完整 NBA 名單限制整隊預期分鐘；輪替造成的缺賽不計為傷病。`health.injury_share` 拆分其他預期缺賽中的傷病比例，目前 0.5 是未校準假設；已知回歸日前的缺陣另外處理。`team-minutes.json` 列出分配、池外球員與資料缺口。舊投影需從凍結快照重新 `project`。
+模型格式 9 以完整 NBA 名單限制整隊預期分鐘；輪替造成的缺賽不計為傷病。`health.injury_share` 拆分其他預期缺賽中的傷病比例，目前 0.5 是未校準假設；已知回歸日前的缺陣另外處理。`team-minutes.json` 列出分配、池外球員與資料缺口。舊投影需從凍結快照重新 `project`。
 
 每次 `project`／`annual` 會產生 `forecast.json`，請保留供下季評估。在下季 `season.sources` 加入 `role: "forecast_archive"`、`adapter: "fba_forecast"`，指定上一季 `season_id` 與此檔的來源、時間、SHA-256；本機存檔使用 `delivery: "manual"`、`file:///` URL、`manual_file` 與 `manual_capture`。缺預測存檔時 `annual` 會停止，可先用 `build`／`project` 完成資料建置，不能宣稱換季驗收完成。
 
@@ -32,7 +32,7 @@ uv run fba serve /path/auction-input-SHA256/auction-input.json \
 
 每次保存會將被替換的檔案保留在草稿旁的 `.<草稿檔名>.history/`，包含保存間隙的外部修改。需復原時先停止服務、保留現有草稿，再從歷史檔選擇正確版本。歷史檔不會自動刪除；保存需要支援原子交換的 macOS／Linux 本機檔案系統。
 
-市場與預算先更新，停損價在背景重算；「更新中」不顯示舊停損價。計算失敗不影響已保存成交，可按重試。成交若顯示「保存未確認」，先重新整理核對紀錄，避免重複登錄。買／不買比較使用當前類別加總模型；依陣容調整是假設下的局部估值，並非實戰勝率。
+市場與預算先更新，停損價在背景重算；「更新中」不顯示舊停損價。計算失敗不影響已保存成交，可按重試。成交若顯示「保存未確認」，先重新整理核對紀錄，避免重複登錄。買／不買比較沿用目前選取模式的估值。依陣容調整把傷兵替補、串流與永久升級納入共同模擬；加人額度與期間讀取聯盟設定，管理策略讀取 `pricing` 與 `management`。停止價仍是局部估計，受傷病與對手策略假設影響，並非實戰勝率。
 
 服務僅限本機、離線讀取凍結輸入。`auction.jsonl` 保存各次計算的草稿、設定／資料雜湊、結果與耗時；瀏覽器 console 的 `fba timing` 記錄畫面完成時間。草稿、日誌與備份請放在專案外。
 

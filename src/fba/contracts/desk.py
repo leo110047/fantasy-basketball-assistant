@@ -22,6 +22,7 @@ class StateRequest(Record):
 
 
 class CompareRequest(StateRequest):
+    mode: Literal["equal", "fit"]
     player_id: Text
     price: PositiveInt
 
@@ -54,6 +55,7 @@ class DeskBootstrap(Record):
 
 
 class Compared(Record):
+    mode: Literal["equal", "fit"]
     state_sha256: Digest
     comparison: Comparison
 

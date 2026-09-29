@@ -9,7 +9,13 @@ from fba.contracts.base import (
     Record,
     Text,
 )
-from fba.contracts.config import ConfigBundle, FitParameters, LeagueRules
+from fba.contracts.config import (
+    ConfigBundle,
+    FitParameters,
+    LeagueRules,
+    ManagementParameters,
+    PricingParameters,
+)
 from fba.contracts.data import Digest
 from fba.contracts.projection import FrozenCalculationInput
 from fba.contracts.season import ManagementInput, MarginalTask
@@ -41,6 +47,8 @@ class MarginalRequest(Record):
     players: tuple[AuctionPlayer, ...]
     pool: tuple[int, ...]
     tasks: tuple[MarginalTask, ...]
+    pricing: PricingParameters | None
+    tactics: ManagementParameters | None
 
 
 class DraftTeam(Record):
@@ -160,6 +168,17 @@ class FitSummary(Record):
     health_samples: PositiveInt
 
 
+class FittedPlayer(Record):
+    id: Text
+    utility: Finite | None
+
+
+class ManagedFitSummary(FitSummary):
+    method: Literal["paired_managed_marginal"]
+    players: tuple[FittedPlayer, ...]
+    policy: PricingParameters
+
+
 class AuctionResult(Record):
     format_version: FormatVersion
     algorithm: Text
@@ -171,7 +190,7 @@ class AuctionResult(Record):
     caps: tuple[Cap, ...]
     nominations: Nominations
     solver_calls: Natural
-    fit: FitSummary | None
+    fit: ManagedFitSummary | FitSummary | None
 
 
 class Comparison(Record):

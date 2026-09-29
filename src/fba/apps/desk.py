@@ -7,7 +7,13 @@ from typing import Literal
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.desk import log_execution, save_draft
 from fba.apps.auction import AuctionSession
-from fba.contracts.auction import AuctionInput, AuctionResult, DraftState, MarketUpdate
+from fba.contracts.auction import (
+    AuctionInput,
+    AuctionResult,
+    DraftState,
+    ManagedFitSummary,
+    MarketUpdate,
+)
 from fba.contracts.base import DataError
 from fba.contracts.desk import (
     Compared,
@@ -229,12 +235,28 @@ class AuctionDesk:
         with self.lock:
             self.require_state(request.state_sha256)
             state, market = self.desk.state, self.desk.market.market
-            if self.equal.current(request.state_sha256).status != "ready":
-                raise DataError("comparison: current additive calculation is not ready")
+            if not next(team.slots for team in market.room if team.id == state.mine):
+                raise DataError("comparison: own roster is already complete")
+            job = (self.equal if request.mode == "equal" else self.fit).current(
+                request.state_sha256
+            )
+            if job.status != "ready" or job.result is None:
+                raise DataError(f"comparison: current {request.mode} calculation is not ready")
+            fitted = job.result.fit
+            if request.mode == "fit" and not isinstance(fitted, ManagedFitSummary):
+                raise DataError(
+                    "comparison: rebuild with a managed pricing model for fit comparison"
+                )
         start = perf_counter_ns()
         players = effective_players(self.inputs.config.league, self.inputs.players, state)
+        if request.mode == "fit" and isinstance(fitted, ManagedFitSummary):
+            utilities = {p.id: p.utility for p in fitted.players}
+            if set(utilities) != {p.id for p in players}:
+                raise DataError("comparison: fitted player population differs from current state")
+            players = tuple(p.model_copy(update={"utility": utilities[p.id]}) for p in players)
         portfolio = portfolio_for(self.inputs, players, market, state)
         result = Compared(
+            mode=request.mode,
             state_sha256=request.state_sha256,
             comparison=compare(portfolio, request.player_id, request.price, self.comparison_runner),
         )

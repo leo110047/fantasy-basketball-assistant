@@ -1,5 +1,5 @@
 {
-  "format_version": 8,
+  "format_version": 9,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -337,6 +337,16 @@
       "reference": "Configured injury/noninjury decomposition; sensitivity endpoints 0 and 1; no historical injury-label calibration",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "The 0.5 midpoint allocates half of unconstrained missed appearances to injury episodes; known return dates remain definite absence and constrained role losses remain noninjury. Not an empirical estimate."
+    }
+  },
+  "pricing": {
+    "streaming_slots": 1,
+    "upgrades": true,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Shared daily management kernel; configured league acquisition limits and periods",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "One managed streaming seat and permanent upgrades compete with injury replacement for configured acquisition capacity and shared free agents. Local paired marginal approximation, not an exact counterfactual championship probability."
     }
   }
 }

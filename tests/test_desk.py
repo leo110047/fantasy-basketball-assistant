@@ -248,7 +248,7 @@ def test_running_result_cannot_replace_newer_state_and_pending_work_coalesces(de
 def test_compare_uses_exact_state_and_refuses_busy_or_stale(desk):
     wait_for(lambda: desk.results().equal.status == "ready")
     sha = desk.results().state_sha256
-    request = CompareRequest(state_sha256=sha, player_id="000", price=1)
+    request = CompareRequest(state_sha256=sha, player_id="000", price=1, mode="equal")
     result = desk.comparison(request)
     assert result.state_sha256 == sha
     assert result.comparison.buy.players

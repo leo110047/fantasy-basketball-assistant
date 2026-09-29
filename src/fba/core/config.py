@@ -9,6 +9,7 @@ from fba.contracts.config import (
     HealthModel,
     LeagueRules,
     Linear,
+    ManagedPricingModel,
     ModelConfig,
     Period,
     PreparationModel,
@@ -391,6 +392,11 @@ def validate_team_minutes(
     model: TeamBudgetModel, season: SeasonConfig, league: LeagueRules
 ) -> None:
     p = model.team_minutes
+    if isinstance(model, ManagedPricingModel):
+        if model.pricing.streaming_slots > len(league.starter_slots) + league.bench_slots:
+            raise ConfigError("model.pricing.streaming_slots: exceeds roster capacity")
+        if model.pricing.evidence.as_of > season.snapshot_as_of:
+            raise ConfigError("model.pricing.evidence: after snapshot cutoff")
     if isinstance(model, HealthModel) and model.health.evidence.as_of > season.snapshot_as_of:
         raise ConfigError("model.health.evidence: after snapshot cutoff")
     if p.unmodeled_reserve_minutes >= p.players_on_court * (

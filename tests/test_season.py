@@ -59,6 +59,10 @@ def test_all_reference_traces_adds_and_managed_moments(kernel, case_index):
     )
     tactics = manager.tactics(policy, management_parameters(manager, case["reserve"]))
     result = kernel.run(arrays, rosters, manager.pool, tactics, True)
+    primary = kernel.run(arrays, rosters, manager.pool, tactics, False, primary_only=True)
+    np.testing.assert_array_equal(primary.counts, result.counts[:, :1])
+    np.testing.assert_array_equal(primary.adds, result.adds)
+    assert not primary.events
     assert oracle_history(manager, result.events, len(rosters)) == case["history"]
     np.testing.assert_array_equal(result.adds, data[f"{case_index}_adds"])
     np.testing.assert_array_equal(result.counts.sum(axis=-1), data[f"{case_index}_started"])

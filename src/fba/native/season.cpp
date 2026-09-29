@@ -3,11 +3,15 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <numeric>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 struct Seat { int player; int origin; int group; };
 using Seats = std::vector<Seat>;
+struct LegalCheck { uint64_t removed, added; bool allowed; };
+struct Candidates { int generation = -1; std::vector<int> players; };
 
 static bool augment(int player, std::vector<uint8_t>& seen,
                     std::vector<int>& assignment, const uint64_t* masks,
@@ -23,15 +27,17 @@ static bool augment(int player, std::vector<uint8_t>& seen,
     return false;
 }
 
-static std::vector<int> starters(std::vector<int> players, int count,
+static std::vector<int> starters(std::vector<int>& players, int count,
                                 const uint64_t* masks, const uint64_t* slots,
                                 const double* priority) {
-    std::sort(players.begin(), players.end(), [&](int a, int b) {
+    if (priority) std::sort(players.begin(), players.end(), [&](int a, int b) {
         return priority[a] != priority[b] ? priority[a] > priority[b] : a < b;
     });
     std::vector<int> assignment(count, -1), chosen;
+    chosen.reserve(count);
+    std::vector<uint8_t> seen(count);
     for (int p : players) {
-        std::vector<uint8_t> seen(count, false);
+        std::fill(seen.begin(), seen.end(), false);
         if (augment(p, seen, assignment, masks, slots)) chosen.push_back(p);
         if (int(chosen.size()) == count) break;
     }
@@ -48,7 +54,7 @@ struct Options {
 };
 
 struct Input {
-    int N, D, W, S, T, R, L, I, add_limit, waiver_days, next_day, weekly_lock;
+    int N, D, W, S, T, R, L, I, add_limit, waiver_days, next_day, weekly_lock, scored_teams;
     const uint8_t *health, *games;
     const int *week, *period;
     const uint64_t *masks, *slots;
@@ -66,14 +72,46 @@ struct Team {
     std::vector<int> locked;
     int used = 0, injury_adds = 0;
     std::vector<int> streamed;
+    std::vector<uint64_t> legal_masks;
+    std::vector<LegalCheck> legal_checks;
+    int legal_count = -1;
+};
+
+struct MaskHash {
+    size_t operator()(const std::vector<uint64_t>& masks) const {
+        size_t hash = masks.size();
+        for (auto mask : masks) hash ^= size_t(mask) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+        return hash;
+    }
+};
+
+class MatchingCounts {
+    std::unordered_map<std::vector<uint64_t>, int, MaskHash> values;
+public:
+    int count(std::vector<uint64_t> masks, const Input& input) {
+        std::sort(masks.begin(), masks.end());
+        auto found = values.find(masks);
+        if (found != values.end()) return found->second;
+        std::vector<int> players(masks.size());
+        std::iota(players.begin(), players.end(), 0);
+        // Maximum matching size depends on positions, not player identity or priority.
+        int size = int(starters(players, input.L, masks.data(), input.slots, nullptr).size());
+        values.emplace(std::move(masks), size);
+        return size;
+    }
 };
 
 class Simulation {
     const Input& x;
+    MatchingCounts& matching;
     std::vector<Team> teams;
     std::vector<uint8_t> free;
     std::vector<int> release, effective;
+    std::vector<int> hurt;
+    std::vector<uint8_t> seat_seen, ownership_seen;
     int current_day = 0, current_team = 0, current_sample = 0;
+    int pool_generation = 0;
+    Candidates short_candidates, long_candidates;
 
     void emit(int kind, int old, int added, const std::vector<int>& started = {}) {
         const auto* o = x.options;
@@ -103,17 +141,22 @@ class Simulation {
     void drop(int p, int day) {
         free[p] = true;
         release[p] = day + x.waiver_days;
+        ++pool_generation;
+    }
+
+    void hold(int p) {
+        free[p] = false;
+        effective[p] = current_day + x.next_day;
+        ++pool_generation;
     }
 
     void returns(Team& team, int day, const uint8_t* today) {
-        auto old_injured = team.injured;
-        for (auto seat : old_injured) {
+        for (size_t i = 0; i < team.injured.size();) {
+            auto seat = team.injured[i];
             int p = seat.player;
             // A changed public designation may make an occupied injury slot ineligible.
-            if (!today[p] && x.eligible[(day*x.N+p)*x.I+seat.group]) continue;
-            auto found = std::find_if(team.injured.begin(), team.injured.end(),
-                                     [&](Seat q) { return q.player == p; });
-            team.injured.erase(found);
+            if (!today[p] && x.eligible[(day*x.N+p)*x.I+seat.group]) { ++i; continue; }
+            team.injured.erase(team.injured.begin() + i);
             auto same = std::find_if(team.active.begin(), team.active.end(),
                                     [&](Seat q) { return q.origin == seat.origin; });
             if (same != team.active.end()) {
@@ -134,7 +177,7 @@ class Simulation {
     }
 
     void injuries(Team& team, const uint8_t* today) {
-        std::vector<int> hurt;
+        hurt.clear();
         for (auto seat : team.active) if (!today[seat.player]) hurt.push_back(seat.player);
         std::sort(hurt.begin(), hurt.end(), [&](int p, int q) {
             return x.value[p] != x.value[q] ? x.value[p] > x.value[q] : p < q;
@@ -175,22 +218,38 @@ class Simulation {
             int seat = vacancy(t, p);
             if (seat < 0) continue;
             team.active.push_back({p, seat, -1});
-            free[p] = false;
-            effective[p] = day + x.next_day;
+            hold(p);
             addition(InjuryAdd);
             emit(InjuryAdd, -1, p);
         }
     }
 
-    bool legal(const Team& team, int old, int added) const {
-        if ((x.masks[added] & x.masks[old]) == x.masks[old]) return true;
-        std::vector<int> before, after;
-        for (auto seat : team.active) {
-            before.push_back(seat.player);
-            after.push_back(seat.player == old ? added : seat.player);
+    void prepare_legality(Team& team) const {
+        std::vector<uint64_t> masks;
+        masks.reserve(team.active.size());
+        for (auto seat : team.active) masks.push_back(x.masks[seat.player]);
+        std::sort(masks.begin(), masks.end());
+        if (masks != team.legal_masks) {
+            team.legal_masks.swap(masks);
+            team.legal_checks.clear();
+            team.legal_count = -1;
         }
-        return starters(after, x.L, x.masks, x.slots, x.priority).size() >=
-               starters(before, x.L, x.masks, x.slots, x.priority).size();
+    }
+
+    bool legal(Team& team, int old, int added) const {
+        auto& checks = team.legal_checks;
+        int& baseline = team.legal_count;
+        if ((x.masks[added] & x.masks[old]) == x.masks[old]) return true;
+        auto found = std::find_if(checks.begin(), checks.end(), [&](const LegalCheck& c) {
+            return c.removed == x.masks[old] && c.added == x.masks[added];
+        });
+        if (found != checks.end()) return found->allowed;
+        auto after = team.legal_masks;
+        if (baseline < 0) baseline = matching.count(after, x);
+        *std::find(after.begin(), after.end(), x.masks[old]) = x.masks[added];
+        bool allowed = matching.count(std::move(after), x) >= baseline;
+        checks.push_back({x.masks[old], x.masks[added], allowed});
+        return allowed;
     }
 
     bool streamable(const Team& team, int seat) const {
@@ -198,28 +257,60 @@ class Simulation {
                int(team.streamed.size()) < x.options->flex[current_team];
     }
 
+    Seats eligible_seats(const Team& team, bool longer) const {
+        Seats eligible;
+        eligible.reserve(team.active.size());
+        for (auto held : team.active)
+            if (longer || streamable(team, held.origin)) eligible.push_back(held);
+        return eligible;
+    }
+
     struct Swap { int old = -1, added = -1, origin = -1; double gain; };
 
-    Swap choose(const Team& team, const uint8_t* today, bool longer) const {
+    const std::vector<int>& candidates(const uint8_t* today, bool longer) {
+        auto& cached = longer ? long_candidates : short_candidates;
+        if (cached.generation == pool_generation) return cached.players;
+        cached.players.clear();
+        size_t offset = (size_t(current_sample)*x.D+current_day)*x.N;
+        const auto& o = *x.options;
+        const int* order = (longer ? o.long_order : o.short_order) + offset;
+        for (int j = 0; j < x.N && int(cached.players.size()) < o.candidates; ++j) {
+            int p = order[j];
+            if (!today[p] || !free[p] || release[p] > current_day) continue;
+            cached.players.push_back(p);
+        }
+        cached.generation = pool_generation;
+        return cached.players;
+    }
+
+    Swap choose(Team& team, const uint8_t* today, bool longer) {
         const auto& o = *x.options;
         size_t offset = (size_t(current_sample)*x.D+current_day)*x.N;
-        const int* order = (longer ? o.long_order : o.short_order) + offset;
         const double* short_value = o.short_values + offset;
         const double* long_value = o.long_values + offset;
         const double* acquired_short = o.acquired_short + offset;
         const double* acquired_long = o.acquired_long + offset;
         Swap best{-1, -1, -1, o.minimum_gain};
-        int candidates = 0;
-        for (int j = 0; j < x.N && candidates < o.candidates; ++j) {
-            int p = order[j];
-            if (!today[p] || !free[p] || release[p] > current_day) continue;
-            ++candidates;
-            for (auto held : team.active) {
-                if (!longer && !streamable(team, held.origin)) continue;
+        // This choice does not mutate the roster; eligibility and its baseline are invariant.
+        auto eligible = eligible_seats(team, longer);
+        if (eligible.empty()) return best;
+        const double* held_values = longer ? long_value : short_value;
+        const double* acquired = longer ? acquired_long : acquired_short;
+        auto cheapest = std::min_element(eligible.begin(), eligible.end(), [&](Seat a, Seat b) {
+            return held_values[a.player] < held_values[b.player];
+        });
+        double lower = held_values[cheapest->player];
+        bool prepared = false;
+        for (int p : candidates(today, longer)) {
+            // Opportunity cost is nonnegative, so this upper bound cannot discard a better swap.
+            if (acquired[p] - lower <= best.gain) continue;
+            for (auto held : eligible) {
                 int q = held.player;
                 double gain = longer ? acquired_long[p] - long_value[q] :
                     acquired_short[p] - short_value[q] - std::max(0., long_value[q]-acquired_long[p])*o.opportunity_cost;
-                if (gain > best.gain && legal(team, q, p)) best = {q, p, held.origin, gain};
+                if (gain <= best.gain) continue;
+                if (!prepared) { prepare_legality(team); prepared = true; }
+                if (legal(team, q, p)) best = {q, p, held.origin, gain};
             }
         }
         return best;
@@ -243,8 +334,7 @@ class Simulation {
         drop(selected.old, current_day);
         emit(kind, selected.old, selected.added);
         team.active.push_back({selected.added, selected.origin, -1});
-        free[selected.added] = false;
-        effective[selected.added] = current_day + x.next_day;
+        hold(selected.added);
         if (kind == Stream && std::find(team.streamed.begin(), team.streamed.end(), selected.origin) == team.streamed.end())
             team.streamed.push_back(selected.origin);
         addition(kind);
@@ -269,34 +359,36 @@ class Simulation {
         auto selected = starters(playing, x.L, x.masks, x.slots, x.priority);
         // A weekly selection stays locked even when today's report predicts a DNP.
         // Simulated counts use health; historical replay scores the selection with actual boxes.
-        for (int p : selected) if (today[p]) x.counts[((size_t(sample)*x.T+t)*x.W+x.week[day])*x.N+p] += 1;
+        for (int p : selected) if (today[p]) x.counts[((size_t(sample)*x.scored_teams+t)*x.W+x.week[day])*x.N+p] += 1;
         emit(Lineup, -1, -1, selected);
     }
 
-    void validate_team(int t) const {
+    void validate_team(int t) {
         const auto& team = teams[t];
         if (int(team.active.size()) > x.sizes[t] || int(team.injured.size()) > x.I ||
             team.used > x.add_limit) throw std::runtime_error("Management capacity violation");
-        std::vector<uint8_t> seats(x.R, false);
+        std::fill(seat_seen.begin(), seat_seen.end(), false);
         for (auto seat : team.active) {
-            if (seats[seat.origin]) throw std::runtime_error("Duplicate active seat");
-            seats[seat.origin] = true;
+            if (seat_seen[seat.origin]) throw std::runtime_error("Duplicate active seat");
+            seat_seen[seat.origin] = true;
         }
     }
 
-    void validate_ownership() const {
-        std::vector<uint8_t> held(x.N, false);
+    void validate_ownership() {
+        std::fill(ownership_seen.begin(), ownership_seen.end(), false);
         for (const auto& team : teams) for (const auto* group : {&team.active, &team.injured}) {
             for (auto seat : *group) {
-                if (held[seat.player] || free[seat.player]) throw std::runtime_error("Management ownership violation");
-                held[seat.player] = true;
+                if (ownership_seen[seat.player] || free[seat.player]) throw std::runtime_error("Management ownership violation");
+                ownership_seen[seat.player] = true;
             }
         }
     }
 
 public:
-    explicit Simulation(const Input& input)
-        : x(input), teams(x.T), free(x.pool, x.pool+x.N), release(x.N, 0), effective(x.N, 0) {
+    Simulation(const Input& input, MatchingCounts& counts)
+        : x(input), matching(counts), teams(x.T), free(x.pool, x.pool+x.N), release(x.N, 0), effective(x.N, 0),
+          seat_seen(x.R), ownership_seen(x.N) {
+        hurt.reserve(x.R);
         for (int t = 0; t < x.T; ++t) {
             if (x.sizes[t] < 0 || x.sizes[t] > x.R) throw std::runtime_error("Invalid roster size");
             for (int seat = 0; seat < x.sizes[t]; ++seat) {
@@ -313,6 +405,7 @@ public:
             const auto* today = x.health + (size_t(sample)*x.D+day)*x.N;
             const auto* ranked = x.order + (size_t(sample)*x.D+day)*x.N;
             current_day = day; current_sample = sample;
+            ++pool_generation; // Public health, waiver eligibility and rankings can change daily.
             if (!day || x.period[day] != x.period[day-1]) for (auto& team : teams) {
                 team.used = 0; team.injury_adds = 0; team.streamed.clear();
             }
@@ -324,7 +417,7 @@ public:
                 injuries(teams[t], today);
                 replacements(t, day, today, ranked);
                 tactical(today);
-                score(t, day, sample, today);
+                if (t < x.scored_teams) score(t, day, sample, today);
                 validate_team(t);
             }
             validate_ownership();
@@ -334,19 +427,20 @@ public:
 
 extern "C" int fba_season(
     int N, int D, int W, int S, int T, int R, int L, int I,
-    int add_limit, int waiver_days, int next_day, int weekly_lock,
+    int add_limit, int waiver_days, int next_day, int weekly_lock, int scored_teams,
     const uint8_t* health, const uint8_t* games, const int* week, const int* period,
     const uint64_t* masks, const uint64_t* slots, const double* priority,
     const double* value, const int* order, const uint8_t* eligible, const uint8_t* lock_days,
     const int* roster, const int* sizes, const uint8_t* pool,
     double* counts, const Options* options, char* error, int error_capacity) {
     try {
-        if (N < 1 || D < 1 || W < 1 || S < 1 || T < 1 || R < 1 || L < 1 || I < 0)
+        if (N < 1 || D < 1 || W < 1 || S < 1 || T < 1 || R < 1 || L < 1 || I < 0 || scored_teams < 1 || scored_teams > T)
             throw std::runtime_error("Invalid season dimensions");
-        Input input{N, D, W, S, T, R, L, I, add_limit, waiver_days, next_day, weekly_lock,
+        Input input{N, D, W, S, T, R, L, I, add_limit, waiver_days, next_day, weekly_lock, scored_teams,
                     health, games, week, period, masks, slots, priority, value, order,
                     eligible, lock_days, roster, sizes, pool, counts, options};
-        for (int sample = 0; sample < S; ++sample) Simulation(input).run(sample);
+        MatchingCounts matching;
+        for (int sample = 0; sample < S; ++sample) Simulation(input, matching).run(sample);
         return 0;
     } catch (const std::exception& e) {
         if (error_capacity > 0) { std::strncpy(error, e.what(), error_capacity-1); error[error_capacity-1] = 0; }

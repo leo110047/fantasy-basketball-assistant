@@ -362,6 +362,66 @@
       "title": "HistoryShare",
       "type": "object"
     },
+    "ManagedPricingModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 9,
+          "minimum": 9,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketParameters"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing"
+      ],
+      "title": "ManagedPricingModel",
+      "type": "object"
+    },
     "ManagementParameters": {
       "additionalProperties": false,
       "properties": {
@@ -661,6 +721,30 @@
         "evidence"
       ],
       "title": "PreparationParameters",
+      "type": "object"
+    },
+    "PricingParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "streaming_slots": {
+          "minimum": 0,
+          "title": "Streaming Slots",
+          "type": "integer"
+        },
+        "upgrades": {
+          "title": "Upgrades",
+          "type": "boolean"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "streaming_slots",
+        "upgrades",
+        "evidence"
+      ],
+      "title": "PricingParameters",
       "type": "object"
     },
     "PriorWeight": {
@@ -1231,6 +1315,9 @@
     },
     {
       "$ref": "#/$defs/HealthModel"
+    },
+    {
+      "$ref": "#/$defs/ManagedPricingModel"
     }
   ],
   "title": "ModelDocument"

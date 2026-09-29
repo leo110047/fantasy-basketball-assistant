@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from typing import Literal, Protocol
 
@@ -33,6 +33,7 @@ class MarginalTask(Record):
     index: int
     player: int
     rest: tuple[int, ...]
+    opponents: tuple[tuple[int, ...], ...]
 
 
 class MarginalFeature(Record):
@@ -79,6 +80,9 @@ class TacticalArrays:
     minimum_gain: float
     opportunity_cost: float
 
+    def with_policy(self, policy: ManagementPolicy) -> "TacticalArrays":
+        return replace(self, policy=policy)
+
 
 @dataclass(frozen=True)
 class SeasonRun:
@@ -122,4 +126,6 @@ class SeasonKernel(Protocol):
         pool: tuple[int, ...],
         tactics: TacticalArrays | None,
         trace: bool,
+        *,
+        primary_only: bool = False,
     ) -> SeasonRun: ...

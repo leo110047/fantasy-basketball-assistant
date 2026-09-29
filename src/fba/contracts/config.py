@@ -402,6 +402,17 @@ class HealthModel(TeamBudgetModel):
     health: HealthParameters
 
 
+class PricingParameters(Record):
+    streaming_slots: Natural
+    upgrades: bool
+    evidence: Evidence
+
+
+class ManagedPricingModel(HealthModel):
+    format_version: Annotated[int, Field(ge=9, le=9)]
+    pricing: PricingParameters
+
+
 class ModelDocument(
     RootModel[
         ModelConfig
@@ -412,6 +423,7 @@ class ModelDocument(
         | SeasonModel
         | TeamBudgetModel
         | HealthModel
+        | ManagedPricingModel
     ]
 ):
     pass
@@ -441,5 +453,6 @@ class ValidatedConfig(Record):
         | SeasonModel
         | TeamBudgetModel
         | HealthModel
+        | ManagedPricingModel
     )
     refs: ConfigBundle

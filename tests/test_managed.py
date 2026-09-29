@@ -234,10 +234,10 @@ def test_native_abi_accepts_zero_error_buffer_capacity(kernel, monkeypatch):
 @pytest.mark.parametrize(
     "pointer,value,message",
     [
-        (24, -1, "roster size"),
-        (24, 2, "roster size"),
-        (23, -1, "roster player"),
-        (23, 3, "roster player"),
+        (25, -1, "roster size"),
+        (25, 2, "roster size"),
+        (24, -1, "roster player"),
+        (24, 3, "roster player"),
     ],
 )
 def test_native_abi_rejects_invalid_roster_buffers(kernel, monkeypatch, pointer, value, message):
