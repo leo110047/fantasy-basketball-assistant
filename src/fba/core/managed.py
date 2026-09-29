@@ -150,8 +150,10 @@ class ManagedSeason:
         self.pool: tuple[int, ...] = ()
         self.cache: dict[tuple[tuple[int, ...], ...], ManagedMoments] = {}
         self.primary_cache: dict[tuple[tuple[int, ...], ...], ManagedMoments] = {}
+        self.box_cache: dict[tuple[tuple[int, ...], ...], FloatArray] = {}
         self.lineups: dict[tuple[int, ...], tuple[int, ...]] = {}
         self.controls: dict[tuple[int, ...], tuple[FloatArray, FloatArray]] = {}
+        self.control_means: dict[tuple[int, ...], tuple[FloatArray, FloatArray]] = {}
 
     def validate_players(self) -> None:
         for p in self.players:
@@ -268,22 +270,38 @@ class ManagedSeason:
         self.lineups[roster] = result
         return result
 
-    def control(self, roster: tuple[int, ...]) -> tuple[FloatArray, FloatArray]:
-        if roster in self.controls:
-            return self.controls[roster]
-        realised = np.zeros((self.parameters.health_samples, len(self.weeks), self.k))
-        expected = np.zeros((len(self.weeks), self.k))
-        correction = np.zeros((len(self.weeks), self.k, self.k))
-        dates: dict[tuple[int, int], list[int]] = {}
+    def control_schedule(self, roster: tuple[int, ...]) -> tuple[tuple[int, tuple[int, ...]], ...]:
+        scheduled: list[tuple[int, tuple[int, ...]]] = []
         for d in range(self.d):
             use = self.lineup(tuple(p for p in roster if self.games[d, p] and d >= self.returns[p]))
-            if not use:
-                continue
+            if use:
+                scheduled.append((d, use))
+        return tuple(scheduled)
+
+    def control_mean(self, roster: tuple[int, ...]) -> tuple[FloatArray, FloatArray]:
+        if roster in self.control_means:
+            return self.control_means[roster]
+        realised = np.zeros((self.parameters.health_samples, len(self.weeks), self.k))
+        expected = np.zeros((len(self.weeks), self.k))
+        for d, use in self.control_schedule(roster):
             w = int(self.week[d])
             ids = list(use)
             health = self.health[:, d][:, ids]
             realised[:, w] += health @ self.raw[ids]
             expected[w] += (self.raw[ids] * self.availability[ids, None]).sum(axis=0)
+        self.control_means[roster] = (realised, expected)
+        return realised, expected
+
+    def control(self, roster: tuple[int, ...]) -> tuple[FloatArray, FloatArray]:
+        if roster in self.controls:
+            return self.controls[roster]
+        realised, expected = self.control_mean(roster)
+        correction = np.zeros((len(self.weeks), self.k, self.k))
+        dates: dict[tuple[int, int], list[int]] = {}
+        for d, use in self.control_schedule(roster):
+            w = int(self.week[d])
+            ids = list(use)
+            health = self.health[:, d][:, ids]
             correction[w] += np.einsum(
                 "n,nij->ij", self.availability[ids] - health.mean(axis=0), self.cov[ids]
             )
@@ -377,6 +395,18 @@ class ManagedSeason:
             )
         return self.primary_cache[rosters]
 
+    def project_primary_boxes(self, rosters: tuple[tuple[int, ...], ...]) -> FloatArray:
+        rosters = tuple(tuple(sorted(r)) for r in rosters)
+        if rosters in self.cache:
+            return self.cache[rosters].boxes[:, 0]
+        if rosters in self.primary_cache:
+            return self.primary_cache[rosters].boxes
+        if rosters not in self.box_cache:
+            counts = self.run_counts(rosters, primary_only=True)
+            realised, expected = self.control_mean(rosters[0])
+            self.box_cache[rosters] = counts[:, 0] @ self.raw - (realised - expected)
+        return self.box_cache[rosters]
+
     def run_counts(
         self, rosters: tuple[tuple[int, ...], ...], *, primary_only: bool = False
     ) -> FloatArray:
@@ -416,3 +446,4 @@ class ManagedSeason:
             self.pool = pool
             self.cache.clear()
             self.primary_cache.clear()
+            self.box_cache.clear()

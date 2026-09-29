@@ -47,10 +47,9 @@ def marginal_batch(
 ) -> tuple[MarginalFeature, ...]:
     features: list[MarginalFeature] = []
     for task in tasks:
-        difference = (
-            paired_project(manager, (*task.rest, task.player), task.opponents).boxes
-            - paired_project(manager, task.rest, task.opponents).boxes
-        )
+        difference = manager.project_primary_boxes(
+            ((*task.rest, task.player), *task.opponents)
+        ) - manager.project_primary_boxes((task.rest, *task.opponents))
         features.append(
             MarginalFeature(
                 index=task.index, values=tuple(float(v) for v in difference.mean(axis=(0, 1)))

@@ -193,6 +193,41 @@ def test_changed_public_designation_releases_ineligible_injury_slot(kernel):
     assert all(not e.injured for e in result.events if e.kind == "lineup" and e.day >= 1)
 
 
+def test_shared_pool_candidate_limit_preserves_unsorted_input_order(kernel):
+    from test_managed import small_arrays
+
+    from fba.contracts.season import TacticalArrays
+
+    a = replace(
+        small_arrays(),
+        health=np.ones((1, 1, 5), dtype=np.uint8),
+        games=np.ones((1, 5), dtype=np.uint8),
+        weeks=np.zeros(1, dtype=np.int32),
+        periods=np.zeros(1, dtype=np.int32),
+        masks=np.ones(5, dtype=np.uint64),
+        priority=np.ones(5),
+        value=np.ones(5),
+        orders=np.array([[[2, 3, 4, 0, 1]]], dtype=np.int32),
+        il_eligible=np.zeros((1, 5, 0), dtype=np.uint8),
+        lock_days=np.ones(1, dtype=np.uint8),
+    )
+    values = np.array([[[0.0, 0.0, 3.0, 2.0, 100.0]]])
+    tactics = TacticalArrays(
+        ManagementPolicy(streaming_slots=(1, 1), reserve_adds=0, upgrades=False),
+        values,
+        values,
+        values,
+        values,
+        a.orders,
+        a.orders,
+        1,
+        0.0,
+        0.0,
+    )
+    result = kernel.run(a, ((0,), (1,)), (2, 3, 4), tactics, True)
+    assert [(e.team, e.added) for e in result.events if e.kind == "stream"] == [(0, 2), (1, 3)]
+
+
 @pytest.mark.parametrize("fault", ["known_out", "replacement_chain"])
 def test_invariants_detect_old_fault_classes_in_native_kernel(tmp_path, monkeypatch, fault):
     import subprocess

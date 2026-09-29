@@ -59,6 +59,33 @@ def test_configured_policy_is_used_by_pricing_projection(limit):
         native.close()
 
 
+@pytest.mark.parametrize("tactical", [False, True])
+def test_marginal_boxes_equal_full_moments_and_follow_pool_changes(tactical):
+    native = NativeKernel()
+    try:
+        manager, spec, _ = reference_manager(native, 1)
+        if tactical:
+            manager.pricing = PricingParameters(
+                streaming_slots=2, upgrades=True, evidence=manager.parameters.evidence
+            )
+            manager.tactic_parameters = management_parameters(manager, 1)
+        rosters = tuple(tuple(r) for r in spec["case"]["rosters"])
+        boxes = manager.project_primary_boxes(rosters)
+        assert not manager.controls  # A boxes request does not compute covariance corrections.
+        assert boxes is manager.project_primary_boxes(rosters)
+        full = manager.project_many(rosters)
+        np.testing.assert_array_equal(boxes, full.boxes[:, 0])
+        np.testing.assert_array_equal(manager.project_primary_boxes(rosters), full.boxes[:, 0])
+        manager.set_pool(())
+        assert not manager.box_cache
+        boxes = manager.project_primary_boxes(rosters)
+        primary = manager.project_primary(rosters)
+        np.testing.assert_array_equal(boxes, primary.boxes)
+        np.testing.assert_array_equal(manager.project_primary_boxes(rosters), primary.boxes)
+    finally:
+        native.close()
+
+
 def managed_input(inputs):
     data = inputs.config.model.model_dump(mode="json")
     evidence = data["fit"]["evidence"]

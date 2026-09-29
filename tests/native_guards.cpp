@@ -29,7 +29,7 @@ static void candidates_follow_public_eligibility(Input input) {
     auto check = [&](std::vector<int> expected) {
         for (auto* cache : {&simulation.short_candidates, &simulation.long_candidates,
                             &simulation.replacement_candidates}) {
-            if (simulation.eligible_candidates(today, order, *cache) != expected)
+            if (simulation.eligible_candidates(today, order, *cache, input.N) != expected)
                 throw std::runtime_error("Candidate eligibility differs from public state");
         }
     };
@@ -54,6 +54,27 @@ static void candidates_follow_public_eligibility(Input input) {
     check({0});
 }
 
+static void candidate_prefix_extends_after_acquisition(Input input) {
+    MatchingCounts matching;
+    Simulation simulation(input, matching);
+    const uint8_t today[] = {1, 1, 1, 1};
+    const int order[] = {3, 2, 1, 0};
+    for (auto* cache : {&simulation.short_candidates, &simulation.long_candidates,
+                        &simulation.replacement_candidates}) {
+        if (simulation.eligible_candidates(today, order, *cache, 1) != std::vector<int>{3})
+            throw std::runtime_error("Candidate prefix did not preserve rank order");
+    }
+    simulation.hold(3);
+    for (auto* cache : {&simulation.short_candidates, &simulation.long_candidates,
+                        &simulation.replacement_candidates}) {
+        if (simulation.eligible_candidates(today, order, *cache, 1) != std::vector<int>{2})
+            throw std::runtime_error("Acquisition did not extend the candidate prefix");
+    }
+    simulation.hold(2);
+    if (!simulation.eligible_candidates(today, order, simulation.short_candidates, input.N).empty())
+        throw std::runtime_error("Exhausted pool admitted a held player");
+}
+
 int main() {
     const uint8_t pool[] = {0, 0, 1, 1};
     const int roster[] = {0, -1, 1, -1};
@@ -68,6 +89,7 @@ int main() {
     input.roster = roster;
     input.sizes = sizes;
     candidates_follow_public_eligibility(input);
+    candidate_prefix_extends_after_acquisition(input);
     reject(input, [](Simulation& s) { s.teams[0].active.push_back({2, 1, -1}); },
            "Management capacity violation");
     reject(input, [](Simulation& s) { s.teams[0].injured = {{2, 0, 0}, {3, 1, 0}}; },

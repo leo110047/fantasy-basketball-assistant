@@ -11,7 +11,11 @@
 struct Seat { int player; int origin; int group; };
 using Seats = std::vector<Seat>;
 struct LegalCheck { uint64_t removed, added; bool allowed; };
-struct Candidates { int generation = -1; std::vector<int> players; };
+struct Candidates {
+    int generation = -1;
+    int cursor = 0;
+    std::vector<int> players;
+};
 
 static bool augment(int player, std::vector<uint8_t>& seen,
                     std::vector<int>& assignment, const uint64_t* masks,
@@ -75,6 +79,7 @@ struct Team {
     std::vector<uint64_t> legal_masks;
     std::vector<LegalCheck> legal_checks;
     int legal_count = -1;
+    bool legal_dirty = true;
 };
 
 struct MaskHash {
@@ -112,6 +117,8 @@ class Simulation {
     int current_day = 0, current_team = 0, current_sample = 0;
     int pool_generation = 0;
     Candidates short_candidates, long_candidates, replacement_candidates;
+    Seats eligible_buffer;
+    std::vector<int> vacant;
 
     void emit(int kind, int old, int added, const std::vector<int>& started = {}) {
         const auto* o = x.options;
@@ -178,6 +185,7 @@ class Simulation {
             }
             seat.group = -1;
             team.active.push_back(seat);
+            team.legal_dirty = true;
             emit(Activate, -1, p);
         }
     }
@@ -199,33 +207,37 @@ class Simulation {
                 seat.group = group;
                 team.injured.push_back(seat);
                 team.active.erase(held);
+                team.legal_dirty = true;
                 emit(Injury, p, -1);
                 break;
             }
         }
     }
 
-    int vacancy(int team, int p) const {
-        for (int seat = 0; seat < x.sizes[team]; ++seat) {
-            const auto& active = teams[team].active;
-            if (std::any_of(active.begin(), active.end(),
-                            [&](Seat q) { return q.origin == seat; })) continue;
-            if (x.masks[p] & x.masks[x.roster[team * x.R + seat]]) return seat;
-        }
-        return -1;
+    void vacancies(int t) {
+        vacant.clear();
+        std::fill(seat_seen.begin(), seat_seen.end(), false);
+        for (auto seat : teams[t].active) seat_seen[seat.origin] = true;
+        for (int seat = 0; seat < x.sizes[t]; ++seat)
+            if (!seat_seen[seat]) vacant.push_back(seat);
     }
 
     void replacements(int t, const uint8_t* today, const int* ranked) {
         auto& team = teams[t];
         if (int(team.active.size()) >= x.sizes[t] || team.used >= x.add_limit) return;
-        auto& players = eligible_candidates(today, ranked, replacement_candidates);
+        vacancies(t);
         size_t j = 0;
-        while (j < players.size() && int(team.active.size()) < x.sizes[t] &&
-               team.used < x.add_limit) {
+        while (int(team.active.size()) < x.sizes[t] && team.used < x.add_limit) {
+            auto& players = eligible_candidates(today, ranked, replacement_candidates, int(j)+1);
+            if (j >= players.size()) break;
             int p = players[j];
-            int seat = vacancy(t, p);
-            if (seat < 0) { ++j; continue; }
-            team.active.push_back({p, seat, -1});
+            auto seat = std::find_if(vacant.begin(), vacant.end(), [&](int origin) {
+                return x.masks[p] & x.masks[x.roster[t * x.R + origin]];
+            });
+            if (seat == vacant.end()) { ++j; continue; }
+            team.active.push_back({p, *seat, -1});
+            vacant.erase(seat);
+            team.legal_dirty = true;
             // hold removes p from this list; the next candidate now occupies j.
             hold(p);
             addition(InjuryAdd);
@@ -234,6 +246,8 @@ class Simulation {
     }
 
     void prepare_legality(Team& team) const {
+        if (!team.legal_dirty) return;
+        team.legal_dirty = false;
         std::vector<uint64_t> masks;
         masks.reserve(team.active.size());
         for (auto seat : team.active) masks.push_back(x.masks[seat.player]);
@@ -266,9 +280,9 @@ class Simulation {
                int(team.streamed.size()) < x.options->flex[current_team];
     }
 
-    Seats eligible_seats(const Team& team, bool longer) const {
-        Seats eligible;
-        eligible.reserve(team.active.size());
+    const Seats& eligible_seats(const Team& team, bool longer) {
+        auto& eligible = eligible_buffer;
+        eligible.clear();
         for (auto held : team.active)
             if (longer || streamable(team, held.origin)) eligible.push_back(held);
         return eligible;
@@ -277,15 +291,17 @@ class Simulation {
     struct Swap { int old = -1, added = -1, origin = -1; double gain; };
 
     std::vector<int>& eligible_candidates(const uint8_t* today, const int* order,
-                                          Candidates& cached) {
-        if (cached.generation == pool_generation) return cached.players;
-        cached.players.clear();
-        for (int j = 0; j < x.N; ++j) {
-            int p = order[j];
+                                          Candidates& cached, int limit) {
+        if (cached.generation != pool_generation) {
+            cached.players.clear();
+            cached.cursor = 0;
+            cached.generation = pool_generation;
+        }
+        while (cached.cursor < x.N && int(cached.players.size()) < limit) {
+            int p = order[cached.cursor++];
             if (!today[p] || !free[p] || release[p] > current_day) continue;
             cached.players.push_back(p);
         }
-        cached.generation = pool_generation;
         return cached.players;
     }
 
@@ -293,7 +309,8 @@ class Simulation {
         size_t offset = (size_t(current_sample)*x.D+current_day)*x.N;
         const auto& o = *x.options;
         const int* order = (longer ? o.long_order : o.short_order) + offset;
-        return eligible_candidates(today, order, longer ? long_candidates : short_candidates);
+        auto& cached = longer ? long_candidates : short_candidates;
+        return eligible_candidates(today, order, cached, o.candidates);
     }
 
     Swap choose(Team& team, const uint8_t* today, bool longer) {
@@ -305,7 +322,7 @@ class Simulation {
         const double* acquired_long = o.acquired_long + offset;
         Swap best{-1, -1, -1, o.minimum_gain};
         // This choice does not mutate the roster; eligibility and its baseline are invariant.
-        auto eligible = eligible_seats(team, longer);
+        const auto& eligible = eligible_seats(team, longer);
         if (eligible.empty()) return best;
         const double* held_values = longer ? long_value : short_value;
         const double* acquired = longer ? acquired_long : acquired_short;
@@ -315,9 +332,7 @@ class Simulation {
         double lower = held_values[cheapest->player];
         bool prepared = false;
         const auto& available = candidates(today, longer);
-        int count = std::min(int(available.size()), o.candidates);
-        for (int j = 0; j < count; ++j) {
-            int p = available[j];
+        for (int p : available) {
             // Opportunity cost is nonnegative, so this upper bound cannot discard a better swap.
             if (acquired[p] - lower <= best.gain) continue;
             for (auto held : eligible) {
@@ -350,6 +365,7 @@ class Simulation {
         drop(selected.old, current_day);
         emit(kind, selected.old, selected.added);
         team.active.push_back({selected.added, selected.origin, -1});
+        team.legal_dirty = true;
         hold(selected.added);
         if (kind == Stream && std::find(team.streamed.begin(), team.streamed.end(), selected.origin) == team.streamed.end())
             team.streamed.push_back(selected.origin);
@@ -405,6 +421,8 @@ public:
         : x(input), matching(counts), teams(x.T), free(x.pool, x.pool+x.N), release(x.N, 0), effective(x.N, 0),
           seat_seen(x.R), ownership_seen(x.N) {
         hurt.reserve(x.R);
+        eligible_buffer.reserve(x.R);
+        vacant.reserve(x.R);
         for (int t = 0; t < x.T; ++t) {
             if (x.sizes[t] < 0 || x.sizes[t] > x.R) throw std::runtime_error("Invalid roster size");
             for (int seat = 0; seat < x.sizes[t]; ++seat) {
