@@ -1,11 +1,14 @@
+from collections.abc import Generator
 from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
+from contextlib import contextmanager
 from multiprocessing import get_context
 from multiprocessing.connection import Connection
-from threading import Event
+from threading import Event, Lock
 
 from fba.adapters.native import NativeArtifact, NativeKernel
 from fba.apps.workers import WorkBatch, check_cancelled, check_current, parallelism
-from fba.contracts.auction import MarginalRequest, Plan
+from fba.contracts.auction import MarginalRequest, Plan, SolverError
 from fba.contracts.season import MarginalFeature, SeasonArrays, SeasonRun, TacticalArrays
 from fba.core.auction import run_caps
 from fba.core.fit import marginal_batch
@@ -88,12 +91,40 @@ class AuctionSession:
             raise ValueError("workers: must be positive")
         self.workers = workers
         self.pool = ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn"))
+        self.pool_lock = Lock()
+        self.closed = False
         self.kernel: NativeKernel | None = None
 
     def close(self) -> None:
-        self.pool.shutdown(wait=True, cancel_futures=True)
+        with self.pool_lock:
+            self.closed = True
+            pool = self.pool
+        pool.shutdown(wait=True, cancel_futures=True)
         if self.kernel is not None:
             self.kernel.close()
+
+    @contextmanager
+    def working_pool(self) -> Generator[ProcessPoolExecutor]:
+        with self.pool_lock:
+            if self.closed:
+                raise SolverError("auction session is closed")
+            pool = self.pool
+        try:
+            yield pool
+        except BrokenProcessPool as exc:
+            retired = False
+            with self.pool_lock:
+                # Both modes can observe the same dead pool; replace that generation only once.
+                if not self.closed and self.pool is pool:
+                    self.pool = ProcessPoolExecutor(
+                        max_workers=self.workers, mp_context=get_context("spawn")
+                    )
+                    retired = True
+            if retired:
+                pool.shutdown(wait=True, cancel_futures=True)
+            raise SolverError(
+                "calculation worker exited; retry the saved draft calculation"
+            ) from exc
 
     def native(self) -> NativeKernel:
         if self.kernel is None:
@@ -121,10 +152,9 @@ class AuctionSession:
         requests = tuple(
             request.model_copy(update={"tasks": request.tasks[i::workers]}) for i in range(workers)
         )
-        with WorkBatch(cancelled) as batch:
+        with self.working_pool() as pool, WorkBatch(cancelled) as batch:
             futures = tuple(
-                batch.submit(self.pool, managed_batch, request, kernel.artifact)
-                for request in requests
+                batch.submit(pool, managed_batch, request, kernel.artifact) for request in requests
             )
             return tuple(
                 sorted(
@@ -149,9 +179,9 @@ class AuctionSession:
         chunks = tuple(candidates[i : i + width] for i in range(0, len(candidates), width))
         results: dict[int, tuple[int, float | None, bool]] = {}
         calls = 0
-        with WorkBatch(cancelled) as batch:
+        with self.working_pool() as pool, WorkBatch(cancelled) as batch:
             futures = tuple(
-                batch.submit(self.pool, cap_batch, portfolio, base, chunk) for chunk in chunks
+                batch.submit(pool, cap_batch, portfolio, base, chunk) for chunk in chunks
             )
             for chunk, future in zip(chunks, futures, strict=True):
                 values, count = batch.result(future)

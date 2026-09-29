@@ -1,27 +1,54 @@
-import fcntl
 import hmac
 import json
 import secrets
+import signal
+from collections.abc import Generator
+from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from itertools import combinations
 from pathlib import Path
+from threading import Event
+from types import FrameType
 from typing import override
 
 from fba.adapters.auction import load_auction
 from fba.adapters.codec import canonical, decode
+from fba.adapters.desk import check_storage, draft_lock
 from fba.apps.auction import AuctionSession
 from fba.apps.desk import AuctionDesk, session_calculator
 from fba.contracts.auction import AuctionInput, SolverError
 from fba.contracts.base import ConfigError, DataError, Record
-from fba.contracts.desk import CompareRequest, DeskError, SaveDraft, StateRequest
+from fba.contracts.desk import (
+    CompareRequest,
+    DeskError,
+    DeskHealth,
+    SaveDraft,
+    SaveUnconfirmed,
+    StateRequest,
+)
 
 
 class DeskServer(ThreadingHTTPServer):
-    def __init__(self, desk: AuctionDesk, port: int) -> None:
-        self.desk = desk
+    def __init__(self, desk: AuctionDesk | None, port: int) -> None:
+        self._desk = desk
         self.token = secrets.token_urlsafe(32)
-        super().__init__(("127.0.0.1", port), DeskHandler)
+        try:
+            super().__init__(("127.0.0.1", port), DeskHandler)
+        except OSError as exc:
+            raise DataError(f"serve: cannot bind 127.0.0.1:{port}: {exc}") from exc
         self.origin = f"http://127.0.0.1:{self.server_port}"
+
+    @property
+    def desk(self) -> AuctionDesk:
+        if self._desk is None:
+            raise RuntimeError("serve: auction desk is not initialized")
+        return self._desk
+
+    def start(self, desk: AuctionDesk, stopping: Event) -> None:
+        self._desk = desk
+        self.timeout = 0.1
+        while not stopping.is_set():
+            self.handle_request()
 
 
 class DeskHandler(BaseHTTPRequestHandler):
@@ -71,7 +98,9 @@ class DeskHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if not self.permitted(api=self.path.startswith("/api/")):
             return
-        if self.path == "/api/bootstrap":
+        if self.path == "/api/health":
+            self.respond(DeskHealth(status="ok"))
+        elif self.path == "/api/bootstrap":
             self.respond(self.desk_server.desk.bootstrap())
         elif self.path == "/api/results":
             self.respond(self.desk_server.desk.results())
@@ -115,7 +144,11 @@ class DeskHandler(BaseHTTPRequestHandler):
             data = self.request_body()
             desk = self.desk_server.desk
             if self.path == "/api/draft":
-                saved = desk.save(decode(SaveDraft, data, "request.draft"))
+                try:
+                    saved = desk.save(decode(SaveDraft, data, "request.draft"))
+                except SaveUnconfirmed:
+                    desk.start_calculations(desk.results().state_sha256)
+                    raise
                 try:
                     self.respond(saved)
                 finally:
@@ -149,16 +182,42 @@ def serve(input_path: Path, draft: Path, log: Path, workers: int, port: int) -> 
     input_path, draft, log = paths
     inputs, sha = load_auction(input_path)
     # Every service alias shares this stable lock, held across all reads and replacements.
+    with draft_lock(draft):
+        run_server(inputs, sha, draft, log, workers, port)
+
+
+@contextmanager
+def shutdown_signals() -> Generator[Event]:
+    stopping = Event()
+
+    def stop(_signum: int, _frame: FrameType | None) -> None:
+        stopping.set()
+
+    watched = (signal.SIGTERM, signal.SIGHUP, signal.SIGINT)
+    previous = {s: signal.signal(s, stop) for s in watched}
     try:
-        with draft.with_suffix(draft.suffix + ".lock").open("a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            run_server(inputs, sha, draft, log, workers, port)
-    except OSError as exc:
-        raise DataError(f"serve: cannot open or exclusively lock draft: {exc}") from exc
+        yield stopping
+    finally:
+        for name, handler in previous.items():
+            signal.signal(name, handler)
 
 
 def run_server(
     inputs: AuctionInput, sha: str, draft: Path, log: Path, workers: int, port: int
+) -> None:
+    check_storage(draft)
+    with shutdown_signals() as stopping, DeskServer(None, port) as server:
+        run_desk(inputs, sha, draft, log, workers, server, stopping)
+
+
+def run_desk(
+    inputs: AuctionInput,
+    sha: str,
+    draft: Path,
+    log: Path,
+    workers: int,
+    server: DeskServer,
+    stopping: Event,
 ) -> None:
     session = AuctionSession(workers)
     desk: AuctionDesk | None = None
@@ -171,22 +230,18 @@ def run_server(
             session_calculator(inputs, sha, session, "equal"),
             session_calculator(inputs, sha, session, "fit"),
         )
-        with DeskServer(desk, port) as server:
-            print(
-                json.dumps(
-                    {
-                        "url": f"{server.origin}/#{server.token}",
-                        "draft": str(draft),
-                        "log": str(log),
-                        "worker_limit": workers,
-                    }
-                ),
-                flush=True,
-            )
-            try:
-                server.serve_forever()
-            except KeyboardInterrupt:
-                pass
+        print(
+            json.dumps(
+                {
+                    "url": f"{server.origin}/#{server.token}",
+                    "draft": str(draft),
+                    "log": str(log),
+                    "worker_limit": workers,
+                }
+            ),
+            flush=True,
+        )
+        server.start(desk, stopping)
     finally:
         if desk is not None:
             desk.close()

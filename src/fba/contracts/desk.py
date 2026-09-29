@@ -64,6 +64,14 @@ class DeskError(Record):
     error: Text
 
 
+class SaveUnconfirmed(RuntimeError):
+    """The draft was replaced, but durability or execution logging could not be confirmed."""
+
+
+class DeskHealth(Record):
+    status: Literal["ok"]
+
+
 class DeskExecution(Record):
     format_version: FormatVersion
     stage: Literal["market", "equal", "fit", "compare"]

@@ -322,7 +322,8 @@ def test_service_shares_background_pool_and_comparison_never_queues_behind_it(de
         def __exit__(self, *args):
             pass
 
-        def serve_forever(self):
+        def start(self, service, stopping):
+            self.service = service
             assert owners[0] is owners[1]
             assert self.service.comparison_runner is comparison_plans
             wait_for(lambda: self.service.results().equal.status == "ready")
@@ -379,6 +380,7 @@ def request(server, method, path, body=None, headers=None):
 
 
 def test_actual_http_round_trip_and_static_routes(server):
+    assert request(server, "GET", "/api/health")[0] == 200
     status, headers, payload = request(server, "GET", "/api/bootstrap")
     assert status == 200
     initial = json.loads(payload)
@@ -415,6 +417,7 @@ def test_actual_http_round_trip_and_static_routes(server):
 def test_loopback_host_origin_and_token_boundary(server, headers):
     before = server.desk.path.read_bytes()
     assert request(server, "GET", "/api/bootstrap", headers=headers)[0] == 403
+    assert request(server, "GET", "/api/health", headers=headers)[0] == 403
     assert request(server, "POST", "/api/draft", b"{}", headers)[0] == 403
     assert server.desk.path.read_bytes() == before
 

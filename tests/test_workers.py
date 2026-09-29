@@ -25,6 +25,10 @@ def failing_worker(signal):
     raise TimeoutError("solver deadline")
 
 
+def terminated_worker(*args):
+    os._exit(7)
+
+
 @pytest.mark.parametrize("cpus,expected", [(12, 9), (8, 6), (3, 2), (2, 1), (1, 1), (None, 1)])
 def test_auto_ceiling_reserves_desktop_capacity(monkeypatch, cpus, expected):
     monkeypatch.setattr("fba.apps.workers.process_cpu_count", lambda: cpus)
@@ -137,3 +141,41 @@ def test_parent_kernel_cancellation_keeps_native_results_and_stops_next_call():
             wrapped(arrays, ((0,),), (1, 2))
     finally:
         native.close()
+
+
+def test_real_worker_exit_recovers_on_retry_without_restarting_session(monkeypatch):
+    from test_auction import config, inputs_for, player, state
+
+    import fba.apps.auction as application
+    from fba.contracts.auction import SolverError
+    from fba.core.auction import calculate_auction
+
+    league = config().league
+    league = league.model_copy(
+        update={"teams": 2, "starter_slots": league.starter_slots[:1], "bench_slots": 1}
+    )
+    inputs = inputs_for(tuple(player(i, utility=float(i), quote=0.0) for i in range(8)), league)
+    draft = state(inputs)
+    session = application.AuctionSession(2)
+    original = application.cap_batch
+    try:
+        old_pool = session.pool
+        monkeypatch.setattr(application, "cap_batch", terminated_worker)
+        with pytest.raises(SolverError, match="worker exited; retry"):
+            calculate_auction(inputs, draft, "0" * 64, "1" * 64, runner=session.caps)
+        assert session.pool is not old_pool
+        monkeypatch.setattr(application, "cap_batch", original)
+        expected = calculate_auction(inputs, draft, "0" * 64, "1" * 64)
+        actual = calculate_auction(inputs, draft, "0" * 64, "1" * 64, runner=session.caps)
+        assert actual == expected
+        # An ordinary task error does not destroy a healthy pool.
+        healthy = session.pool
+        with pytest.raises(TimeoutError, match="solver deadline"):
+            with session.working_pool() as pool, WorkBatch(None) as batch:
+                batch.result(batch.submit(pool, failing_worker))
+        assert session.pool is healthy
+    finally:
+        session.close()
+    with pytest.raises(SolverError, match="closed"):
+        with session.working_pool():
+            pytest.fail("closed session allowed more work")

@@ -28,6 +28,7 @@ from fba.contracts.desk import (
     DeskState,
     JobView,
     SaveDraft,
+    SaveUnconfirmed,
 )
 from fba.core.auction import (
     ComparisonRunner,
@@ -166,7 +167,8 @@ class AuctionDesk:
         self.log_lock = Lock()
         self.payload = read_bytes(draft)
         state = decode(DraftState, self.payload, str(draft))
-        self.desk = self.market(state)
+        self.desk, entry = self.market(state)
+        self.record(entry)
         self.equal = LatestCalculation(equal, self.record, "equal")
         self.fit = LatestCalculation(fit, self.record, "fit")
         self.request()
@@ -175,7 +177,7 @@ class AuctionDesk:
         with self.log_lock:
             log_execution(self.log, record)
 
-    def market(self, state: DraftState) -> DeskState:
+    def market(self, state: DraftState) -> tuple[DeskState, DeskExecution]:
         start = perf_counter_ns()
         sha = digest(canonical(state))
         update = MarketUpdate(
@@ -185,18 +187,16 @@ class AuctionDesk:
             state_sha256=sha,
             market=market_context(self.inputs, state, self.input_hash)[1],
         )
-        self.record(
-            DeskExecution(
-                format_version=1,
-                stage="market",
-                state=state,
-                state_sha256=sha,
-                elapsed_ns=perf_counter_ns() - start,
-                solver_calls=0,
-                result=update,
-            )
+        entry = DeskExecution(
+            format_version=1,
+            stage="market",
+            state=state,
+            state_sha256=sha,
+            elapsed_ns=perf_counter_ns() - start,
+            solver_calls=0,
+            result=update,
         )
-        return DeskState(format_version=1, state=state, market=update)
+        return DeskState(format_version=1, state=state, market=update), entry
 
     def request(self) -> None:
         for job in (self.equal, self.fit):
@@ -218,14 +218,27 @@ class AuctionDesk:
     def save(self, request: SaveDraft) -> DeskState:
         with self.lock:
             self.require_state(request.expected_sha256)
+            if request.draft.draft_id != self.desk.state.draft_id:
+                raise DataError("draft: imported backup belongs to a different draft")
             candidate = request.draft.model_copy(update={"revision": self.desk.state.revision + 1})
-            updated = self.market(candidate)
-            payload = save_draft(self.path, candidate, self.payload)
-            self.payload = payload
-            self.desk = updated
-            for job in (self.equal, self.fit):
-                job.invalidate()
+            updated, entry = self.market(candidate)
+            try:
+                payload = save_draft(self.path, candidate, self.payload)
+            except SaveUnconfirmed:
+                self.accept_saved(updated, canonical(candidate))
+                raise
+            self.accept_saved(updated, payload)
+            try:
+                self.record(entry)
+            except DataError as exc:
+                raise SaveUnconfirmed(f"draft saved; execution log failed: {exc}") from exc
             return self.desk
+
+    def accept_saved(self, updated: DeskState, payload: bytes) -> None:
+        self.payload = payload
+        self.desk = updated
+        for job in (self.equal, self.fit):
+            job.invalidate()
 
     def start_calculations(self, sha: str) -> None:
         with self.lock:

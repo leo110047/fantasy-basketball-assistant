@@ -102,6 +102,10 @@ def validate_draft(
     league: LeagueRules, players: tuple[AuctionPlayer, ...], state: DraftState
 ) -> tuple[TeamBudget, ...]:
     unique(tuple(t.id for t in state.teams), "draft.teams")
+    if any(not team.name.strip() for team in state.teams):
+        raise DataError("draft.teams: names must not be blank")
+    if len({team.name.strip().casefold() for team in state.teams}) != len(state.teams):
+        raise DataError("draft.teams: duplicate names")
     unique(tuple(s.id for s in state.sales), "draft.sales.id")
     unique(tuple(s.player_id for s in state.sales), "draft.sales.player_id")
     if len(state.teams) != league.teams or state.mine not in {t.id for t in state.teams}:
