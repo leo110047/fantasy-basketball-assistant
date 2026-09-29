@@ -1,18 +1,22 @@
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import get_context
+from multiprocessing.connection import Connection
+from threading import Event
 
 from fba.adapters.native import NativeArtifact, NativeKernel
-from fba.contracts.auction import Infeasible, MarginalRequest, Plan
-from fba.contracts.season import MarginalFeature
-from fba.core.auction import comparison_branch, run_caps
+from fba.apps.workers import WorkBatch, check_cancelled, check_current, parallelism
+from fba.contracts.auction import MarginalRequest, Plan
+from fba.contracts.season import MarginalFeature, SeasonArrays, SeasonRun, TacticalArrays
+from fba.core.auction import run_caps
 from fba.core.fit import marginal_batch
-from fba.core.managed import ManagedSeason
+from fba.core.managed import FloatArray, ManagedSeason, management_calendar
 from fba.core.portfolio import Portfolio
 
 
 def managed_batch(
-    request: MarginalRequest, compiled: NativeArtifact
+    request: MarginalRequest, compiled: NativeArtifact, signal: Connection | None = None
 ) -> tuple[MarginalFeature, ...]:
+    check_cancelled(signal)
     kernel = NativeKernel(compiled)
     try:
         manager = ManagedSeason(
@@ -25,9 +29,55 @@ def managed_batch(
             tactics=request.tactics,
         )
         manager.set_pool(request.pool)
-        return marginal_batch(manager, request.tasks)
+        values: list[MarginalFeature] = []
+        for task in request.tasks:
+            check_cancelled(signal)
+            values.extend(marginal_batch(manager, (task,)))
+        check_cancelled(signal)
+        return tuple(values)
     finally:
         kernel.close()
+
+
+def cap_batch(
+    portfolio: Portfolio, base: Plan, candidates: tuple[int, ...], signal: Connection
+) -> tuple[tuple[tuple[int, float | None, bool], ...], int]:
+    values: list[tuple[int, float | None, bool]] = []
+    calls = 0
+    for candidate in candidates:
+        check_cancelled(signal)
+        value, count = run_caps(portfolio, base, (candidate,))
+        values.extend(value)
+        calls += count
+    check_cancelled(signal)
+    return tuple(values), calls
+
+
+class CancellableKernel:
+    """Check request currency between complete native calls; the shared kernel stays stateless."""
+
+    def __init__(self, kernel: NativeKernel, cancelled: Event) -> None:
+        self.kernel, self.cancelled = kernel, cancelled
+
+    def __call__(
+        self, arrays: SeasonArrays, rosters: tuple[tuple[int, ...], ...], pool: tuple[int, ...]
+    ) -> FloatArray:
+        return self.run(arrays, rosters, pool, None, False).counts
+
+    def run(
+        self,
+        arrays: SeasonArrays,
+        rosters: tuple[tuple[int, ...], ...],
+        pool: tuple[int, ...],
+        tactics: TacticalArrays | None,
+        trace: bool,
+        *,
+        primary_only: bool = False,
+    ) -> SeasonRun:
+        check_current(self.cancelled)
+        result = self.kernel.run(arrays, rosters, pool, tactics, trace, primary_only=primary_only)
+        check_current(self.cancelled)
+        return result
 
 
 class AuctionSession:
@@ -50,41 +100,61 @@ class AuctionSession:
             self.kernel = NativeKernel()
         return self.kernel
 
-    def comparison(
-        self, portfolio: Portfolio, player: int, branch: Portfolio
-    ) -> tuple[Plan | Infeasible, Plan | Infeasible, int]:
-        skip_job = self.pool.submit(comparison_branch, portfolio, player)
-        buy_job = self.pool.submit(comparison_branch, branch, None)
-        skip, skip_calls = skip_job.result()
-        buy, buy_calls = buy_job.result()
-        return skip, buy, skip_calls + buy_calls
-
-    def features(self, request: MarginalRequest) -> tuple[MarginalFeature, ...]:
-        kernel = self.native()
-        requests = tuple(
-            request.model_copy(update={"tasks": request.tasks[i :: self.workers]})
-            for i in range(self.workers)
-        )
-        futures = tuple(
-            self.pool.submit(managed_batch, request, kernel.artifact) for request in requests
-        )
-        return tuple(
-            sorted(
-                (feature for future in futures for feature in future.result()),
-                key=lambda f: f.index,
+    def features(
+        self, request: MarginalRequest, *, cancelled: Event | None = None
+    ) -> tuple[MarginalFeature, ...]:
+        if not request.tasks:
+            return ()
+        days = len(
+            management_calendar(
+                request.league, tuple(d for p in request.management.players for d in p.game_days)
             )
         )
+        work = (
+            sum(1 + len(t.opponents) for t in request.tasks)
+            * days
+            * request.parameters.health_samples
+        )
+        # Assumption: roughly eight million sample/team/days amortize one worker's setup.
+        workers = parallelism(self.workers, len(request.tasks), work, 8_000_000)
+        kernel = self.native()
+        requests = tuple(
+            request.model_copy(update={"tasks": request.tasks[i::workers]}) for i in range(workers)
+        )
+        with WorkBatch(cancelled) as batch:
+            futures = tuple(
+                batch.submit(self.pool, managed_batch, request, kernel.artifact)
+                for request in requests
+            )
+            return tuple(
+                sorted(
+                    (feature for future in futures for feature in batch.result(future)),
+                    key=lambda f: f.index,
+                )
+            )
 
     def caps(
-        self, portfolio: Portfolio, base: Plan, candidates: tuple[int, ...]
+        self,
+        portfolio: Portfolio,
+        base: Plan,
+        candidates: tuple[int, ...],
+        *,
+        cancelled: Event | None = None,
     ) -> tuple[tuple[tuple[int, float | None, bool], ...], int]:
-        width = max(1, (len(candidates) + self.workers * 2 - 1) // (self.workers * 2))
+        if not candidates:
+            return (), 0
+        # Assumption: avoid starting parallel batches for fewer than 32 candidate caps.
+        workers = parallelism(self.workers, len(candidates), len(candidates), 32)
+        width = (len(candidates) + workers - 1) // workers
         chunks = tuple(candidates[i : i + width] for i in range(0, len(candidates), width))
-        futures = tuple(self.pool.submit(run_caps, portfolio, base, chunk) for chunk in chunks)
         results: dict[int, tuple[int, float | None, bool]] = {}
         calls = 0
-        for chunk, future in zip(chunks, futures, strict=True):
-            values, count = future.result()
-            calls += count
-            results.update(zip(chunk, values, strict=True))
+        with WorkBatch(cancelled) as batch:
+            futures = tuple(
+                batch.submit(self.pool, cap_batch, portfolio, base, chunk) for chunk in chunks
+            )
+            for chunk, future in zip(chunks, futures, strict=True):
+                values, count = batch.result(future)
+                calls += count
+                results.update(zip(chunk, values, strict=True))
         return tuple(results[i] for i in candidates), calls

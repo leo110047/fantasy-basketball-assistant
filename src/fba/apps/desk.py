@@ -1,12 +1,15 @@
 from collections.abc import Callable
+from concurrent.futures import CancelledError
+from functools import partial
 from pathlib import Path
-from threading import Condition, Lock, Thread
+from threading import Condition, Event, Lock, Thread
 from time import perf_counter_ns
 from typing import Literal
 
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.desk import log_execution, save_draft
-from fba.apps.auction import AuctionSession
+from fba.apps.auction import AuctionSession, CancellableKernel
+from fba.apps.workers import check_current
 from fba.contracts.auction import (
     AuctionInput,
     AuctionResult,
@@ -36,7 +39,7 @@ from fba.core.auction import (
 )
 from fba.core.roster import effective_players
 
-Calculator = Callable[[DraftState, str], AuctionResult]
+Calculator = Callable[[DraftState, str, Event], AuctionResult]
 
 
 class LatestCalculation:
@@ -52,7 +55,8 @@ class LatestCalculation:
         self.record = record
         self.mode: Literal["equal", "fit"] = mode
         self.condition = Condition()
-        self.pending: tuple[DraftState, str, int] | None = None
+        self.pending: tuple[DraftState, str, int, Event] | None = None
+        self.cancelled = Event()
         self.generation = 0
         self.identity = ""
         self.view = JobView(status="updating", result=None, error=None)
@@ -62,11 +66,18 @@ class LatestCalculation:
 
     def request(self, state: DraftState, sha: str) -> None:
         with self.condition:
+            self.cancelled.set()
+            self.cancelled = Event()
             self.generation += 1
             self.identity = sha
-            self.pending = (state, sha, self.generation)
+            self.pending = (state, sha, self.generation, self.cancelled)
             self.view = JobView(status="updating", result=None, error=None)
             self.condition.notify()
+
+    def invalidate(self) -> None:
+        with self.condition:
+            self.cancelled.set()
+            self.pending = None
 
     def current(self, sha: str) -> JobView:
         with self.condition:
@@ -81,11 +92,13 @@ class LatestCalculation:
                 if self.stopping:
                     return
                 assert self.pending is not None
-                state, sha, generation = self.pending
+                state, sha, generation, cancelled = self.pending
                 self.pending = None
             started = perf_counter_ns()
             try:
-                result = self.calculate(state, sha)
+                result = self.calculate(state, sha, cancelled)
+                if cancelled.is_set():
+                    continue
                 self.record(
                     DeskExecution(
                         format_version=1,
@@ -99,6 +112,8 @@ class LatestCalculation:
                 )
                 view = JobView(status="ready", result=result, error=None)
             except Exception as exc:
+                if isinstance(exc, CancelledError) and cancelled.is_set():
+                    continue
                 # This is the process boundary: report the failure, keep the saved ledger.
                 view = self.failure(state, sha, started, exc)
             with self.condition:
@@ -126,6 +141,7 @@ class LatestCalculation:
     def close(self) -> None:
         with self.condition:
             self.stopping = True
+            self.cancelled.set()
             self.condition.notify()
         self.thread.join()
 
@@ -207,6 +223,8 @@ class AuctionDesk:
             payload = save_draft(self.path, candidate, self.payload)
             self.payload = payload
             self.desk = updated
+            for job in (self.equal, self.fit):
+                job.invalidate()
             return self.desk
 
     def start_calculations(self, sha: str) -> None:
@@ -277,22 +295,29 @@ class AuctionDesk:
 
     def close(self) -> None:
         for job in (self.equal, self.fit):
+            job.invalidate()
+        for job in (self.equal, self.fit):
             job.close()
 
 
 def session_calculator(
     inputs: AuctionInput, sha: str, session: AuctionSession, mode: Literal["equal", "fit"]
 ) -> Calculator:
-    def calculate(state: DraftState, state_hash: str) -> AuctionResult:
-        return calculate_auction(
+    def calculate(state: DraftState, state_hash: str, cancelled: Event) -> AuctionResult:
+        check_current(cancelled)
+        result = calculate_auction(
             inputs,
             state,
             sha,
             state_hash,
-            runner=session.caps,
+            runner=partial(session.caps, cancelled=cancelled),
             mode=mode,
-            kernel=session.native() if mode == "fit" else None,
-            feature_runner=session.features if mode == "fit" else None,
+            kernel=CancellableKernel(session.native(), cancelled) if mode == "fit" else None,
+            feature_runner=partial(session.features, cancelled=cancelled)
+            if mode == "fit"
+            else None,
         )
+        check_current(cancelled)
+        return result
 
     return calculate

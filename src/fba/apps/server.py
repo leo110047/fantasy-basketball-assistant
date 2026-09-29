@@ -160,8 +160,7 @@ def serve(input_path: Path, draft: Path, log: Path, workers: int, port: int) -> 
 def run_server(
     inputs: AuctionInput, sha: str, draft: Path, log: Path, workers: int, port: int
 ) -> None:
-    equal = AuctionSession(workers)
-    fit = AuctionSession(workers)
+    session = AuctionSession(workers)
     desk: AuctionDesk | None = None
     try:
         desk = AuctionDesk(
@@ -169,9 +168,8 @@ def run_server(
             sha,
             draft,
             log,
-            session_calculator(inputs, sha, equal, "equal"),
-            session_calculator(inputs, sha, fit, "fit"),
-            equal.comparison,
+            session_calculator(inputs, sha, session, "equal"),
+            session_calculator(inputs, sha, session, "fit"),
         )
         with DeskServer(desk, port) as server:
             print(
@@ -180,6 +178,7 @@ def run_server(
                         "url": f"{server.origin}/#{server.token}",
                         "draft": str(draft),
                         "log": str(log),
+                        "worker_limit": workers,
                     }
                 ),
                 flush=True,
@@ -191,5 +190,4 @@ def run_server(
     finally:
         if desk is not None:
             desk.close()
-        equal.close()
-        fit.close()
+        session.close()

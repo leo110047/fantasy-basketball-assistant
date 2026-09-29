@@ -18,6 +18,7 @@ from fba.apps.annual import finish_annual
 from fba.apps.auction import AuctionSession
 from fba.apps.build import assemble
 from fba.apps.server import serve
+from fba.apps.workers import worker_limit
 from fba.contracts.auction import SolverError
 from fba.contracts.base import ConfigError, DataError, IdentityError
 from fba.contracts.config import ValidatedConfig
@@ -132,7 +133,12 @@ def parser() -> argparse.ArgumentParser:
     auction = commands.add_parser("auction", help="Compute an offline auction state")
     auction.add_argument("input", type=Path)
     auction.add_argument("--draft", required=True, type=Path)
-    auction.add_argument("--workers", required=True, type=int)
+    auction.add_argument(
+        "--workers",
+        default="auto",
+        type=worker_limit,
+        help="Total worker ceiling: auto or a positive integer",
+    )
     auction.add_argument("--output", required=True, type=Path)
     auction.add_argument("--stage", choices=("market", "equal", "fit"), required=True)
     prepare = commands.add_parser(
@@ -151,7 +157,12 @@ def parser() -> argparse.ArgumentParser:
     desk.add_argument("input", type=Path)
     desk.add_argument("--draft", required=True, type=Path)
     desk.add_argument("--log", required=True, type=Path)
-    desk.add_argument("--workers", required=True, type=int)
+    desk.add_argument(
+        "--workers",
+        default="auto",
+        type=worker_limit,
+        help="Total worker ceiling: auto or a positive integer",
+    )
     desk.add_argument("--port", type=int, default=0)
     return root
 

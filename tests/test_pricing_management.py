@@ -157,8 +157,8 @@ def test_desk_comparison_uses_selected_managed_utilities(fitted_case, tmp_path):
         "0" * 64,
         path,
         tmp_path / "log.jsonl",
-        lambda d, s: calculate_auction(inputs, d, "0" * 64, s),
-        lambda d, s: fitted,
+        lambda d, s, cancelled: calculate_auction(inputs, d, "0" * 64, s),
+        lambda d, s, cancelled: fitted,
     )
     try:
         wait_for(lambda: service.results().fit.status == "ready")

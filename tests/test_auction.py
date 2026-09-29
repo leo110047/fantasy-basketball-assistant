@@ -363,15 +363,6 @@ def test_parallel_caps_are_identical_on_a_changed_state():
         fast = calculate_auction(inputs, draft, "0" * 64, "3" * 64, runner=session.caps)
         slow = calculate_auction(inputs, draft, "0" * 64, "3" * 64)
         assert canonical(fast) == canonical(slow)
-        players, market = market_context(inputs, draft, "0" * 64)
-        for candidate, price in (("001", 1), ("004", 5), ("007", 100)):
-            slow_comparison = compare(
-                portfolio_for(inputs, players, market, draft), candidate, price
-            )
-            fast_comparison = compare(
-                portfolio_for(inputs, players, market, draft), candidate, price, session.comparison
-            )
-            assert canonical(fast_comparison) == canonical(slow_comparison)
     finally:
         session.close()
 

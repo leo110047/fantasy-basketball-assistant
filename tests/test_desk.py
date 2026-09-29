@@ -2,6 +2,7 @@ import fcntl
 import json
 import os
 import threading
+from concurrent.futures import CancelledError
 from http.client import HTTPConnection
 from time import monotonic, sleep
 
@@ -36,7 +37,7 @@ def desk(tmp_path):
     path = tmp_path / "draft.json"
     path.write_bytes(canonical(initial))
 
-    def calculate(draft, sha):
+    def calculate(draft, sha, cancelled):
         return calculate_auction(inputs, draft, "0" * 64, sha)
 
     service = AuctionDesk(
@@ -219,7 +220,7 @@ def test_running_result_cannot_replace_newer_state_and_pending_work_coalesces(de
     calls, records = [], []
     draft = desk.bootstrap().desk.state
 
-    def calculate(state, sha):
+    def calculate(state, sha, cancelled):
         calls.append(state.revision)
         if state.revision == 0:
             entered.set()
@@ -255,6 +256,99 @@ def test_compare_uses_exact_state_and_refuses_busy_or_stale(desk):
     desk.save(sell_request(desk))
     with pytest.raises(DataError, match="another change"):
         desk.comparison(request)
+
+
+def test_new_request_and_close_signal_running_calculations(desk):
+    entered = threading.Event()
+    records = []
+    draft = desk.bootstrap().desk.state
+
+    def calculate(state, sha, cancelled):
+        if state.revision in (0, 2):
+            entered.set()
+            assert cancelled.wait(5), "obsolete computation was not signalled"
+            raise CancelledError("superseded")
+        return calculate_auction(desk.inputs, state, desk.input_hash, sha)
+
+    job = LatestCalculation(calculate, records.append, "equal")
+    try:
+        job.request(draft, digest(canonical(draft)))
+        assert entered.wait(5)
+        latest = draft.model_copy(update={"revision": 1})
+        sha = digest(canonical(latest))
+        job.request(latest, sha)
+        wait_for(lambda: job.current(sha).status == "ready")
+        assert len(records) == 1 and records[0].state.revision == 1
+        entered.clear()
+        closing = draft.model_copy(update={"revision": 2})
+        job.request(closing, digest(canonical(closing)))
+        assert entered.wait(5)
+    finally:
+        job.close()
+    assert not job.thread.is_alive()
+    assert len(records) == 1
+
+
+def test_only_successfully_saved_changes_cancel_the_old_work(desk):
+    before = (desk.equal.cancelled, desk.fit.cancelled)
+    with pytest.raises(DataError, match="legal bid"):
+        desk.save(sell_request(desk, amount=999))
+    assert not any(event.is_set() for event in before)
+    saved = desk.save(sell_request(desk))
+    assert all(event.is_set() for event in before)
+    assert desk.path.read_bytes() == canonical(saved.state)
+    assert desk.results().fit.status == "updating"
+
+
+def test_service_shares_background_pool_and_comparison_never_queues_behind_it(desk, monkeypatch):
+    import fba.apps.server as server
+    from fba.core.auction import comparison_plans
+
+    owners = []
+
+    def calculator(inputs, sha, session, mode):
+        owners.append(session)
+        return lambda state, state_sha, cancelled: calculate_auction(inputs, state, sha, state_sha)
+
+    class ProbeServer:
+        origin, token = "http://127.0.0.1:0", "test"
+
+        def __init__(self, service, port):
+            self.service = service
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def serve_forever(self):
+            assert owners[0] is owners[1]
+            assert self.service.comparison_runner is comparison_plans
+            wait_for(lambda: self.service.results().equal.status == "ready")
+            from fba.core.auction import compare, market_context, portfolio_for
+
+            draft = self.service.bootstrap().desk.state
+            players, market = market_context(desk.inputs, draft, desk.input_hash)
+            for candidate, price in (("001", 1), ("004", 5), ("007", 100)):
+                expected = compare(
+                    portfolio_for(desk.inputs, players, market, draft), candidate, price
+                )
+                result = self.service.comparison(
+                    CompareRequest(
+                        state_sha256=self.service.results().state_sha256,
+                        player_id=candidate,
+                        price=price,
+                        mode="equal",
+                    )
+                )
+                assert canonical(result.comparison) == canonical(expected)
+
+    monkeypatch.setattr(server, "session_calculator", calculator)
+    monkeypatch.setattr(server, "DeskServer", ProbeServer)
+    path = desk.path.with_name("service-draft.json")
+    path.write_bytes(canonical(sell_request(desk).draft))
+    server.run_server(desk.inputs, desk.input_hash, path, path.with_suffix(".jsonl"), 2, 0)
 
 
 @pytest.fixture
