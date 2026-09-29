@@ -1,4 +1,4 @@
-import {el, money, node, action, option, renderRoom, renderTable, renderPlan, renderComparison} from "/view.js";
+import {el, money, node, action, option, catalogue, forecastWarning, renderProjectionDetail, renderRoom, renderTable, renderPlan, renderComparison} from "/view.js";
 import {beginTiming, rendered, measure} from "/timing.js";
 
 let boot, desk, jobs, selected = null, saving = false, comparing = false, composing = false;
@@ -62,6 +62,8 @@ function renderNominee() {
   const price = desk.market.market.prices.find(q => q.player_id === selected);
   el("nominee").replaceChildren(node("h2", p.name), node("p", p.positions.join(" / "), "muted"), node("div", sold ? "已成交" : current ? money(cap?.amount) : unavailable(), "cap"), node("p", `公允 ${money(p.fair)} · 預期成交 ${money(price?.expected)}`, "muted"), action("檢視價格原因", () => browse(selected)));
   if (cap?.conditional || cap?.reason) el("nominee").append(node("p", cap.conditional ? "條件式估值：先確認位置與市場報價。" : cap.reason, "warning"));
+  const warning = forecastWarning(p);
+  if (warning) el("nominee").append(node("p", warning, "warning"));
 }
 function controls() {
   const busy = saving || stale;
@@ -78,6 +80,7 @@ function controls() {
 function render() {
   if (!desk) return;
   const current = result();
+  el("sourceNotice").hidden = boot.details != null;
   renderRoom(desk, players);
   renderTable(desk, players, current, watched, browse, nominate, watch, unavailable(), saving || stale);
   renderPlan(current, players, desk.market.market, nominate, unavailable());
@@ -109,6 +112,7 @@ function renderDetails(id) {
     node("p", `停損價 ${result() ? money(c?.amount) : unavailable()}`),
     node("p", c?.reason ?? (c?.conditional ? "須先確認位置／市場報價。" : "根據目前預算、可用球員與合法組隊計算。"), "muted"));
   if (p.projected_price == null) d.append(node("p", "Yahoo 報價缺失；未當成底價備案。", "warning"));
+  renderProjectionDetail(d, p);
   d.append(action("指定為本輪", () => { nominate(id); el("playerDialog").close(); }));
 }
 function browse(id) {
@@ -246,7 +250,7 @@ async function dismissSettings(event) {
 }
 async function start() {
   boot = await api("bootstrap"); desk = boot.desk;
-  players = new Map(boot.players.map(p => [p.id,p]));
+  players = catalogue(boot);
   watched = new Set(desk.state.watch);
   try {
     const stored = JSON.parse(localStorage.getItem(`fba-watch:${desk.state.input_sha256}`) ?? "[]");
@@ -310,7 +314,7 @@ el("import").addEventListener("change", async e => {
     const candidate = JSON.parse(await file.text());
     if (!await confirmChange("以此備份取代目前成交紀錄？設定與資料版本仍由後端檢查。")) return;
     if (await save(candidate)) {
-      const updated = await api("bootstrap"); boot = updated; desk = updated.desk; players = new Map(updated.players.map(p => [p.id,p]));
+      const updated = await api("bootstrap"); boot = updated; desk = updated.desk; players = catalogue(updated);
       selected = null; el("buyer").value = ""; el("amount").value = ""; render();
     }
   } catch (e) { error(`匯入失敗：${e.message}`); }

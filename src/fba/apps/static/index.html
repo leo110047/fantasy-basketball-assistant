@@ -19,6 +19,7 @@
 <div class="support">
 <section>
 <div class="section-title"><h2>市場與停損價</h2><span id="count" class="muted"></span></div>
+<p id="sourceNotice" class="warning" hidden>這份資料沒有來源明細，無法確認哪些球員缺當季預測；請重新建置競標資料。</p>
 <div class="filters"><label>搜尋清單<input id="filter" type="search" placeholder="姓名或 ID"></label><label>顯示<select id="scope"><option value="available">未成交</option><option value="value">公允價高於市場價</option><option value="watch">我的追蹤</option><option value="all">全部球員</option></select></label></div>
 <div class="table-scroll"><table><thead><tr><th>追蹤</th><th>球員／位置</th><th>公允價</th><th>預期成交</th><th>停損價</th><th>本輪</th></tr></thead><tbody id="players"></tbody></table></div>
 </section>
@@ -27,7 +28,7 @@
 </div>
 </div>
 <footer><button id="settings" disabled>我方與隊名</button><button id="export" disabled>匯出備份</button><label class="file-button">匯入備份<input id="import" type="file" accept="application/json,.json" disabled></label><button id="legacyWatch" hidden>將瀏覽器原有追蹤存入草稿</button><span id="saved" role="status"></span></footer>
-<details><summary>聯盟規則與資料版本</summary><div id="rules"></div><div id="identity" class="identity"></div><p class="muted">缺預測或報價保持空白；條件式價格須先確認位置或市場報價。底價備案需要我方首先以最低出價提名，且無人加價。</p></details>
+<details><summary>聯盟規則與資料版本</summary><div id="rules"></div><div id="identity" class="identity"></div><p class="muted">缺報價保持空白；缺當季預測會標示警告，請核對歷史先驗與人工調整。條件式價格須先確認位置或市場報價。底價備案需要我方首先以最低出價提名，且無人加價。</p></details>
 </main>
 <dialog id="settingsDialog"><form id="settingsForm"><h2>我方與隊名</h2><label for="mine">我的隊伍</label><select id="mine"></select><div id="teamNames"></div><p id="settingsError" class="error" hidden></p><div class="dialog-actions"><button type="button" id="cancelSettings">取消</button><button class="primary">套用</button></div></form></dialog>
 <dialog id="playerDialog"><div id="playerDetail"></div><button id="closePlayer">關閉</button></dialog>

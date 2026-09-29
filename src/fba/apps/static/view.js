@@ -13,6 +13,48 @@ export function action(label, fn, className = "") {
   return b;
 }
 export function option(id, name) { const n = node("option", name); n.value = id; return n; }
+export const quantity = value => value == null ? "—" : Number(value).toFixed(Number.isInteger(value) ? 0 : 2);
+export function catalogue(bootstrap) {
+  const details = new Map((bootstrap.details ?? []).map(d => [d.player_id, d]));
+  const labels = new Map(bootstrap.league.categories.map(c => [c.id, c.label ?? c.id]));
+  return new Map(bootstrap.players.map(p => {
+    const detail = details.get(p.id) ?? null;
+    const strengths = (detail?.categories ?? []).filter(c => c.z > 0).sort((a,b) => b.z - a.z || a.id.localeCompare(b.id, "en")).slice(0,3).map(c => labels.get(c.id) ?? c.id);
+    return [p.id, {...p, detail, strengths}];
+  }));
+}
+export function forecastWarning(player) {
+  if (!player.detail || player.detail.forecast_usable) return "";
+  return player.detail.forecast_sources.length ? "當季預測不可用；請核對原因與人工調整。" : "缺當季預測；請核對傷情與人工調整。";
+}
+function adjustmentText(adjustment) {
+  const op = adjustment.operation;
+  if (op.kind === "multiply") return `${op.stat_id} × ${quantity(op.factor)}`;
+  if (op.kind === "expected_games") return `出賽 ${quantity(op.games)} 場`;
+  return `預期回歸 ${op.return_at.split("T")[0]}`;
+}
+export function renderProjectionDetail(container, player) {
+  const detail = player.detail;
+  if (!detail) { container.append(node("p", "此份競標資料沒有預測來源明細，請重新建置後核對。", "warning")); return; }
+  const warning = forecastWarning(player);
+  if (warning) container.append(node("p", warning, "warning"));
+  for (const reason of detail.preparation_warnings) container.append(node("p", reason, "detail-sources warning"));
+  container.append(node("h3", "預測與來源"), node("p", `預期 ${quantity(detail.expected_games)} 場 · 每場 ${quantity(detail.minutes)} 分鐘`));
+  const stats = node("dl", "", "player-stats");
+  for (const stat of detail.stats) {
+    const cell = node("div", ""); cell.append(node("dt", stat.id), node("dd", quantity(stat.value))); stats.append(cell);
+  }
+  if (detail.stats.length) container.append(node("p", "每場數據", "muted"), stats);
+  if (player.strengths.length) container.append(node("p", `相對強項：${player.strengths.join("、")}`));
+  container.append(node("p", `Yahoo 平均成交 ${money(detail.average_price)}`));
+  const sources = detail.forecast_sources.length ? detail.forecast_sources.join("、") : "未提供；請檢查歷史先驗與人工調整";
+  container.append(node("p", `當季預測來源：${sources}`, "detail-sources muted"));
+  for (const source of detail.forecast_provenance) container.append(node("p", `${source.source_id} · 資料 ${source.available_as_of.split("T")[0]} · ${source.url}`, "detail-sources muted"));
+  if (detail.adjustments.length) {
+    container.append(node("h3", "人工調整"));
+    for (const adjustment of detail.adjustments) container.append(node("p", `${adjustment.assumption ? "假設" : "調整"}：${adjustmentText(adjustment)} · ${adjustment.reason}（${adjustment.source}；公布 ${adjustment.published_at.split("T")[0]}）`, "detail-sources muted"));
+  }
+}
 
 let roomHash = null;
 export function renderRoom(data, players) {
@@ -60,7 +102,7 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
       row = document.createElement("tr"); row.dataset.player = p.id;
       for (let i=0;i<6;i++) row.append(document.createElement("td"));
       row.children[0].append(action("☆", () => watch(p.id)));
-      row.children[1].append(action(p.name, () => browse(p.id), "name"), node("small", ""));
+      row.children[1].append(action(p.name, () => browse(p.id), "name"), node("small", ""), node("small", "", "warning"));
       row.children[4].className = "good";
       row.children[5].append(action("指定", () => nominate(p.id)));
     }
@@ -69,7 +111,8 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
     text(star, watched.has(p.id) ? "★" : "☆");
     star.disabled = busy;
     star.setAttribute("aria-label", `追蹤 ${p.name}`); star.setAttribute("aria-pressed", String(watched.has(p.id)));
-    text(cells[1].lastChild, p.positions.join(" / "));
+    text(cells[1].children[1], [p.positions.join(" / "), p.strengths?.join("、")].filter(Boolean).join(" · "));
+    const warning = cells[1].children[2]; text(warning, forecastWarning(p)); warning.hidden = !warning.textContent;
     text(cells[2], money(p.fair)); text(cells[3], held ? "已成交" : money(quote?.expected));
     text(cells[4], held ? "—" : result ? `${money(cap?.amount)}${cap?.conditional ? " *" : ""}` : unavailable);
     cells[4].title = cap?.reason ?? (cap?.conditional ? "需確認位置／報價" : "");

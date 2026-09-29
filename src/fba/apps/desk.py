@@ -250,6 +250,7 @@ class AuctionDesk:
                 players=effective_players(
                     self.inputs.config.league, self.inputs.players, self.desk.state
                 ),
+                details=self.inputs.details,
                 desk=self.desk,
             )
 

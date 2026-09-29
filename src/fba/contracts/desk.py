@@ -1,6 +1,7 @@
 from typing import Literal
 
 from fba.contracts.auction import (
+    AuctionDetail,
     AuctionPlayer,
     AuctionResult,
     Comparison,
@@ -51,6 +52,7 @@ class DeskBootstrap(Record):
     snapshot_sha256: Digest
     league: LeagueRules
     players: tuple[AuctionPlayer, ...]
+    details: tuple[AuctionDetail, ...] | None
     desk: DeskState
 
 

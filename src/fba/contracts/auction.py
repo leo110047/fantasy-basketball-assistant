@@ -1,4 +1,6 @@
-from typing import Literal
+from typing import Annotated, Literal, Self
+
+from pydantic import Field, model_validator
 
 from fba.contracts.base import (
     Finite,
@@ -16,8 +18,8 @@ from fba.contracts.config import (
     ManagementParameters,
     PricingParameters,
 )
-from fba.contracts.data import Digest
-from fba.contracts.projection import FrozenCalculationInput
+from fba.contracts.data import Adjustment, Digest, Provenance, StatValue
+from fba.contracts.projection import CategoryScore, FrozenCalculationInput
 from fba.contracts.season import ManagementInput, MarginalTask
 
 
@@ -83,11 +85,34 @@ class DraftState(Record):
     watch: tuple[Text, ...] = ()  # Older backups contain no saved watch list.
 
 
+class AuctionDetail(Record):
+    player_id: Text
+    team_id: Text | None
+    expected_games: Nonnegative | None
+    minutes: Nonnegative | None
+    stats: tuple[StatValue, ...]
+    average_price: Nonnegative | None
+    forecast_sources: tuple[Text, ...]
+    forecast_usable: bool
+    preparation_warnings: tuple[Text, ...]
+    forecast_provenance: tuple[Provenance, ...]
+    adjustments: tuple[Adjustment, ...]
+    categories: tuple[CategoryScore, ...]
+
+
 class AuctionInput(FrozenCalculationInput):
+    format_version: Annotated[int, Field(ge=1, le=2)]
     snapshot_sha256: Digest
     calculation_sha256: Digest
     players: tuple[AuctionPlayer, ...]
     management: ManagementInput | None
+    details: tuple[AuctionDetail, ...] | None = None  # v1 did not freeze source details.
+
+    @model_validator(mode="after")
+    def detail_version(self) -> Self:
+        if (self.format_version == 2) != (self.details is not None):
+            raise ValueError("auction.details: required only in format_version 2")
+        return self
 
 
 class TeamBudget(Record):

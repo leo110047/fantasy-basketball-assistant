@@ -4,11 +4,25 @@ from time import perf_counter_ns
 from fba.adapters.calculation import load_calculation_input, load_projection, publish_result
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_parameters
+from fba.adapters.preparation import prepare_snapshot
 from fba.adapters.snapshots import artifact, load_snapshot, publish_bundle
-from fba.contracts.auction import AuctionInput, AuctionPlayer, DraftState, DraftTeam, MarketUpdate
+from fba.contracts.auction import (
+    AuctionDetail,
+    AuctionInput,
+    AuctionPlayer,
+    DraftState,
+    DraftTeam,
+    MarketUpdate,
+)
 from fba.contracts.base import ConfigError, DataError, FormatVersion, Natural, Record, Text
-from fba.contracts.config import AuctionModel, CalculationModel, HealthModel, HealthParameters
-from fba.contracts.data import Digest, Snapshot
+from fba.contracts.config import (
+    AuctionModel,
+    CalculationModel,
+    HealthModel,
+    HealthParameters,
+    ValidatedConfig,
+)
+from fba.contracts.data import Digest, Snapshot, StatValue
 from fba.contracts.projection import CalculationResult, ProductionInput, RoleProjected
 from fba.contracts.season import ManagedPlayer, ManagementInput, RoleManagedPlayer, SeasonKernel
 from fba.core.auction import CapRunner, calculate_auction, market_context, run_caps
@@ -53,6 +67,73 @@ def auction_players(
     )
 
 
+def auction_details(
+    snapshot: Snapshot, calculation: CalculationResult, config: ValidatedConfig
+) -> tuple[AuctionDetail, ...]:
+    model = config.model
+    assert isinstance(model, AuctionModel)
+    prepared = prepare_snapshot(snapshot, config)
+    usable = {
+        p.id
+        for p in prepared.players
+        if any(s.id == model.preparation.forecast_prior_id for s in p.priors)
+    }
+    projected = {p.id: p for p in calculation.projections}
+    values = {p.id: p for p in calculation.valuation.players}
+    axes = (*model.projection.stat_ids, model.projection.threshold_stat)
+    provenance = tuple(a.provenance for a in snapshot.artifacts if a.provenance is not None)
+    records: list[AuctionDetail] = []
+    for player in sorted(snapshot.players, key=lambda p: p.roster.id):
+        pid = player.roster.id
+        projection = projected.get(pid)
+        sources = tuple(sorted({f.source_id for f in snapshot.forecasts if f.player_id == pid}))
+        if projection is not None and len(projection.stats) != len(axes):
+            raise DataError(f"auction.details.{pid}: projection statistic axes disagree")
+        records.append(
+            AuctionDetail(
+                player_id=pid,
+                team_id=player.team_id,
+                expected_games=projection.expected_games if projection is not None else None,
+                minutes=projection.minutes if projection is not None else None,
+                stats=tuple(
+                    StatValue(id=axis, value=value, missing_reason=None)
+                    for axis, value in zip(axes, projection.stats, strict=True)
+                )
+                if projection is not None
+                else (),
+                average_price=player.roster.average_price,
+                forecast_sources=sources,
+                forecast_usable=pid in usable,
+                preparation_warnings=tuple(
+                    n.detail
+                    for n in prepared.notes
+                    if n.player_id == pid and n.kind == "unavailable"
+                ),
+                forecast_provenance=tuple(
+                    sorted(
+                        (p for p in provenance if p.source_id in sources),
+                        key=lambda p: (
+                            p.source_id,
+                            p.url,
+                            p.raw_sha256,
+                            p.available_as_of,
+                            p.retrieved_at,
+                            p.delivery,
+                        ),
+                    )
+                ),
+                adjustments=tuple(
+                    sorted(
+                        (a for a in snapshot.adjustments.adjustments if a.player_id == pid),
+                        key=lambda a: (a.published_at, a.id),
+                    )
+                ),
+                categories=values[pid].categories,
+            )
+        )
+    return tuple(records)
+
+
 def load_auction(path: Path) -> tuple[AuctionInput, str]:
     inputs, input_hash = load_calculation_input(path, AuctionInput)
     artifacts = {a.path: a.sha256 for a in inputs.artifacts}
@@ -77,19 +158,31 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
         or inputs.players != auction_players(snapshot, result)
     ):
         raise DataError("auction.sources: season, configuration or derived players disagree")
-    if inputs.management is None:
-        raise DataError("auction.management: frozen managed projections are required")
     model = inputs.config.model
     if not isinstance(model, AuctionModel):
         raise ConfigError("model: auction requires format_version 5")
     require_distribution(model.market)
-    if inputs.management.stat_ids != (*model.projection.stat_ids, model.projection.threshold_stat):
+    if inputs.details is not None and inputs.details != auction_details(
+        snapshot, result, inputs.config
+    ):
+        raise DataError("auction.details: differs from frozen sources or calculation")
+    validate_management(inputs, result, model)
+    return inputs, input_hash
+
+
+def validate_management(
+    inputs: AuctionInput, result: CalculationResult, model: AuctionModel
+) -> None:
+    management = inputs.management
+    if management is None:
+        raise DataError("auction.management: frozen managed projections are required")
+    if management.stat_ids != (*model.projection.stat_ids, model.projection.threshold_stat):
         raise DataError("auction.management.stat_ids: differs from frozen projection axes")
-    ids = tuple(p.id for p in inputs.management.players)
+    ids = tuple(p.id for p in management.players)
     if len(ids) != len(set(ids)) or set(ids) != {p.id for p in inputs.players}:
         raise DataError("auction.management: player population disagrees with catalogue")
     projected = {p.id: p for p in result.projections}
-    for player in inputs.management.players:
+    for player in management.players:
         p = projected.get(player.id)
         if p is not None and (
             player.expected_games != p.expected_games
@@ -97,7 +190,7 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
             or player.covariance != p.covariance
         ):
             raise DataError(f"auction.management.{player.id}: differs from frozen projection")
-    for player in inputs.management.players:
+    for player in management.players:
         p = projected.get(player.id)
         if isinstance(p, RoleProjected) and (
             not isinstance(player, RoleManagedPlayer)
@@ -107,7 +200,7 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
                 f"auction.management.{player.id}: original participation differs from projection"
             )
     if isinstance(model, HealthModel):
-        for player in inputs.management.players:
+        for player in management.players:
             p = projected.get(player.id)
             if not isinstance(player, RoleManagedPlayer) or (
                 p is not None
@@ -128,7 +221,6 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
                 raise DataError(
                     f"auction.management.{player.id}: health decomposition differs from model"
                 )
-    return inputs, input_hash
 
 
 def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
@@ -180,12 +272,13 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
     files["source/calculation.json"] = payload
     files["source/snapshot.json"] = read_bytes(snapshot_root / "snapshot.json")
     auction = AuctionInput(
-        format_version=1,
+        format_version=2,
         config=config,
         artifacts=tuple(artifact(p, data) for p, data in sorted(files.items())),
         snapshot_sha256=digest(files["source/snapshot.json"]),
         calculation_sha256=digest(payload),
         players=players,
+        details=auction_details(snapshot, calculation, config),
         management=prepare_management(
             inputs, calculation, players, model.health if isinstance(model, HealthModel) else None
         ),

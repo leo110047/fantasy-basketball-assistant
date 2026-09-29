@@ -12,33 +12,27 @@ from fba.adapters.snapshots import artifact, publish_bundle
 from fba.adapters.team_minutes import team_members
 from fba.adapters.team_offense import offense_sources
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import PreparationModel, TeamBudgetModel, TeamOffenseModel
-from fba.contracts.data import ManualAdjustments, ReturnAt
-from fba.contracts.projection import BudgetedInput, CalculationResult, OffenseInput, PreparedInput
+from fba.contracts.config import (
+    PreparationModel,
+    TeamBudgetModel,
+    TeamOffenseModel,
+    ValidatedConfig,
+)
+from fba.contracts.data import ManualAdjustments, ReturnAt, Snapshot
+from fba.contracts.projection import (
+    BudgetedInput,
+    CalculationResult,
+    OffenseInput,
+    PreparedInput,
+    PreparedPopulation,
+)
 from fba.core.calculation import calculate_with_offense
 from fba.core.config import validate_config
 from fba.core.preparation import prepare
 from fba.core.team_minutes import minute_allocations
 
 
-def projection_input(root: Path, model_path: Path) -> tuple[PreparedInput, dict[str, bytes]]:
-    snapshot, prefix, files, artifacts = frozen_calibration(root)
-    original = load_config(*(root / f"config/{n}.json" for n in ("league", "season", "model")))
-    if original.refs != snapshot.config:
-        raise DataError("snapshot.config: mismatched frozen configuration")
-    model, ref = load_parameters(model_path)
-    if not isinstance(model, PreparationModel):
-        raise ConfigError("model: annual projection requires preparation format_version 4")
-    config = validate_config(
-        original.league, original.season, model, original.refs.model_copy(update={"model": ref})
-    )
-    new_files = {
-        f"config/{n}.json": files[f"{prefix}/config/{n}.json"] for n in ("league", "season")
-    }
-    new_files["config/model.json"] = read_bytes(model_path)
-    if digest(new_files["config/model.json"]) != ref.input_sha256:
-        raise ConfigError("model: changed during projection preparation")
-    new_files["config/effective.json"] = canonical(config)
+def prepare_snapshot(snapshot: Snapshot, config: ValidatedConfig) -> PreparedPopulation:
     zone = ZoneInfo(config.league.timezone)
     adjusted = snapshot.model_copy(
         update={
@@ -60,7 +54,28 @@ def projection_input(root: Path, model_path: Path) -> tuple[PreparedInput, dict[
             )
         }
     )
-    prepared = prepare(adjusted, config)
+    return prepare(adjusted, config)
+
+
+def projection_input(root: Path, model_path: Path) -> tuple[PreparedInput, dict[str, bytes]]:
+    snapshot, prefix, files, artifacts = frozen_calibration(root)
+    original = load_config(*(root / f"config/{n}.json" for n in ("league", "season", "model")))
+    if original.refs != snapshot.config:
+        raise DataError("snapshot.config: mismatched frozen configuration")
+    model, ref = load_parameters(model_path)
+    if not isinstance(model, PreparationModel):
+        raise ConfigError("model: annual projection requires preparation format_version 4")
+    config = validate_config(
+        original.league, original.season, model, original.refs.model_copy(update={"model": ref})
+    )
+    new_files = {
+        f"config/{n}.json": files[f"{prefix}/config/{n}.json"] for n in ("league", "season")
+    }
+    new_files["config/model.json"] = read_bytes(model_path)
+    if digest(new_files["config/model.json"]) != ref.input_sha256:
+        raise ConfigError("model: changed during projection preparation")
+    new_files["config/effective.json"] = canonical(config)
+    prepared = prepare_snapshot(snapshot, config)
     files.update(new_files)
     entries = tuple(
         sorted(
