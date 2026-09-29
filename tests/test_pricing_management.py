@@ -106,6 +106,59 @@ def managed_input(inputs):
     return inputs.model_copy(update={"config": inputs.config.model_copy(update={"model": model})})
 
 
+def test_unquoted_candidate_gets_managed_value_without_inventing_a_quote(fitted_case):
+    from fba.contracts.auction import ManagedFitSummary, Plan
+    from fba.core.auction import market_context, portfolio_for
+    from fba.core.fit import FittedUtility
+
+    inputs, draft, kernel = fitted_case
+    inputs = managed_input(inputs)
+    inputs = inputs.model_copy(
+        update={
+            "players": tuple(
+                p.model_copy(update={"projected_price": None}) if p.id == "007" else p
+                for p in inputs.players
+            )
+        }
+    )
+    players, market = market_context(inputs, draft, "0" * 64)
+    portfolio = portfolio_for(inputs, players, market, draft)
+    base = portfolio.solve(canonical=True)
+    assert isinstance(base, Plan) and base.players == ("005", "006")
+    model = inputs.config.model
+    fitted = FittedUtility(
+        portfolio,
+        market,
+        draft.mine,
+        model.fit,
+        inputs.management,
+        kernel,
+        base,
+        model.pricing,
+        model.management,
+    )
+    mean, noise = fitted.context(fitted.anchor)
+    gradient = fitted.gradient(mean, noise)
+    features = fitted.marginals(base, gradient, mean, None)
+    # Player 005 is the weaker purchase; compare full native season totals with
+    # and without 007 in that seat, including the same opponent and waiver pool.
+    rest = (fitted.manager.index["006"],)
+    candidate = fitted.manager.index["007"]
+    rivals = fitted.candidate_rivals(rest, candidate)
+    without = fitted.manager.project_many((rest, *rivals)).boxes[:, 0]
+    with_player = fitted.manager.project_many(((*rest, candidate), *rivals)).boxes[:, 0]
+    expected = (with_player - without).mean(axis=(0, 1))
+    assert np.linalg.norm(expected) > 0
+    np.testing.assert_allclose(features[7], expected, rtol=0, atol=1e-12)
+    result = calculate_auction(inputs, draft, "0" * 64, "3" * 64, mode="fit", kernel=kernel)
+    assert isinstance(result.fit, ManagedFitSummary) and result.fit.selected_step > 0
+    price = next(p for p in result.market.prices if p.player_id == "007")
+    assert price.anchor is price.expected is price.acquisition is price.planning_cost is None
+    cap = next(c for c in result.caps if c.player_id == "007")
+    assert cap.conditional and cap.amount is not None
+    assert isinstance(result.plan, Plan) and "007" not in result.plan.purchases
+
+
 def test_complete_management_flows_through_auction_and_parallel_workers(fitted_case):
     inputs, draft, native = fitted_case
     inputs = managed_input(inputs)

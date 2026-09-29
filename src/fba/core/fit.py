@@ -312,10 +312,11 @@ class FittedUtility:
         preferred = tuple(p for p, _ in sorted(losses, key=lambda pair: (pair[1], pair[0])))
         feature = np.zeros((len(self.portfolio.players), self.manager.k))
         tasks: list[MarginalTask] = []
+        sold = {pid for team in self.market.room for pid in team.owned}
         for i, player in enumerate(self.portfolio.players):
             if not player.active or player.utility is None or player.id in self.portfolio.owned:
                 continue
-            if self.pricing is not None and not self.portfolio.available[i]:
+            if self.pricing is not None and player.id in sold:
                 continue
             p = self.manager.index[player.id]
             q = (
