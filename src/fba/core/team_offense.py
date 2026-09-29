@@ -106,23 +106,20 @@ def validate_offense_input(inputs: OffenseInput, model: TeamOffenseModel) -> Non
 def allocate_usage(
     rows: tuple[PlayerOffenseAllocation, ...], budget: float, full: int, model: TeamOffenseModel
 ) -> tuple[PlayerOffenseAllocation, ...]:
-    remaining = budget
     result: list[PlayerOffenseAllocation] = []
     axes = model.projection.stat_ids
-    for coverage in sorted({r.prior_coverage for r in rows}, reverse=True):
-        group = tuple(r for r in rows if r.prior_coverage == coverage)
-        demand = fsum(r.expected_games * used(r.before, model) / full for r in group)
-        factor = min(1.0, remaining / demand) if demand else 1.0
-        for row in group:
-            stats = [
-                v * factor if s in model.team_offense.scaled_stats else v
-                for s, v in zip(axes, row.before, strict=True)
-            ]
-            stats[axes.index(model.projection.scoring_stat)] = fsum(
-                t.coefficient * stats[axes.index(t.stat_id)] for t in model.projection.scoring_terms
-            )
-            result.append(row.model_copy(update={"after": tuple(stats), "usage_factor": factor}))
-        remaining = max(0.0, remaining - demand)
+    demand = fsum(r.expected_games * used(r.before, model) / full for r in rows)
+    factor = min(1.0, budget / demand) if demand else 1.0
+    # Source coverage measures evidence, not a player's right to the remaining possessions.
+    for row in rows:
+        stats = [
+            v * factor if s in model.team_offense.scaled_stats else v
+            for s, v in zip(axes, row.before, strict=True)
+        ]
+        stats[axes.index(model.projection.scoring_stat)] = fsum(
+            t.coefficient * stats[axes.index(t.stat_id)] for t in model.projection.scoring_terms
+        )
+        result.append(row.model_copy(update={"after": tuple(stats), "usage_factor": factor}))
     assist, made = (
         axes.index(s) for s in (model.team_offense.assist_stat, model.team_offense.made_stat)
     )

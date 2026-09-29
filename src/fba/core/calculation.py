@@ -100,7 +100,7 @@ def calculate_with_offense(
         )
     result = CalculationResult(
         format_version=1,
-        algorithm="team-offense-projection-v1"
+        algorithm="team-offense-projection-v2"
         if offense
         else "role-constrained-projection-v1"
         if allocations

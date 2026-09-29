@@ -384,7 +384,7 @@
       "kind": "Assumption",
       "reference": "Minutes-screened previous-season team totals and configured possession proxy",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Carry forward regulation-normalized FGA + 0.44 FTA + TO - OREB. Reserve historical average usage for unsupported team minutes; allocate remaining usage by prior coverage, preserve shooting percentages, and bound team AST by FGM. Not official pace or a calibrated future team pace forecast."
+      "reason": "Carry forward regulation-normalized FGA + 0.44 FTA + TO - OREB. Reserve historical average usage for unsupported team minutes; share excess usage reductions proportionally across all modeled players, preserve shooting percentages, and bound team AST by FGM. Source coverage is evidence metadata, not priority. Not official pace or a calibrated future team pace forecast."
     }
   }
 }

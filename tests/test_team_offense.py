@@ -234,7 +234,8 @@ def test_double_double_is_recomputed_when_usage_crosses_threshold(offense_case, 
     )
 
 
-def test_source_priority_and_assists_accounting_are_independent(offense_case):
+@pytest.mark.parametrize("budget", [9.9, 10.0, 10.1, 15.0, 20.0])
+def test_positive_usage_is_shared_continuously_across_source_coverage(offense_case, budget):
     from fba.contracts.projection import PlayerOffenseAllocation
     from fba.core.team_offense import allocate_usage
 
@@ -253,12 +254,16 @@ def test_source_priority_and_assists_accounting_are_independent(offense_case):
         )
         for i, coverage in enumerate((1.0, 0.0))
     )
-    high, low = allocate_usage(rows, 15, 1, offense_case.config.model)
-    assert high.usage_factor == 1
-    assert low.usage_factor == 0.5
+    high, low = allocate_usage(rows, budget, 1, offense_case.config.model)
+    assert high.usage_factor == low.usage_factor == pytest.approx(budget / 20)
+    assert high.after[1] > 0 and low.after[1] > 0
     assert high.assist_factor == low.assist_factor == 0.5
     assert high.after[8] + low.after[8] == high.after[0] + low.after[0]
-    assert high.after[4] == 8 and low.after[4] == 4
+    assert high.after[4] == low.after[4] == pytest.approx(8 * budget / 20)
+    assert allocate_usage(tuple(reversed(rows)), budget, 1, offense_case.config.model) == (
+        high,
+        low,
+    )
 
 
 def test_outside_forecast_imputation_has_explicit_donor_evidence(offense_case):
