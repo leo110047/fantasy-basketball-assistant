@@ -18,7 +18,7 @@ from fba.contracts.config import (
     ManagementParameters,
     PricingParameters,
 )
-from fba.contracts.data import Adjustment, Digest, Provenance, StatValue
+from fba.contracts.data import Adjustment, Digest, Provenance, StatValue, TeamLabel
 from fba.contracts.projection import CategoryScore, FrozenCalculationInput
 from fba.contracts.season import ManagementInput, MarginalTask
 
@@ -100,18 +100,33 @@ class AuctionDetail(Record):
     categories: tuple[CategoryScore, ...]
 
 
+class AnnotatedAuctionDetail(AuctionDetail):
+    history_games: Natural
+    history_minimum: PositiveInt
+    original_expected_games: Nonnegative | None
+    healthy_games_threshold: Nonnegative
+
+
 class AuctionInput(FrozenCalculationInput):
-    format_version: Annotated[int, Field(ge=1, le=2)]
+    format_version: Annotated[int, Field(ge=1, le=3)]
     snapshot_sha256: Digest
     calculation_sha256: Digest
     players: tuple[AuctionPlayer, ...]
     management: ManagementInput | None
-    details: tuple[AuctionDetail, ...] | None = None  # v1 did not freeze source details.
+    details: tuple[AnnotatedAuctionDetail | AuctionDetail, ...] | None = None
+    teams: tuple[TeamLabel, ...] | None = None
 
     @model_validator(mode="after")
     def detail_version(self) -> Self:
-        if (self.format_version == 2) != (self.details is not None):
-            raise ValueError("auction.details: required only in format_version 2")
+        if (self.format_version >= 2) != (self.details is not None):
+            raise ValueError("auction.details: required in format_version 2 or later")
+        if (self.format_version == 3) != (self.teams is not None):
+            raise ValueError("auction.teams: required only in format_version 3")
+        if any(
+            isinstance(detail, AnnotatedAuctionDetail) != (self.format_version == 3)
+            for detail in self.details or ()
+        ):
+            raise ValueError("auction.details: annotations require format_version 3")
         return self
 
 

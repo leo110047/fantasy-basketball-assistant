@@ -5,7 +5,7 @@ import pytest
 from test_calculation import projection_bundle as projection_bundle
 
 from fba.adapters.calculation import calculate_file, load_calculation_input
-from fba.adapters.codec import canonical
+from fba.adapters.codec import canonical, digest
 from fba.adapters.config import load_config
 from fba.adapters.preparation import project
 from fba.adapters.snapshots import artifact, load_snapshot, publish
@@ -19,6 +19,7 @@ from fba.contracts.data import (
     Multiply,
     Player,
     PlayerGame,
+    Provenance,
     ReturnAt,
     RosterRow,
     ScheduleCount,
@@ -47,6 +48,7 @@ def annual_case(projection_bundle, tmp_path):
     axes = config.model.projection.stat_ids
     players, forecasts, history = [], [], []
     for i, p in enumerate(inputs.players):
+        team_id = "1" if p.team_id == "A" else "2"
         players.append(
             Player(
                 roster=RosterRow(
@@ -58,7 +60,7 @@ def annual_case(projection_bundle, tmp_path):
                     average_price=None,
                 ),
                 identities=(),
-                team_id=p.team_id,
+                team_id=team_id,
                 history_status="available" if i else "no_previous_season_history",
             )
         )
@@ -84,7 +86,7 @@ def annual_case(projection_bundle, tmp_path):
                     PlayerGame(
                         player_id=p.id,
                         game_id=str(g),
-                        team_id=p.team_id,
+                        team_id=team_id,
                         source_id="history",
                         stats=tuple(
                             StatValue(id=s, value=v, missing_reason=None)
@@ -95,8 +97,8 @@ def annual_case(projection_bundle, tmp_path):
     games = tuple(
         Game(
             id=str(i),
-            home_team_id="A",
-            away_team_id="B",
+            home_team_id="1",
+            away_team_id="2",
             tipoff=datetime.combine(day, datetime.min.time(), tzinfo=UTC),
             local_date=day,
             source_id="schedule",
@@ -115,6 +117,25 @@ def annual_case(projection_bundle, tmp_path):
         }
     )
     files["config/effective.json"] = canonical(config)
+    files["raw/schedule.json"] = json.dumps(
+        {
+            "settings": {
+                "proTeams": [
+                    {"id": 1, "abbrev": "A", "location": "City A", "name": "Alphas"},
+                    {"id": 2, "abbrev": "B", "location": "City B", "name": "Betas"},
+                ]
+            }
+        }
+    ).encode()
+    source = next(s for s in config.season.sources if s.role == "schedule")
+    provenance = Provenance(
+        source_id=source.id,
+        url=source.url,
+        raw_sha256=digest(files["raw/schedule.json"]),
+        available_as_of=source.available_as_of,
+        retrieved_at=snapshot.as_of,
+        delivery=source.delivery,
+    )
     candidate = snapshot.model_copy(
         update={
             "config": config.refs,
@@ -130,9 +151,14 @@ def annual_case(projection_bundle, tmp_path):
                     pending_reason="pending",
                     source_id="schedule",
                 )
-                for t in ("A", "B")
+                for t in ("1", "2")
             ),
-            "artifacts": tuple(artifact(p, d) for p, d in sorted(files.items())),
+            "artifacts": tuple(
+                artifact(p, d).model_copy(
+                    update={"provenance": provenance if p == "raw/schedule.json" else None}
+                )
+                for p, d in sorted(files.items())
+            ),
         }
     )
     frozen = publish(candidate, files, tmp_path / "annual-source")

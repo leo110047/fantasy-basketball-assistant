@@ -4,7 +4,7 @@ export function normalized(value) {
 export function matches(player, query) {
   const name = normalized(player.name), initials = name.split(" ").map(word => word[0] ?? "").join("");
   const capitals = normalized(player.name.match(/[A-Z]/g)?.join("") ?? "");
-  const text = normalized(`${player.name} ${player.id} ${player.detail?.team_id ?? ""}`);
+  const text = normalized(`${player.name} ${player.id} ${player.detail?.team_id ?? ""} ${player.team?.abbreviation ?? ""} ${player.team?.name ?? ""}`);
   const needle = normalized(query);
   return !needle || needle.split(" ").every(part => text.includes(part)) || text.replaceAll(" ", "").includes(needle.replaceAll(" ", "")) || initials === needle || capitals === needle;
 }
@@ -47,6 +47,9 @@ export function rowTags(row) {
   if (quote?.anchor == null) tags.push("缺市場報價");
   if (!player.positions_confirmed) tags.push("位置待確認");
   if (cap?.forced) tags.push("難以替代");
+  const detail = player.detail;
+  if (detail?.original_expected_games != null && detail.original_expected_games < detail.healthy_games_threshold) tags.push("出賽風險");
+  if (detail?.history_games != null && detail.history_games < detail.history_minimum) tags.push("歷史樣本少");
   if (player.detail?.adjustments.some(a => a.operation.kind === "return_at")) tags.push("傷情待追蹤");
   return tags;
 }
@@ -54,9 +57,9 @@ export function floorBackup(quote, cap, sold, minimum) {
   return !sold && quote?.planning_cost === minimum && cap?.amount >= minimum && !cap.reason;
 }
 export function priceCSV(rows, desk, mode) {
-  const header = ["球員", "球員 ID", "位置", "NBA 球隊 ID", "公允價", "預期成交", "價差", "折扣比例", "停損價", "可出價空間", "標籤", "買家", "成交價", "估值模式", "狀態雜湊"];
+  const header = ["球員", "球員 ID", "位置", "NBA 球隊", "公允價", "預期成交", "價差", "折扣比例", "停損價", "可出價空間", "標籤", "買家", "成交價", "估值模式", "狀態雜湊"];
   const teams = new Map(desk.state.teams.map(t => [t.id,t.name]));
-  const values = rows.map(r => [r.player.name,r.player.id,r.player.positions.join("/"),r.player.detail?.team_id,r.player.fair,r.quote?.expected,r.difference,r.discount,r.cap?.amount,r.edge,rowTags(r).join(" / "),teams.get(r.sale?.buyer),r.sale?.amount,mode,desk.market.state_sha256]);
+  const values = rows.map(r => [r.player.name,r.player.id,r.player.positions.join("/"),r.player.team?.abbreviation ?? r.player.detail?.team_id,r.player.fair,r.quote?.expected,r.difference,r.discount,r.cap?.amount,r.edge,rowTags(r).join(" / "),teams.get(r.sale?.buyer),r.sale?.amount,mode,desk.market.state_sha256]);
   return "\ufeff" + [header,...values].map(row => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 function csvCell(value) {

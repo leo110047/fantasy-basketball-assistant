@@ -1,12 +1,14 @@
 from pathlib import Path
 from time import perf_counter_ns
 
+from fba.adapters.auction_metadata import auction_teams, freeze_team_sources, label_sources
 from fba.adapters.calculation import load_calculation_input, load_projection, publish_result
 from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_parameters
 from fba.adapters.preparation import prepare_snapshot
 from fba.adapters.snapshots import artifact, load_snapshot, publish_bundle
 from fba.contracts.auction import (
+    AnnotatedAuctionDetail,
     AuctionDetail,
     AuctionInput,
     AuctionPlayer,
@@ -30,6 +32,8 @@ from fba.core.config import validate_config
 from fba.core.fit import FeatureRunner
 from fba.core.health import healthy_games
 from fba.core.market import require_distribution
+from fba.core.preparation import history_samples
+from fba.core.projection import prior
 
 
 class AuctionExecution(Record):
@@ -68,11 +72,21 @@ def auction_players(
 
 
 def auction_details(
-    snapshot: Snapshot, calculation: CalculationResult, config: ValidatedConfig
+    snapshot: Snapshot,
+    calculation: CalculationResult,
+    config: ValidatedConfig,
+    *,
+    annotated: bool = False,
 ) -> tuple[AuctionDetail, ...]:
     model = config.model
     assert isinstance(model, AuctionModel)
     prepared = prepare_snapshot(snapshot, config)
+    priors = {p.id: p for p in prepared.players}
+    history = (
+        history_samples(snapshot, (*model.projection.stat_ids, model.preparation.minutes_stat))[0]
+        if annotated
+        else {}
+    )
     usable = {
         p.id
         for p in prepared.players
@@ -131,6 +145,17 @@ def auction_details(
                 categories=values[pid].categories,
             )
         )
+        if annotated:
+            source = priors[pid]
+            records[-1] = AnnotatedAuctionDetail(
+                **records[-1].model_dump(),
+                history_games=len(history.get(pid, ())),
+                history_minimum=model.preparation.minimum_player_history,
+                original_expected_games=prior(source, model.projection)[0]
+                if source.priors
+                else None,
+                healthy_games_threshold=model.valuation.healthy_games,
+            )
     return tuple(records)
 
 
@@ -163,9 +188,21 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
         raise ConfigError("model: auction requires format_version 5")
     require_distribution(model.market)
     if inputs.details is not None and inputs.details != auction_details(
-        snapshot, result, inputs.config
+        snapshot, result, inputs.config, annotated=inputs.format_version == 3
     ):
         raise DataError("auction.details: differs from frozen sources or calculation")
+    if inputs.format_version == 3:
+        if any(
+            artifacts.get(f"source/teams/{a.path}") != a.sha256
+            for a in label_sources(snapshot, inputs.config)
+        ):
+            raise DataError("auction.teams: source artifact manifest disagrees with snapshot")
+        files = {
+            f"source/teams/{a.path}": read_bytes(path.parent / f"source/teams/{a.path}")
+            for a in label_sources(snapshot, inputs.config)
+        }
+        if inputs.teams != auction_teams(snapshot, inputs.config, files):
+            raise DataError("auction.teams: differs from frozen sources")
     validate_management(inputs, result, model)
     return inputs, input_hash
 
@@ -272,14 +309,16 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
     files["config/effective.json"] = canonical(config)
     files["source/calculation.json"] = payload
     files["source/snapshot.json"] = read_bytes(snapshot_root / "snapshot.json")
+    files.update(freeze_team_sources(snapshot, config, snapshot_root))
     auction = AuctionInput(
-        format_version=2,
+        format_version=3,
         config=config,
         artifacts=tuple(artifact(p, data) for p, data in sorted(files.items())),
         snapshot_sha256=digest(files["source/snapshot.json"]),
         calculation_sha256=digest(payload),
         players=players,
-        details=auction_details(snapshot, calculation, config),
+        details=auction_details(snapshot, calculation, config, annotated=True),
+        teams=auction_teams(snapshot, config, files),
         management=prepare_management(
             inputs, calculation, players, model.health if isinstance(model, HealthModel) else None
         ),

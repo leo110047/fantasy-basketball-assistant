@@ -15,7 +15,7 @@ from pydantic import (
 )
 
 from fba.adapters.codec import checked_json
-from fba.contracts.base import ConfigError, DataError
+from fba.contracts.base import ConfigError, DataError, Text
 from fba.contracts.config import Source
 from fba.contracts.data import (
     ActualGames,
@@ -25,6 +25,7 @@ from fba.contracts.data import (
     PlayerGame,
     ProviderPlayer,
     StatValue,
+    TeamLabel,
 )
 
 
@@ -76,7 +77,9 @@ class EspnGame(Wire):
 
 class EspnTeam(Wire):
     id: int
-    abbrev: str
+    abbrev: Text
+    location: str | None = None
+    name: str | None = None
     proGamesByScoringPeriod: dict[str, tuple[EspnGame, ...]] = {}
 
 
@@ -86,6 +89,24 @@ class EspnSettings(Wire):
 
 class EspnSchedule(Wire):
     settings: EspnSettings
+
+
+def team_labels(data: bytes, source: str) -> tuple[TeamLabel, ...]:
+    try:
+        wire = EspnSchedule.model_validate_json(checked_json(data, source))
+    except ValidationError as exc:
+        raise DataError(f"{source}: ESPN team labels changed: {exc}") from exc
+    teams = wire.settings.proTeams
+    if not teams or len({t.id for t in teams}) != len(teams):
+        raise DataError(f"{source}: empty or duplicate ESPN team IDs")
+    return tuple(
+        TeamLabel(
+            id=str(t.id),
+            abbreviation=t.abbrev,
+            name=f"{t.location} {t.name}" if t.location and t.name else None,
+        )
+        for t in sorted(teams, key=lambda t: str(t.id))
+    )
 
 
 def validate_source_season(source: Source) -> None:

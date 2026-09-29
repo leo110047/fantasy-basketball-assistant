@@ -16,11 +16,12 @@ export function option(id, name) { const n = node("option", name); n.value = id;
 export const quantity = value => value == null ? "—" : Number(value).toFixed(Number.isInteger(value) ? 0 : 2);
 export function catalogue(bootstrap) {
   const details = new Map((bootstrap.details ?? []).map(d => [d.player_id, d]));
+  const teams = new Map((bootstrap.teams ?? []).map(t => [t.id,t]));
   const labels = new Map(bootstrap.league.categories.map(c => [c.id, c.label ?? c.id]));
   return new Map(bootstrap.players.map(p => {
     const detail = details.get(p.id) ?? null;
     const strengths = (detail?.categories ?? []).filter(c => c.z > 0).sort((a,b) => b.z - a.z || a.id.localeCompare(b.id, "en")).slice(0,3).map(c => labels.get(c.id) ?? c.id);
-    return [p.id, {...p, detail, strengths}];
+    return [p.id, {...p, detail, strengths, team:teams.get(detail?.team_id) ?? null}];
   }));
 }
 export function forecastWarning(player) {
@@ -46,6 +47,9 @@ export function renderProjectionDetail(container, player) {
   }
   if (detail.stats.length) container.append(node("p", "每場數據", "muted"), stats);
   if (player.strengths.length) container.append(node("p", `相對強項：${player.strengths.join("、")}`));
+  if (player.team) container.append(node("p", `NBA 球隊：${player.team.name ?? player.team.abbreviation}（${player.team.abbreviation}）`));
+  if (detail.history_games != null) container.append(node("p", `歷史逐場資料 ${detail.history_games} 場 · 個人樣本門檻 ${detail.history_minimum} 場`, "muted"));
+  if (detail.original_expected_games != null && detail.original_expected_games < detail.healthy_games_threshold) container.append(node("p", `出賽風險：校正前預測 ${quantity(detail.original_expected_games)} 場，低於模型健康門檻 ${quantity(detail.healthy_games_threshold)} 場；不是傷病診斷。`, "warning"));
   container.append(node("p", `Yahoo 平均成交 ${money(detail.average_price)}`));
   const sources = detail.forecast_sources.length ? detail.forecast_sources.join("、") : "未提供；請檢查歷史先驗與人工調整";
   container.append(node("p", `當季預測來源：${sources}`, "detail-sources muted"));
@@ -119,7 +123,7 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
     text(star, watched.has(p.id) ? "★" : "☆");
     star.disabled = busy;
     star.setAttribute("aria-label", `追蹤 ${p.name}`); star.setAttribute("aria-pressed", String(watched.has(p.id)));
-    text(cells[1].children[1], [p.positions.join(" / "), p.strengths?.join("、")].filter(Boolean).join(" · "));
+    text(cells[1].children[1], [p.team?.abbreviation, p.positions.join(" / "), p.strengths?.join("、")].filter(Boolean).join(" · "));
     const warning = cells[1].children[2]; text(warning, forecastWarning(p)); warning.hidden = !warning.textContent;
     text(cells[1].children[3], rowTags(item).join(" · "));
     text(cells[2], money(p.fair)); text(cells[3].children[0], held ? "已成交" : money(quote?.expected));

@@ -84,7 +84,8 @@ function controls() {
 function render() {
   if (!desk) return;
   const current = result();
-  el("sourceNotice").hidden = boot.details != null;
+  el("sourceNotice").hidden = boot.details != null && boot.teams != null;
+  el("sourceNotice").textContent = boot.details == null ? "這份資料沒有來源明細，無法確認哪些球員缺當季預測；請重新建置競標資料。" : "這份舊版資料未含球隊名稱與樣本註記；重新建置競標資料可補齊。";
   renderRoom(desk, players, editors.sale);
   renderTable(desk, players, current, watched, browse, nominate, watch, unavailable(), saving || stale, boot.league.minimum_bid);
   renderPlan(current, players, desk.market.market, nominate, unavailable());

@@ -252,6 +252,7 @@ class AuctionDesk:
                     self.inputs.config.league, self.inputs.players, self.desk.state
                 ),
                 details=self.inputs.details,
+                teams=self.inputs.teams,
                 desk=self.desk,
             )
 

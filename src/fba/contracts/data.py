@@ -94,6 +94,12 @@ class ProviderPlayer(Record):
     team_id: Text | None
 
 
+class TeamLabel(Record):
+    id: Text
+    abbreviation: Text
+    name: Text | None
+
+
 class Forecast(Record):
     player_id: Text
     expected_games: Nonnegative

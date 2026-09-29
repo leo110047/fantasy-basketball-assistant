@@ -1,6 +1,7 @@
 from typing import Literal
 
 from fba.contracts.auction import (
+    AnnotatedAuctionDetail,
     AuctionDetail,
     AuctionPlayer,
     AuctionResult,
@@ -10,7 +11,7 @@ from fba.contracts.auction import (
 )
 from fba.contracts.base import FormatVersion, Natural, PositiveInt, Record, Text
 from fba.contracts.config import LeagueRules
-from fba.contracts.data import Digest
+from fba.contracts.data import Digest, TeamLabel
 
 
 class SaveDraft(Record):
@@ -53,7 +54,8 @@ class DeskBootstrap(Record):
     snapshot_sha256: Digest
     league: LeagueRules
     players: tuple[AuctionPlayer, ...]
-    details: tuple[AuctionDetail, ...] | None
+    details: tuple[AnnotatedAuctionDetail | AuctionDetail, ...] | None
+    teams: tuple[TeamLabel, ...] | None
     desk: DeskState
 
 

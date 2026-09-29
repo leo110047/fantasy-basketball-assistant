@@ -8,7 +8,7 @@
 <div class="workspace">
 <aside>
 <section class="ticket">
-<label for="lookup">搜尋本輪球員</label><input id="lookup" type="search" autocomplete="off" placeholder="姓名或球員 ID"><div id="matches" class="matches" aria-label="搜尋結果"></div>
+<label for="lookup">搜尋本輪球員</label><input id="lookup" type="search" autocomplete="off" placeholder="姓名、縮寫、球隊或 ID"><div id="matches" class="matches" aria-label="搜尋結果"></div>
 <div id="nominee"><p class="muted">搜尋球員，或從表格指定本輪。</p></div>
 <form id="saleForm" novalidate><p class="eyebrow">YAHOO 已成交後，再登錄這裡</p><label for="buyerSearch">搜尋買家</label><input id="buyerSearch" type="search" autocomplete="off" placeholder="隊名或席次；再從下方選擇"><div class="sale-fields"><div><label for="buyer">買家</label><select id="buyer" required><option value="">選擇隊伍</option></select></div><div><label for="amount">成交價</label><input id="amount" inputmode="numeric" autocomplete="off" placeholder="$"></div></div><p id="buyerLimit" class="muted"></p><button id="sell" type="submit" class="primary" disabled>登錄成交</button></form>
 <p id="lastSale" class="muted"></p><button id="undo" disabled>撤銷上一筆</button>
@@ -20,7 +20,7 @@
 <section>
 <div class="section-title"><h2>市場與停損價</h2><span id="count" class="muted"></span></div>
 <p id="sourceNotice" class="warning" hidden>這份資料沒有來源明細，無法確認哪些球員缺當季預測；請重新建置競標資料。</p>
-<div class="filters"><label>搜尋清單<input id="filter" type="search" placeholder="姓名、縮寫或 ID"></label><label>顯示<select id="scope"><option value="available">未成交</option><option value="focus">重點價差（≥ $5 且 ≥ 20%）</option><option value="value">全部市場低估</option><option value="watch">我的追蹤</option><option value="all">全部球員</option></select></label><label>位置<select id="position"><option value="">全部位置</option></select></label><label>排序<select id="sort"><option value="fair">公允價</option><option value="gap">公允與市場價差</option><option value="cap">停損價</option><option value="edge">可出價空間</option><option value="name">名字</option></select></label></div>
+<div class="filters"><label>搜尋清單<input id="filter" type="search" placeholder="姓名、縮寫、球隊或 ID"></label><label>顯示<select id="scope"><option value="available">未成交</option><option value="focus">重點價差（≥ $5 且 ≥ 20%）</option><option value="value">全部市場低估</option><option value="watch">我的追蹤</option><option value="all">全部球員</option></select></label><label>位置<select id="position"><option value="">全部位置</option></select></label><label>排序<select id="sort"><option value="fair">公允價</option><option value="gap">公允與市場價差</option><option value="cap">停損價</option><option value="edge">可出價空間</option><option value="name">名字</option></select></label></div>
 <div class="table-tools"><p class="muted">價差＝公允－預期成交；折扣比例以公允價為基準。可出價空間＝停損－預期成交。</p><button id="exportCSV" disabled>匯出目前清單 CSV</button></div>
 <div class="table-scroll"><table><thead><tr><th>追蹤</th><th>球員／位置</th><th>公允價</th><th>預期成交</th><th>停損價</th><th>本輪</th></tr></thead><tbody id="players"></tbody></table></div>
 </section>
