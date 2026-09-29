@@ -1,7 +1,7 @@
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import AwareDatetime
+from pydantic import AwareDatetime, Field, RootModel
 
 from fba.contracts.base import (
     Finite,
@@ -50,6 +50,23 @@ class ActualArchive(Record):
     boxes: tuple[ActualBox, ...]
 
 
+class ScheduledGame(Record):
+    day: date
+    tipoff: AwareDatetime
+
+
+class ScheduleObservation(Record):
+    player_id: Text
+    published_at: AwareDatetime
+    games: tuple[ScheduledGame, ...]
+    source_artifact: Text
+
+
+class ScheduleArchive(Record):
+    format_version: FormatVersion
+    observations: tuple[ScheduleObservation, ...]
+
+
 class Pairing(Record):
     week_id: Text
     home: Text
@@ -68,6 +85,15 @@ class ReplayInput(FrozenCalculationInput):
     health: tuple[HealthObservation, ...]
     actual: tuple[ActualBox, ...]
     pairings: tuple[Pairing, ...]
+
+
+class ScheduledReplayInput(ReplayInput):
+    format_version: Annotated[int, Field(ge=2, le=2)]
+    schedules: tuple[ScheduleObservation, ...]
+
+
+class ReplayDocument(RootModel[ReplayInput | ScheduledReplayInput]):
+    pass
 
 
 class CategoryOutcome(Record):

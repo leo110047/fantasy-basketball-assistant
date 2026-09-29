@@ -5,11 +5,17 @@ import numpy as np
 from numpy.typing import NDArray
 
 from fba.contracts.auction import AuctionInput
-from fba.contracts.backtest import HealthObservation, ReplayInput, ReplayResult
+from fba.contracts.backtest import (
+    HealthObservation,
+    ReplayInput,
+    ReplayResult,
+    ScheduledReplayInput,
+)
 from fba.contracts.base import DataError
 from fba.contracts.config import SeasonModel
 from fba.contracts.season import ManagementInput, ManagementPolicy, SeasonKernel
 from fba.core.managed import ManagedSeason
+from fba.core.replay_schedule import schedule_tape
 from fba.core.roster import capacity
 from fba.core.scoring import score_season
 
@@ -92,16 +98,24 @@ def actual_boxes(
     manager: ManagedSeason,
     lineups: tuple[tuple[int, int, tuple[int, ...]], ...],
 ) -> tuple[tuple[tuple[float, ...], ...], ...]:
+    expected = (
+        {
+            (day, player)
+            for d, day in enumerate(manager.days)
+            for p, player in enumerate(manager.ids)
+            if manager.schedule.actual[d, p]
+        }
+        if manager.schedule is not None
+        else {(day, p.id) for p in manager.players for day in p.game_days}
+    )
     actual: dict[tuple[date, str], tuple[float, ...]] = {}
     for box in inputs.actual:
         key = (box.day, box.player_id)
         if key in actual or box.player_id not in manager.index or len(box.stats) != manager.k:
             raise DataError("replay.actual: duplicate game, unknown player or wrong stat axes")
-        p = manager.index[box.player_id]
-        if box.day not in manager.players[p].game_days:
+        if key not in expected:
             raise DataError("replay.actual: game outside player schedule")
         actual[key] = box.stats
-    expected = {(day, p.id) for p in manager.players for day in p.game_days}
     if set(actual) != expected:
         raise DataError(
             "replay.actual: requires every scheduled player game, including explicit zero DNP rows"
@@ -111,7 +125,11 @@ def actual_boxes(
     ]
     for day, team, started in lineups:
         for p in started:
-            values = actual[(manager.days[day], manager.ids[p])]
+            key = (manager.days[day], manager.ids[p])
+            if key not in expected:
+                # A game canceled after selection contributes nothing; it is not a DNP record.
+                continue
+            values = actual[key]
             for k, value in enumerate(values):
                 totals[team][int(manager.week[day])][k].append(value)
     return tuple(tuple(tuple(fsum(v) for v in week) for week in team) for team in totals)
@@ -130,6 +148,9 @@ def replay(
         auction.players,
         kernel,
         health,
+        schedule=schedule_tape(inputs, managed)
+        if isinstance(inputs, ScheduledReplayInput)
+        else None,
     )
     if {w.id for w in manager.weeks} != {w.id for w in inputs.config.league.matchups}:
         raise DataError("replay.schedule: must cover all configured matchup weeks")
@@ -156,7 +177,9 @@ def replay(
     )
     return ReplayResult(
         format_version=1,
-        algorithm="causal-management-v2",
+        algorithm="published-schedule-management-v1"
+        if isinstance(inputs, ScheduledReplayInput)
+        else "causal-management-v2",
         config=inputs.config.refs,
         input_sha256=input_sha256,
         auction_sha256=inputs.auction_sha256,

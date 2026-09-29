@@ -7,7 +7,7 @@ import lizard
 
 from fba.contracts.archive import ForecastArchive
 from fba.contracts.auction import DraftState
-from fba.contracts.backtest import ReplayInput
+from fba.contracts.backtest import ReplayDocument
 from fba.contracts.config import LeagueRules, ModelDocument, SeasonConfig
 from fba.contracts.data import IdentityMap, ManualAdjustments
 
@@ -20,7 +20,7 @@ def test_runtime_types_own_schemas():
     schemas = (
         ("forecast", ForecastArchive),
         ("draft", DraftState),
-        ("replay", ReplayInput),
+        ("replay", ReplayDocument),
         ("league", LeagueRules),
         ("season", SeasonConfig),
         ("model", ModelDocument),

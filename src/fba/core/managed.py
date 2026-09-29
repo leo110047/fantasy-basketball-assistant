@@ -10,6 +10,7 @@ from fba.contracts.config import FitParameters, LeagueRules, ManagementParameter
 from fba.contracts.season import (
     ManagementInput,
     ManagementPolicy,
+    ReplaySchedule,
     SeasonArrays,
     SeasonKernel,
     TacticalArrays,
@@ -51,8 +52,12 @@ class ManagedSeason:
         known_health: NDArray[np.bool_] | None = None,
         pricing: PricingParameters | None = None,
         tactics: ManagementParameters | None = None,
+        schedule: ReplaySchedule | None = None,
     ) -> None:
         self.league, self.parameters, self.kernel = league, parameters, kernel
+        self.schedule = schedule
+        if schedule is not None and known_health is None:
+            raise DataError("management.schedule: published changes require observed replay health")
         if (pricing is None) != (tactics is None):
             raise DataError("management.pricing: policy and tactical parameters are both required")
         self.pricing, self.tactic_parameters = pricing, tactics
@@ -73,7 +78,11 @@ class ManagedSeason:
         self.n = len(self.ids)
         self.k = len(inputs.stat_ids)
         self.stat_ids = inputs.stat_ids
-        self.days = management_calendar(league, tuple(d for p in self.players for d in p.game_days))
+        self.days = (
+            schedule.days
+            if schedule is not None
+            else management_calendar(league, tuple(d for p in self.players for d in p.game_days))
+        )
         self.d = len(self.days)
         self.weeks = tuple(
             w for w in league.matchups if w.start <= self.days[-1] and w.end >= self.days[0]
@@ -213,7 +222,7 @@ class ManagedSeason:
         self, day: int, status: bool, horizon: int | None = None, eligible_from: int = 0
     ) -> FloatArray:
         end = min(self.d, day + (self.parameters.forecast_days if horizon is None else horizon))
-        scheduled = self.games[day:end]
+        scheduled = self.schedule_on(day)[day:end]
         counts = np.cumsum(scheduled, axis=0) - scheduled
         probabilities = (
             self.availability
@@ -236,8 +245,16 @@ class ManagedSeason:
         days = np.arange(self.d)
         eligible = days + int(self.league.transactions.effective == "next_day")
         if self.league.lineup.lock_mode == "weekly":
-            locks = np.append(np.flatnonzero(self.lock_days()), self.d)
-            eligible = locks[np.searchsorted(locks, eligible)]
+            if self.schedule is not None and self.league.lineup.lock_at == "first_game":
+                eligible = np.array(
+                    [
+                        next((i for i in np.flatnonzero(self.lock_days(d)) if i >= start), self.d)
+                        for d, start in enumerate(eligible)
+                    ]
+                )
+            else:
+                locks = np.append(np.flatnonzero(self.lock_days()), self.d)
+                eligible = locks[np.searchsorted(locks, eligible)]
         values: list[FloatArray] = []
         for horizon in (self.parameters.forecast_days, parameters.long_forecast_days):
             for starts in (days, eligible):
@@ -331,12 +348,39 @@ class ManagedSeason:
         self.controls[roster] = result
         return result
 
-    def lock_days(self) -> NDArray[np.uint8]:
+    def schedule_on(self, day: int) -> NDArray[np.bool_]:
+        return self.games if self.schedule is None else self.schedule.known[day]
+
+    def public_games(self) -> NDArray[np.bool_]:
+        if self.schedule is None:
+            return self.games
+        return np.array([self.schedule_on(d)[d] for d in range(self.d)], dtype=bool)
+
+    def known_week_games(self) -> NDArray[np.int32] | None:
+        if self.schedule is None:
+            return None
+        return np.array(
+            [
+                self.schedule_on(d)[(self.week == self.week[d]) & (np.arange(self.d) >= d)].sum(
+                    axis=0
+                )
+                for d in range(self.d)
+            ],
+            dtype=np.int32,
+        )
+
+    def lock_days(self, known_on: int | None = None) -> NDArray[np.uint8]:
         locks = np.zeros(self.d, dtype=np.uint8)
+        games = self.public_games()
+        if known_on is not None:
+            # Past locks stay locked even after a same-day cancellation. Future
+            # locks are forecasts from the calendar public at this decision.
+            games = games.copy()
+            games[known_on:] = self.schedule_on(known_on)[known_on:]
         for week in range(len(self.weeks)):
             days = np.flatnonzero(self.week == week)
             if self.league.lineup.lock_at == "first_game":
-                days = days[self.games[days].any(axis=1)]
+                days = days[games[days].any(axis=1)]
             if len(days):
                 locks[days[0]] = 1
         return locks
@@ -349,7 +393,12 @@ class ManagedSeason:
         ]
         return SeasonArrays(
             health=np.ascontiguousarray(self.health, dtype=np.uint8),
-            games=np.ascontiguousarray(self.games, dtype=np.uint8),
+            games=np.ascontiguousarray(
+                self.schedule.actual
+                if self.schedule is not None and self.league.lineup.lock_mode == "weekly"
+                else self.public_games(),
+                dtype=np.uint8,
+            ),
             weeks=self.week,
             periods=self.period,
             masks=self.masks,
@@ -369,6 +418,7 @@ class ManagedSeason:
             weekly_lock=self.league.lineup.lock_mode == "weekly",
             roster_capacity=capacity(self.league),
             week_count=len(self.weeks),
+            known_week_games=self.known_week_games(),
         )
 
     def project(self, roster: tuple[int, ...]) -> ManagedMoments:

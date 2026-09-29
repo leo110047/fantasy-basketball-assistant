@@ -61,4 +61,6 @@ uv run fba migrate-projection /path/old-input.json --model /path/model.json \
 
 `backtest` 使用模型格式 6 與 `design/schemas/replay.schema.json`：凍結的競標投影、完整起始名單、自由球員、對戰表、每日決策時間、帶公布時間的傷情和逐場實績。傷情檔是 `{"format_version":1,"observations":[...]}`，實績檔是 `{"format_version":1,"boxes":[...]}`；每筆指定 `source_artifact`，原檔需列入帶來源與雜湊的 `artifacts`。實績必須包含明列的零數據 DNP。輸出逐日先發／IL／加人紀錄、週勝負、排名及季後賽結果；串流與傷兵補人共用設定額度。
 
+重播輸入格式 1 使用固定賽程；格式 2 的 `decision_times` 須涵蓋設定賽季的每個聯盟當地日期，並提供 `schedules`（無更新時為 `[]`）。每筆賽程更新含 `player_id`、`published_at`、`games: [{"day":"YYYY-MM-DD","tipoff":"帶時區的開賽時間"}]`、`source_artifact`，完整替換該球員賽程，保留已結束日期；來源檔同樣使用 `{"format_version":1,"observations":[...]}` 並凍結雜湊。決策只讀當時已公布的更新，實績按最後實際賽程提供；取消的原日期不要填假 DNP，改期或新增日期須提供實績。
+
 歷史季前資料不足時只能標為 `retrospective`，不能宣稱當時已知；目前真實歷史資料仍缺完整公開時間證明。每週輔助的預留介面在 `design/contracts.pyi`。交付報告、原始資料與快照留在 Git 外。

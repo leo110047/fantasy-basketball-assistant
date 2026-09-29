@@ -1776,6 +1776,116 @@
       "title": "Ratio",
       "type": "object"
     },
+    "ReplayInput": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "config": {
+          "$ref": "#/$defs/ValidatedConfig"
+        },
+        "artifacts": {
+          "items": {
+            "$ref": "#/$defs/Artifact"
+          },
+          "title": "Artifacts",
+          "type": "array"
+        },
+        "auction_path": {
+          "minLength": 1,
+          "title": "Auction Path",
+          "type": "string"
+        },
+        "auction_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Auction Sha256",
+          "type": "string"
+        },
+        "evaluated_at": {
+          "format": "date-time",
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "information_mode": {
+          "enum": [
+            "published",
+            "retrospective"
+          ],
+          "title": "Information Mode",
+          "type": "string"
+        },
+        "decision_times": {
+          "items": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": "Decision Times",
+          "type": "array"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/ReplayTeam"
+          },
+          "title": "Teams",
+          "type": "array"
+        },
+        "free_agents": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Free Agents",
+          "type": "array"
+        },
+        "upgrades": {
+          "title": "Upgrades",
+          "type": "boolean"
+        },
+        "health": {
+          "items": {
+            "$ref": "#/$defs/HealthObservation"
+          },
+          "title": "Health",
+          "type": "array"
+        },
+        "actual": {
+          "items": {
+            "$ref": "#/$defs/ActualBox"
+          },
+          "title": "Actual",
+          "type": "array"
+        },
+        "pairings": {
+          "items": {
+            "$ref": "#/$defs/Pairing"
+          },
+          "title": "Pairings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "config",
+        "artifacts",
+        "auction_path",
+        "auction_sha256",
+        "evaluated_at",
+        "information_mode",
+        "decision_times",
+        "teams",
+        "free_agents",
+        "upgrades",
+        "health",
+        "actual",
+        "pairings"
+      ],
+      "title": "ReplayInput",
+      "type": "object"
+    },
     "ReplayTeam": {
       "additionalProperties": false,
       "properties": {
@@ -2097,6 +2207,180 @@
         "normalization_seed"
       ],
       "title": "SampledMarketParameters",
+      "type": "object"
+    },
+    "ScheduleObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "published_at": {
+          "format": "date-time",
+          "title": "Published At",
+          "type": "string"
+        },
+        "games": {
+          "items": {
+            "$ref": "#/$defs/ScheduledGame"
+          },
+          "title": "Games",
+          "type": "array"
+        },
+        "source_artifact": {
+          "minLength": 1,
+          "title": "Source Artifact",
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_id",
+        "published_at",
+        "games",
+        "source_artifact"
+      ],
+      "title": "ScheduleObservation",
+      "type": "object"
+    },
+    "ScheduledGame": {
+      "additionalProperties": false,
+      "properties": {
+        "day": {
+          "format": "date",
+          "title": "Day",
+          "type": "string"
+        },
+        "tipoff": {
+          "format": "date-time",
+          "title": "Tipoff",
+          "type": "string"
+        }
+      },
+      "required": [
+        "day",
+        "tipoff"
+      ],
+      "title": "ScheduledGame",
+      "type": "object"
+    },
+    "ScheduledReplayInput": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 2,
+          "minimum": 2,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "config": {
+          "$ref": "#/$defs/ValidatedConfig"
+        },
+        "artifacts": {
+          "items": {
+            "$ref": "#/$defs/Artifact"
+          },
+          "title": "Artifacts",
+          "type": "array"
+        },
+        "auction_path": {
+          "minLength": 1,
+          "title": "Auction Path",
+          "type": "string"
+        },
+        "auction_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Auction Sha256",
+          "type": "string"
+        },
+        "evaluated_at": {
+          "format": "date-time",
+          "title": "Evaluated At",
+          "type": "string"
+        },
+        "information_mode": {
+          "enum": [
+            "published",
+            "retrospective"
+          ],
+          "title": "Information Mode",
+          "type": "string"
+        },
+        "decision_times": {
+          "items": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": "Decision Times",
+          "type": "array"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/ReplayTeam"
+          },
+          "title": "Teams",
+          "type": "array"
+        },
+        "free_agents": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Free Agents",
+          "type": "array"
+        },
+        "upgrades": {
+          "title": "Upgrades",
+          "type": "boolean"
+        },
+        "health": {
+          "items": {
+            "$ref": "#/$defs/HealthObservation"
+          },
+          "title": "Health",
+          "type": "array"
+        },
+        "actual": {
+          "items": {
+            "$ref": "#/$defs/ActualBox"
+          },
+          "title": "Actual",
+          "type": "array"
+        },
+        "pairings": {
+          "items": {
+            "$ref": "#/$defs/Pairing"
+          },
+          "title": "Pairings",
+          "type": "array"
+        },
+        "schedules": {
+          "items": {
+            "$ref": "#/$defs/ScheduleObservation"
+          },
+          "title": "Schedules",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "config",
+        "artifacts",
+        "auction_path",
+        "auction_sha256",
+        "evaluated_at",
+        "information_mode",
+        "decision_times",
+        "teams",
+        "free_agents",
+        "upgrades",
+        "health",
+        "actual",
+        "pairings",
+        "schedules"
+      ],
+      "title": "ScheduledReplayInput",
       "type": "object"
     },
     "Scoring": {
@@ -3048,112 +3332,13 @@
       "type": "object"
     }
   },
-  "additionalProperties": false,
-  "properties": {
-    "format_version": {
-      "maximum": 1,
-      "minimum": 1,
-      "title": "Format Version",
-      "type": "integer"
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ReplayInput"
     },
-    "config": {
-      "$ref": "#/$defs/ValidatedConfig"
-    },
-    "artifacts": {
-      "items": {
-        "$ref": "#/$defs/Artifact"
-      },
-      "title": "Artifacts",
-      "type": "array"
-    },
-    "auction_path": {
-      "minLength": 1,
-      "title": "Auction Path",
-      "type": "string"
-    },
-    "auction_sha256": {
-      "pattern": "^[a-f0-9]{64}$",
-      "title": "Auction Sha256",
-      "type": "string"
-    },
-    "evaluated_at": {
-      "format": "date-time",
-      "title": "Evaluated At",
-      "type": "string"
-    },
-    "information_mode": {
-      "enum": [
-        "published",
-        "retrospective"
-      ],
-      "title": "Information Mode",
-      "type": "string"
-    },
-    "decision_times": {
-      "items": {
-        "format": "date-time",
-        "type": "string"
-      },
-      "title": "Decision Times",
-      "type": "array"
-    },
-    "teams": {
-      "items": {
-        "$ref": "#/$defs/ReplayTeam"
-      },
-      "title": "Teams",
-      "type": "array"
-    },
-    "free_agents": {
-      "items": {
-        "minLength": 1,
-        "type": "string"
-      },
-      "title": "Free Agents",
-      "type": "array"
-    },
-    "upgrades": {
-      "title": "Upgrades",
-      "type": "boolean"
-    },
-    "health": {
-      "items": {
-        "$ref": "#/$defs/HealthObservation"
-      },
-      "title": "Health",
-      "type": "array"
-    },
-    "actual": {
-      "items": {
-        "$ref": "#/$defs/ActualBox"
-      },
-      "title": "Actual",
-      "type": "array"
-    },
-    "pairings": {
-      "items": {
-        "$ref": "#/$defs/Pairing"
-      },
-      "title": "Pairings",
-      "type": "array"
+    {
+      "$ref": "#/$defs/ScheduledReplayInput"
     }
-  },
-  "required": [
-    "format_version",
-    "config",
-    "artifacts",
-    "auction_path",
-    "auction_sha256",
-    "evaluated_at",
-    "information_mode",
-    "decision_times",
-    "teams",
-    "free_agents",
-    "upgrades",
-    "health",
-    "actual",
-    "pairings"
   ],
-  "title": "ReplayInput",
-  "type": "object"
+  "title": "ReplayDocument"
 }

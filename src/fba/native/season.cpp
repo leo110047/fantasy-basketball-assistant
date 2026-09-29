@@ -68,6 +68,7 @@ struct Input {
     const int *roster, *sizes;
     const uint8_t *pool;
     double *counts;
+    const int* known_week_games;
     const Options* options;
 };
 
@@ -396,8 +397,12 @@ class Simulation {
     void week_priorities(int day) {
         weekly_games.assign(x.N, 0);
         weekly_priority.resize(x.N);
-        for (int d = day; d < x.D && x.week[d] == x.week[day]; ++d)
-            for (int p = 0; p < x.N; ++p) weekly_games[p] += x.games[d*x.N+p];
+        if (x.known_week_games) {
+            std::copy(x.known_week_games + day*x.N, x.known_week_games + (day+1)*x.N, weekly_games.begin());
+        } else {
+            for (int d = day; d < x.D && x.week[d] == x.week[day]; ++d)
+                for (int p = 0; p < x.N; ++p) weekly_games[p] += x.games[d*x.N+p];
+        }
         for (int p = 0; p < x.N; ++p) weekly_priority[p] = x.priority[p] * weekly_games[p];
     }
 
@@ -507,13 +512,13 @@ extern "C" int fba_season(
     const uint64_t* masks, const uint64_t* slots, const double* priority,
     const double* value, const int* order, const uint8_t* eligible, const uint8_t* lock_days,
     const int* roster, const int* sizes, const uint8_t* pool,
-    double* counts, const Options* options, char* error, int error_capacity) {
+    double* counts, const int* known_week_games, const Options* options, char* error, int error_capacity) {
     try {
         if (N < 1 || D < 1 || W < 1 || S < 1 || T < 1 || R < 1 || L < 1 || I < 0 || scored_teams < 1 || scored_teams > T)
             throw std::runtime_error("Invalid season dimensions");
         Input input{N, D, W, S, T, R, L, I, add_limit, waiver_days, next_day, weekly_lock, scored_teams,
                     health, games, week, period, masks, slots, priority, value, order,
-                    eligible, lock_days, roster, sizes, pool, counts, options};
+                    eligible, lock_days, roster, sizes, pool, counts, known_week_games, options};
         MatchingCounts matching;
         for (int sample = 0; sample < S; ++sample) Simulation(input, matching).run(sample);
         return 0;

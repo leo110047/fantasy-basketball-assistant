@@ -29,6 +29,13 @@ class ManagementInput(Record):
     players: tuple[RoleManagedPlayer | ManagedPlayer, ...]
 
 
+@dataclass(frozen=True)
+class ReplaySchedule:
+    days: tuple[date, ...]
+    known: tuple[NDArray[np.bool_], ...]
+    actual: NDArray[np.bool_]
+
+
 class MarginalTask(Record):
     index: int
     player: int
@@ -112,6 +119,7 @@ class SeasonArrays:
     weekly_lock: bool
     roster_capacity: int
     week_count: int
+    known_week_games: NDArray[np.int32] | None = None
 
 
 class SeasonKernel(Protocol):

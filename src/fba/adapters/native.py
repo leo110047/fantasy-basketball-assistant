@@ -99,7 +99,7 @@ class NativeKernel:
             self.close()
             raise SolverError(f"management: cannot load verified native kernel: {exc}") from exc
         function = self.library.fba_season
-        function.argtypes = [ctypes.c_int] * 13 + [ctypes.c_void_p] * 17 + [ctypes.c_int]
+        function.argtypes = [ctypes.c_int] * 13 + [ctypes.c_void_p] * 18 + [ctypes.c_int]
         function.restype = ctypes.c_int
         self.function = cast(NativeCall, function)
 
@@ -200,6 +200,9 @@ class NativeKernel:
             int(arrays.weekly_lock),
             scored_teams,
             *(ctypes.c_void_p(a.ctypes.data) for a in buffers),
+            ctypes.c_void_p(
+                None if arrays.known_week_games is None else arrays.known_week_games.ctypes.data
+            ),
             ctypes.byref(options),
             error,
             len(error),
@@ -320,6 +323,7 @@ def validate_arrays(
             raise DataError(
                 "management: invalid native array dtype, shape, layout, or finite values"
             )
+    validate_known_week_games(a, days, n)
     if (
         np.any(a.health > 1)
         or np.any(a.games > 1)
@@ -339,6 +343,17 @@ def validate_arrays(
         or any(p < 0 or p >= n for p in (*owned, *pool))
     ):
         raise DataError("management.rosters: invalid ownership, index, or capacity")
+
+
+def validate_known_week_games(a: SeasonArrays, days: int, players: int) -> None:
+    games = a.known_week_games
+    if games is None:
+        return
+    if games.dtype != np.int32 or games.shape != (days, players) or not games.flags.c_contiguous:
+        raise DataError("management.known_week_games: invalid native dtype, shape or layout")
+    remaining = np.array([np.count_nonzero(a.weeks[d:] == a.weeks[d]) for d in range(days)])
+    if np.any(games < 0) or np.any(games > remaining[:, None]):
+        raise DataError("management.known_week_games: counts exceed remaining matchup dates")
 
 
 def validate_native_integers(a: SeasonArrays, teams: int) -> None:
