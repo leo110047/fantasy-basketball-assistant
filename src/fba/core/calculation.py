@@ -1,5 +1,10 @@
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import AvailabilityModel, CalculationModel, ThresholdCount
+from fba.contracts.config import (
+    AvailabilityModel,
+    CalculationModel,
+    TeamConstraintModel,
+    ThresholdCount,
+)
 from fba.contracts.projection import (
     CalculationResult,
     OffenseInput,
@@ -104,7 +109,9 @@ def calculate_with_offense(
         )
     result = CalculationResult(
         format_version=1,
-        algorithm="bounded-availability-projection-v1"
+        algorithm="configurable-team-projection-v1"
+        if isinstance(model, TeamConstraintModel)
+        else "bounded-availability-projection-v1"
         if isinstance(model, AvailabilityModel)
         else "team-offense-projection-v2"
         if offense

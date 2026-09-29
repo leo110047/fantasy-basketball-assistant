@@ -249,6 +249,7 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
         "team_minutes",
         "team_offense",
         "availability_tail",
+        "team_constraints",
     ):
         if getattr(model, name, None) != getattr(inputs.config.model, name, None):
             raise ConfigError(f"model.{name}: differs from frozen projection; rebuild it first")

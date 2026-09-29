@@ -1,5 +1,5 @@
 {
-  "format_version": 11,
+  "format_version": 12,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -392,5 +392,9 @@
       "as_of": "2026-09-27T11:15:43.799266+00:00",
       "reason": "Below 40 predicted games, interpolate from zero to the fitted GP at 40; above it retain OLS. The training tail is sparse. Same-cohort rank 0.76971786 to 0.76977989, median absolute dollar error 8.02991457 to 8.02903318, hits 105 unchanged. No future actuals used to override players. Evidence cutoff refers to frozen training inputs; this retrospective comparison was performed on 2026-09-29."
     }
+  },
+  "team_constraints": {
+    "minutes": "enforce",
+    "offense": "enforce"
   }
 }

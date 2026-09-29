@@ -1379,6 +1379,113 @@
       "title": "TeamBudgetModel",
       "type": "object"
     },
+    "TeamConstraintModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 12,
+          "minimum": 12,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        },
+        "availability_tail": {
+          "$ref": "#/$defs/AvailabilityTail"
+        },
+        "team_constraints": {
+          "$ref": "#/$defs/TeamConstraints"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense",
+        "availability_tail",
+        "team_constraints"
+      ],
+      "title": "TeamConstraintModel",
+      "type": "object"
+    },
+    "TeamConstraints": {
+      "additionalProperties": false,
+      "properties": {
+        "minutes": {
+          "enum": [
+            "audit",
+            "enforce"
+          ],
+          "title": "Minutes",
+          "type": "string"
+        },
+        "offense": {
+          "enum": [
+            "audit",
+            "enforce"
+          ],
+          "title": "Offense",
+          "type": "string"
+        }
+      },
+      "required": [
+        "minutes",
+        "offense"
+      ],
+      "title": "TeamConstraints",
+      "type": "object"
+    },
     "TeamMinuteParameters": {
       "additionalProperties": false,
       "properties": {
@@ -1646,6 +1753,9 @@
     },
     {
       "$ref": "#/$defs/AvailabilityModel"
+    },
+    {
+      "$ref": "#/$defs/TeamConstraintModel"
     }
   ],
   "title": "ModelDocument"

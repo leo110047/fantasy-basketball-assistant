@@ -1,7 +1,7 @@
 from math import fsum
 
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import AvailabilityModel, TeamBudgetModel
+from fba.contracts.config import AvailabilityModel, TeamBudgetModel, TeamConstraintModel
 from fba.contracts.projection import (
     BudgetedInput,
     PlayerMinuteAllocation,
@@ -84,6 +84,9 @@ def allocate_team(
     model = inputs.config.model
     assert isinstance(model, TeamBudgetModel)
     parameters = model.team_minutes
+    enforce = (
+        not isinstance(model, TeamConstraintModel) or model.team_constraints.minutes == "enforce"
+    )
     full = next(t.full_season_games for t in inputs.teams if t.id == team_id)
     budget = parameters.players_on_court * (
         parameters.regulation_minutes + parameters.overtime_minutes_per_game
@@ -114,9 +117,9 @@ def allocate_team(
     for pinned, coverage in sorted(groups, reverse=True):
         group = groups[pinned, coverage]
         usage = fsum(gp * minutes / full for _, gp, minutes in group)
-        if pinned and usage > remaining:
+        if enforce and pinned and usage > remaining:
             raise DataError(f"team_minutes.{team_id}: manual expected games exceed team budget")
-        factor = min(1.0, remaining / usage) if usage and not pinned else 1.0
+        factor = min(1.0, remaining / usage) if enforce and usage and not pinned else 1.0
         for member, gp, minutes in group:
             allocated.append(
                 PlayerMinuteAllocation(

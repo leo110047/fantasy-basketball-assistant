@@ -1,7 +1,7 @@
 from math import fsum
 
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import TeamOffenseModel, ThresholdCount
+from fba.contracts.config import TeamConstraintModel, TeamOffenseModel, ThresholdCount
 from fba.contracts.projection import (
     OffenseInput,
     PlayerMinuteAllocation,
@@ -106,6 +106,8 @@ def validate_offense_input(inputs: OffenseInput, model: TeamOffenseModel) -> Non
 def allocate_usage(
     rows: tuple[PlayerOffenseAllocation, ...], budget: float, full: int, model: TeamOffenseModel
 ) -> tuple[PlayerOffenseAllocation, ...]:
+    if isinstance(model, TeamConstraintModel) and model.team_constraints.offense == "audit":
+        return tuple(sorted(rows, key=lambda r: r.member_id))
     result: list[PlayerOffenseAllocation] = []
     axes = model.projection.stat_ids
     demand = fsum(r.expected_games * used(r.before, model) / full for r in rows)
@@ -252,6 +254,8 @@ def validate_offense(
 ) -> None:
     model = inputs.config.model
     assert isinstance(model, TeamOffenseModel)
+    if isinstance(model, TeamConstraintModel) and model.team_constraints.offense == "audit":
+        return
     by_id = {p.id: p for p in projections}
     axes = model.projection.stat_ids
     second, assist, made = (

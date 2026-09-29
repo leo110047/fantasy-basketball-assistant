@@ -447,6 +447,16 @@ class AvailabilityModel(TeamOffenseModel):
     availability_tail: AvailabilityTail
 
 
+class TeamConstraints(Record):
+    minutes: Literal["audit", "enforce"]
+    offense: Literal["audit", "enforce"]
+
+
+class TeamConstraintModel(AvailabilityModel):
+    format_version: Annotated[int, Field(ge=12, le=12)]
+    team_constraints: TeamConstraints
+
+
 class ModelDocument(
     RootModel[
         ModelConfig
@@ -460,6 +470,7 @@ class ModelDocument(
         | ManagedPricingModel
         | TeamOffenseModel
         | AvailabilityModel
+        | TeamConstraintModel
     ]
 ):
     pass
@@ -492,5 +503,6 @@ class ValidatedConfig(Record):
         | ManagedPricingModel
         | TeamOffenseModel
         | AvailabilityModel
+        | TeamConstraintModel
     )
     refs: ConfigBundle

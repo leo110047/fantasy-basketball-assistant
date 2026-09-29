@@ -4,6 +4,8 @@
 
 需要 `uv` 和 C++17 編譯器。`scripts/check` 建立鎖定的 Python 環境並跑全部檢查。
 
+CI 用 20 個新成交狀態，在同一環境比較並行與單程序參考路徑：結果必須完全相同，暖機後 p95 不得慢超過 10%。選秀前仍須在使用的 Mac 完整重播 140 筆成交與撤銷，檢查絕對秒數門檻；CI 的相對比較不代表已通過此項驗收。
+
 換季時複製 `examples/2026-27/`，更新規則、日期、來源與快照截止時間，放入 Yahoo CSV、明確的球員 ID 對照及人工調整檔。核對設定裡標記的 `Assumption`；欄位由 `design/schemas/` 定義。報價空白或 `-` 保持缺值，不按姓名猜配球員。
 
 ```sh
@@ -13,7 +15,7 @@ uv run fba annual --league /path/league.json --season /path/season.json \
 
 `annual` 完成抓取、凍結、投影、估值、競標開場與上一季評估，全部成功才發布。`opening-draft.json` 是以通用 Team 1 為我方的空白範本；正式選秀請依下方指令指定席次建立草稿。加 `--previous /path/previous-projection` 比較同季上一版公允價變化最大的 30 人。人工調整檔可從 `{"format_version":1,"adjustments":[]}` 開始。
 
-模型格式 10 以完整 NBA 名單限制整隊預期分鐘與進攻用量；輪替造成的缺賽不計為傷病。`health.injury_share` 的 0.5 傷病比例，以及 `team_offense` 沿用上季團隊用量與缺資料分鐘保留用量，都是假設。`team-minutes.json`、`team-offense.json` 列出分配與資料缺口。舊投影需從凍結快照重新 `project`。
+模型格式 12 的 `team_constraints.minutes`、`team_constraints.offense` 可各自設為 `audit`（只檢查）或 `enforce`（套用校正），範例皆為 `enforce`。兩種模式都檢查完整 NBA 名單與來源，並輸出 `team-minutes.json`、`team-offense.json`；`audit` 的超額會保留在報告中。輪替缺賽不計為傷病；`health.injury_share` 的 0.5 比例、沿用上季進攻用量及缺資料分鐘保留用量仍是模型假設。變更政策或升級舊模型後，需從凍結快照重新 `project`。
 
 每次 `project`／`annual` 會產生 `forecast.json`，請保留供下季評估。在下季 `season.sources` 加入 `role: "forecast_archive"`、`adapter: "fba_forecast"`，指定上一季 `season_id` 與此檔的來源、時間、SHA-256；本機存檔使用 `delivery: "manual"`、`file:///` URL、`manual_file` 與 `manual_capture`。缺預測存檔時 `annual` 會停止，可先用 `build`／`project` 完成資料建置，不能宣稱換季驗收完成。
 
