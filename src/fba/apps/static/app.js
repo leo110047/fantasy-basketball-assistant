@@ -1,5 +1,7 @@
-import {el, money, node, action, option, catalogue, forecastWarning, renderProjectionDetail, renderRoom, renderTable, renderPlan, renderComparison} from "/view.js";
+import {el, money, node, action, option, catalogue, forecastWarning, renderProjectionDetail, renderRoom, renderBuyers, renderTable, tableRows, renderPlan, renderComparison} from "/view.js";
 import {beginTiming, rendered, measure} from "/timing.js";
+import {matches, priceCSV, floorBackup} from "/presentation.js";
+import {installEditors} from "/editing.js";
 
 let boot, desk, jobs, selected = null, saving = false, comparing = false, composing = false;
 let players = new Map(), watched = new Set(), compareRevision = 0, settingsDirty = false, inspected = null;
@@ -48,7 +50,7 @@ function status() {
   for (const [stage, label] of [["equal", "加總"], ["fit", "依陣容調整"]]) {
     const job = !changingPrices && jobs?.state_sha256 === sha() ? jobs[stage] : null;
     const text = stale ? "請重新載入草稿" : job?.status === "ready" ? "已更新" : job?.status === "failed" ? `失敗：${job.error}` : "更新中";
-    el(`${stage}Status`).textContent = `${label}：${text}`;
+    el(`${stage}Status`).textContent = `${label}：${text}${job?.status === "ready" && job.elapsed_ns != null ? ` · ${(job.elapsed_ns/1e9).toFixed(2)} 秒` : ""}`;
   }
   el("retry").hidden = stale || ![jobs?.equal, jobs?.fit].some(j => j?.status === "failed");
   const own = desk.market.market.room.find(t => t.id === desk.state.mine);
@@ -62,6 +64,7 @@ function renderNominee() {
   const price = desk.market.market.prices.find(q => q.player_id === selected);
   el("nominee").replaceChildren(node("h2", p.name), node("p", p.positions.join(" / "), "muted"), node("div", sold ? "已成交" : current ? money(cap?.amount) : unavailable(), "cap"), node("p", `公允 ${money(p.fair)} · 預期成交 ${money(price?.expected)}`, "muted"), action("檢視價格原因", () => browse(selected)));
   if (cap?.conditional || cap?.reason) el("nominee").append(node("p", cap.conditional ? "條件式估值：先確認位置與市場報價。" : cap.reason, "warning"));
+  if (floorBackup(price,cap,sold,boot.league.minimum_bid)) el("nominee").append(node("p", `${money(boot.league.minimum_bid)} 備案需我方先提名，且無人加價。`, "warning"));
   const warning = forecastWarning(p);
   if (warning) el("nominee").append(node("p", warning, "warning"));
 }
@@ -74,15 +77,16 @@ function controls() {
   el("sell").disabled = busy || !legal || !selected || desk.state.sales.some(s => s.player_id === selected);
   el("undo").disabled = busy || !desk.state.sales.length;
   el("buyer").disabled = busy; el("amount").disabled = busy;
-  for (const id of ["settings", "export", "import", "legacyWatch"]) el(id).disabled = busy;
+  for (const id of ["settings", "export", "import", "legacyWatch", "reset", "exportCSV", "buyerSearch"]) el(id).disabled = busy;
+  for (const button of document.querySelectorAll(".edit-sale")) button.disabled = busy;
   status();
 }
 function render() {
   if (!desk) return;
   const current = result();
   el("sourceNotice").hidden = boot.details != null;
-  renderRoom(desk, players);
-  renderTable(desk, players, current, watched, browse, nominate, watch, unavailable(), saving || stale);
+  renderRoom(desk, players, editors.sale);
+  renderTable(desk, players, current, watched, browse, nominate, watch, unavailable(), saving || stale, boot.league.minimum_bid);
   renderPlan(current, players, desk.market.market, nominate, unavailable());
   renderNominee(); controls();
   if (el("playerDialog").open) renderDetails(inspected);
@@ -97,7 +101,7 @@ async function nominate(id) {
   if (saving || id === selected) return;
   if (el("buyer").value || el("amount").value) {
     if (!await confirmChange("切換本輪球員會清除尚未登錄的買家與金額，繼續？")) return;
-    el("buyer").value = ""; el("amount").value = "";
+    clearSaleFields();
   }
   selected = id; invalidateComparison(); renderNominee(); controls();
   el("lookup").value = ""; el("matches").replaceChildren();
@@ -112,7 +116,10 @@ function renderDetails(id) {
     node("p", `停損價 ${result() ? money(c?.amount) : unavailable()}`),
     node("p", c?.reason ?? (c?.conditional ? "須先確認位置／市場報價。" : "根據目前預算、可用球員與合法組隊計算。"), "muted"));
   if (p.projected_price == null) d.append(node("p", "Yahoo 報價缺失；未當成底價備案。", "warning"));
+  const override = desk.state.overrides.find(o => o.player_id === id);
+  if (override) d.append(node("p", `本次覆寫：市場 ${override.market == null ? "沿用來源" : money(override.market)} · 位置 ${override.positions?.join(" / ") ?? "沿用來源"} · ${override.reason}`, "warning"));
   renderProjectionDetail(d, p);
+  d.append(action("修改市場價／位置", () => editors.override(id)));
   d.append(action("指定為本輪", () => { nominate(id); el("playerDialog").close(); }));
 }
 function browse(id) {
@@ -134,8 +141,13 @@ function saveError(message, candidate) {
     ["draft.teams: names must not be blank", "隊伍名稱不能空白。"],
     ["exceeds legal bid or roster capacity", "超過可付金額、名額已滿，或不符合出價單位。"],
     ["cannot complete starter positions", "此筆成交會導致先發位置無法補齊。"],
-    ["unknown player or buyer", "找不到這筆成交的球員或買家。"]
+    ["unknown player or buyer", "找不到這筆成交的球員或買家。"],
+    ["draft.sales.player_id: duplicate values", "同一位球員不能重複成交。"]
   ]);
+  for (const entry of candidate?.overrides ?? []) {
+    if (message === `draft.overrides.${entry.player_id}.market: outside league bid bounds`) return `${players.get(entry.player_id)?.name ?? entry.player_id}：覆寫報價須介於 ${money(boot.league.minimum_bid)} 與 ${money(boot.league.budget)}。`;
+    if (message === `auction.players.${entry.player_id}.positions: empty or duplicate`) return `${players.get(entry.player_id)?.name ?? entry.player_id}：請至少選擇一個位置。`;
+  }
   const sales = Array.isArray(candidate?.sales) ? candidate.sales : [];
   const index = sales.findIndex(s => message.startsWith(`draft.sales.${s?.id}:`) || message.startsWith(`draft.sales.${s?.id}.amount:`));
   if (index < 0) return descriptions.get(message) ?? message;
@@ -147,6 +159,7 @@ async function save(candidate, metadata = false) {
   if (stale) throw new Error("請重新載入已保存的草稿後再操作。");
   beginTiming();
   const previousJobs = jobs;
+  const previousOverrides = JSON.stringify(desk.state.overrides);
   saving = true; changingPrices = !metadata;
   if (!metadata) jobs = null;
   invalidateComparison(); render(); error("");
@@ -156,6 +169,10 @@ async function save(candidate, metadata = false) {
     watched = new Set(desk.state.watch);
     el("saved").textContent = `已保存 · 第 ${desk.state.revision} 版`;
     saved = true;
+    if (JSON.stringify(desk.state.overrides) !== previousOverrides) {
+      try { boot = await api("bootstrap"); desk = boot.desk; players = catalogue(boot); watched = new Set(desk.state.watch); }
+      catch (e) { stale = true; jobs = null; error(`已保存；位置與報價資料載入失敗：${e.message}。請重新整理後繼續。`); }
+    }
     if (metadata) {
       try { receiveResults(await api("results")); }
       catch (e) { jobs = failedJobs(e.message); error(`已保存；計算結果載入失敗：${e.message}`); }
@@ -195,7 +212,7 @@ async function sell(event) {
     if (sale.amount < boot.league.minimum_bid || sale.amount % boot.league.bid_increment) throw new Error("成交價不符合聯盟的最低出價或加價單位。");
     if (await save({...desk.state, sales: [...desk.state.sales, sale]})) {
       // Only clear the submitted fields; no model reply may change this form.
-      el("buyer").value = ""; el("amount").value = ""; controls();
+      clearSaleFields(); controls();
     }
   } catch (e) { error(e.message); }
 }
@@ -261,22 +278,37 @@ async function start() {
   } catch (e) { error(`無法讀取瀏覽器偏好：${e.message}`); }
   el("subtitle").textContent = `${boot.season_id} · ${boot.league.teams} 隊 · 本機離線`;
   const l = boot.league;
+  el("position").replaceChildren(option("", "全部位置"), ...l.positions.map(p => option(p,p)));
   el("rules").replaceChildren(node("p", `${l.categories.map(c => c.label ?? c.id).join("、")} · 預算 ${money(l.budget)} · 最低出價 ${money(l.minimum_bid)}`), node("p", `先發 ${l.starter_slots.map(s => s.id).join("、")} · 板凳 ${l.bench_slots} · IL ${l.injury_slots.map(s => `${s.label} ${s.count} 格`).join("、")}`), node("p", `交易截止：${l.trade_deadline ?? "不設截止日"} · 季後賽 ${l.playoffs.team_count} 隊`));
   render(); rendered("open", sha()); poll();
 }
 
+function clearSaleFields() {
+  el("buyer").value = ""; el("buyerSearch").value = ""; el("amount").value = ""; renderBuyers(desk);
+}
+function download(data, type, name) {
+  const url = URL.createObjectURL(new Blob([data], {type}));
+  const link = document.createElement("a"); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const editors = installEditors({desk:()=>desk,boot:()=>boot,players:()=>players,isBusy:()=>saving||stale,isSaving:()=>saving,save,confirmChange,integer,lastError:()=>el("error").textContent});
+
 el("lookup").addEventListener("input", () => {
-  const q = el("lookup").value.trim().toLowerCase();
-  el("matches").replaceChildren(...(q ? [...players.values()].filter(p => `${p.name} ${p.id}`.toLowerCase().includes(q)).slice(0,12).map(p => action(`${p.name} · ${p.positions.join("/")}`, () => nominate(p.id))) : []));
+  const q = el("lookup").value.trim();
+  el("matches").replaceChildren(...(q ? [...players.values()].filter(p => matches(p,q)).slice(0,12).map(p => action(`${p.name} · ${p.positions.join("/")}`, () => nominate(p.id))) : []));
+});
+el("lookup").addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing && !e.repeat) { e.preventDefault(); el("matches").querySelector("button")?.click(); } });
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && !e.isComposing && !e.ctrlKey && !e.metaKey && !e.altKey && !document.querySelector("dialog[open]") && !e.target.closest("input,textarea,select,[contenteditable]")) { e.preventDefault(); el("lookup").focus(); }
 });
 el("saleForm").addEventListener("compositionstart", () => { composing = true; });
 el("saleForm").addEventListener("compositionend", () => { composing = false; });
 el("saleForm").addEventListener("keydown", e => { if (e.key === "Enter" && (e.repeat || e.isComposing || e.target.id !== "amount")) e.preventDefault(); });
 el("saleForm").addEventListener("submit", sell);
 el("buyer").addEventListener("change", controls);
+el("buyerSearch").addEventListener("input", () => { el("buyer").value = ""; renderBuyers(desk); controls(); });
 el("amount").addEventListener("input", controls);
 el("undo").addEventListener("click", () => save({...desk.state, sales:desk.state.sales.slice(0,-1)}));
-for (const id of ["filter", "scope"]) el(id).addEventListener("input", render);
+for (const id of ["filter", "scope", "position", "sort"]) el(id).addEventListener("input", render);
 el("mode").addEventListener("change", () => {
   try { localStorage.setItem(`fba-mode:${desk.state.draft_id}`, el("mode").value); }
   catch (e) { error(`模式偏好無法保存：${e.message}`); }
@@ -303,9 +335,15 @@ el("settingsForm").addEventListener("submit", async e => {
   else { el("settingsError").textContent = "請保留設定並檢查頁面錯誤。"; el("settingsError").hidden = false; }
 });
 el("closePlayer").addEventListener("click", () => el("playerDialog").close());
+el("help").addEventListener("click", () => el("helpDialog").showModal());
+el("closeHelp").addEventListener("click", () => el("helpDialog").close());
+el("exportCSV").addEventListener("click", () => download(priceCSV(tableRows(desk,players,result(),watched),desk,el("mode").value),"text/csv;charset=utf-8",`prices-${desk.state.revision}-${el("mode").value}.csv`));
+el("reset").addEventListener("click", async () => {
+  if (saving || stale || !await confirmChange("清空全部成交、追蹤及球員覆寫？我方與隊名保留。建議先匯出備份。")) return;
+  if (await save({...desk.state,sales:[],overrides:[],watch:[]})) { selected = null; clearSaleFields(); render(); }
+});
 el("export").addEventListener("click", () => {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(desk.state,null,2)], {type:"application/json"}));
-  const link = document.createElement("a"); link.href = url; link.download = `draft-${desk.state.revision}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  download(JSON.stringify(desk.state,null,2),"application/json",`draft-${desk.state.revision}.json`);
 });
 el("import").addEventListener("change", async e => {
   const file = e.target.files[0]; e.target.value = ""; if (!file) return;
@@ -314,8 +352,7 @@ el("import").addEventListener("change", async e => {
     const candidate = JSON.parse(await file.text());
     if (!await confirmChange("以此備份取代目前成交紀錄？設定與資料版本仍由後端檢查。")) return;
     if (await save(candidate)) {
-      const updated = await api("bootstrap"); boot = updated; desk = updated.desk; players = catalogue(updated);
-      selected = null; el("buyer").value = ""; el("amount").value = ""; render();
+      selected = null; clearSaleFields(); render();
     }
   } catch (e) { error(`匯入失敗：${e.message}`); }
 });

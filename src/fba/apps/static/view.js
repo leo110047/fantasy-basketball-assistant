@@ -57,64 +57,75 @@ export function renderProjectionDetail(container, player) {
 }
 
 let roomHash = null;
-export function renderRoom(data, players) {
+export function renderRoom(data, players, editSale) {
   if (roomHash === data.market.state_sha256) return;
   roomHash = data.market.state_sha256;
   const {state, market} = data;
   const names = new Map(state.teams.map(t => [t.id, t.name]));
   const own = market.market.room.find(t => t.id === state.mine);
+  const cash = market.market.room.reduce((sum,t) => sum+t.budget,0), spendable = market.market.room.filter(t => t.slots).reduce((sum,t) => sum+t.budget,0);
+  el("cashSummary").textContent = `全場剩餘 ${money(cash)} · 尚有名額的隊伍可用 ${money(spendable)} · 剩 ${market.market.room.reduce((sum,t) => sum+t.slots,0)} 格`;
   el("teamTitle").textContent = names.get(state.mine);
   el("myBudget").replaceChildren(node("strong", money(own.budget)), node("div", `剩 ${own.slots} 格 · 最高可付 ${money(own.maximum_bid)}`));
   el("room").replaceChildren(...market.market.room.map(t => {
     const d = node("details", "", t.id === state.mine ? "mine" : "");
-    d.append(node("summary", `${names.get(t.id)}${t.id === state.mine ? "（我方）" : ""} · ${money(t.budget)} / ${t.slots} 格`));
+    d.append(node("summary", `${names.get(t.id)}${t.id === state.mine ? "（我方）" : ""} · ${money(t.budget)} / ${t.slots} 格 · 最高 ${money(t.maximum_bid)}`));
     t.owned.forEach(id => d.append(node("p", `${players.get(id)?.name ?? id} · ${money(state.sales.find(s => s.player_id === id)?.amount)}`)));
     return d;
   }));
-  el("history").replaceChildren(...state.sales.map(s => node("li", `${players.get(s.player_id)?.name ?? s.player_id} → ${names.get(s.buyer)} · ${money(s.amount)}`)));
+  el("history").replaceChildren(...state.sales.map((s,index) => {
+    const row = node("li", `${index+1}. ${players.get(s.player_id)?.name ?? s.player_id} → ${names.get(s.buyer)} · ${money(s.amount)} `);
+    const button = action("更正", () => editSale(s.id), "edit-sale"); button.setAttribute("aria-label", `更正第 ${index+1} 筆成交`);
+    row.append(button); return row;
+  }).reverse());
   const last = state.sales.at(-1);
   el("lastSale").textContent = last ? `上一筆：${players.get(last.player_id)?.name ?? last.player_id} · ${names.get(last.buyer)} ${money(last.amount)}` : "尚未成交";
-  const buyer = el("buyer").value;
-  el("buyer").replaceChildren(option("", "選擇隊伍"), ...state.teams.map(t => option(t.id, `${t.name}${t.id === state.mine ? "（我方）" : ""}`)));
-  el("buyer").value = buyer;
+  renderBuyers(data);
 }
 
-export function renderTable(data, players, result, watched, browse, nominate, watch, unavailable, busy) {
-  const sold = new Set(data.state.sales.map(s => s.player_id));
-  const prices = new Map(data.market.market.prices.map(p => [p.player_id, p]));
-  const caps = new Map(result?.caps.map(c => [c.player_id, c]) ?? []);
-  const query = el("filter").value.trim().toLowerCase(), scope = el("scope").value;
-  const shown = [...players.values()].filter(p => {
-    if (!`${p.name} ${p.id}`.toLowerCase().includes(query)) return false;
-    if (scope === "all") return true;
-    if (sold.has(p.id)) return false;
-    if (scope === "watch") return watched.has(p.id);
-    return scope !== "value" || (p.fair != null && prices.get(p.id)?.expected != null && p.fair > prices.get(p.id).expected);
-  }).sort((a,b) => (b.fair ?? -1) - (a.fair ?? -1) || a.id.localeCompare(b.id, "en"));
+export function renderBuyers(data) {
+  const current = el("buyer").value, query = normalized(el("buyerSearch").value);
+  const teams = data.state.teams.filter((t,i) => t.id === current || normalized(`${i+1} ${t.name}`).includes(query));
+  el("buyer").replaceChildren(option("", "選擇隊伍"), ...teams.map(t => option(t.id, `${t.name}${t.id === data.state.mine ? "（我方）" : ""}`)));
+  el("buyer").value = current;
+}
+
+export function tableRows(data, players, result, watched) {
+  return priceRows(players, data, result, watched, {query:el("filter").value,scope:el("scope").value,position:el("position").value,sort:el("sort").value});
+}
+
+export function renderTable(data, players, result, watched, browse, nominate, watch, unavailable, busy, minimum) {
+  const shown = tableRows(data, players, result, watched);
   el("count").textContent = `${shown.length} 位`;
   const body = el("players"), existing = new Map([...body.children].map(row => [row.dataset.player, row]));
   // Remove departed rows first, so a sale does not move every following row.
-  const visible = new Set(shown.map(p => p.id));
+  const visible = new Set(shown.map(r => r.player.id));
   for (const [id, row] of existing) if (!visible.has(id)) row.remove();
-  const rows = shown.map(p => {
+  const rows = shown.map(item => {
+    const p = item.player;
     let row = existing.get(p.id);
     if (!row) {
       row = document.createElement("tr"); row.dataset.player = p.id;
       for (let i=0;i<6;i++) row.append(document.createElement("td"));
       row.children[0].append(action("☆", () => watch(p.id)));
-      row.children[1].append(action(p.name, () => browse(p.id), "name"), node("small", ""), node("small", "", "warning"));
+      row.children[1].append(action(p.name, () => browse(p.id), "name"), node("small", ""), node("small", "", "warning"), node("small", "", "tags"));
+      row.children[3].append(node("span", ""), node("small", ""));
+      row.children[4].append(node("span", ""), node("small", ""));
       row.children[4].className = "good";
       row.children[5].append(action("指定", () => nominate(p.id)));
     }
     const cells = row.children, star = cells[0].firstChild, choose = cells[5].firstChild;
-    const quote = prices.get(p.id), cap = caps.get(p.id), held = sold.has(p.id);
+    const {quote,cap,sale,difference,discount} = item, held = Boolean(sale);
     text(star, watched.has(p.id) ? "★" : "☆");
     star.disabled = busy;
     star.setAttribute("aria-label", `追蹤 ${p.name}`); star.setAttribute("aria-pressed", String(watched.has(p.id)));
     text(cells[1].children[1], [p.positions.join(" / "), p.strengths?.join("、")].filter(Boolean).join(" · "));
     const warning = cells[1].children[2]; text(warning, forecastWarning(p)); warning.hidden = !warning.textContent;
-    text(cells[2], money(p.fair)); text(cells[3], held ? "已成交" : money(quote?.expected));
-    text(cells[4], held ? "—" : result ? `${money(cap?.amount)}${cap?.conditional ? " *" : ""}` : unavailable);
+    text(cells[1].children[3], rowTags(item).join(" · "));
+    text(cells[2], money(p.fair)); text(cells[3].children[0], held ? "已成交" : money(quote?.expected));
+    text(cells[3].children[1], held || difference == null ? "" : `差 ${money(difference)}${discount == null ? "" : ` · ${(discount*100).toFixed(0)}%`}`);
+    text(cells[4].children[0], held ? "—" : result ? `${money(cap?.amount)}${cap?.conditional ? " *" : ""}` : unavailable);
+    text(cells[4].children[1], floorBackup(quote,cap,held,minimum) ? "底價備案需我方提名" : "");
     cells[4].title = cap?.reason ?? (cap?.conditional ? "需確認位置／報價" : "");
     choose.disabled = held; choose.setAttribute("aria-label", `指定 ${p.name} 為本輪`);
     return row;
@@ -138,8 +149,14 @@ export function renderPlan(result, players, market, nominate, unavailable) {
     const row = node("div", "", "plan-row"), owned = !result.plan.purchases.includes(id);
     row.append(action(players.get(id)?.name ?? id, () => nominate(id)), node("span", owned ? "已持有" : money(quotes.get(id)?.planning_cost))); return row;
   }));
-  const ids = result.nominations[result.nominations.mode];
-  el("nominations").append(node("span", result.nominations.mode === "target" ? "組隊目標" : "讓對手消耗預算", "muted"), ...ids.map(id => action(players.get(id)?.name ?? id, () => nominate(id))));
+  for (const [mode,label] of [["target","難替代／組隊目標"],["drain","讓對手消耗預算"]]) {
+    const group = node("div", "", "nomination-group"), ids = result.nominations[mode];
+    group.append(node("h3", `${label}${result.nominations.mode === mode ? " · 優先" : ""}`));
+    group.append(node("p", mode === "target" ? "方案內且停損價足以支付規劃成本；優先處理難替代的位置。" : "方案外、預期成交高於我方上限，且至少兩個對手仍能競價；不保證有人搶。", "muted"));
+    group.append(...ids.map(id => action(players.get(id)?.name ?? id, () => nominate(id))));
+    if (!ids.length) group.append(node("p", "目前沒有符合條件的人選。", "muted"));
+    el("nominations").append(group);
+  }
 }
 
 export function renderComparison(value, players, data) {
@@ -153,9 +170,12 @@ export function renderComparison(value, players, data) {
     if (branch.reason) col.append(node("p", `無解：${branch.reason}`, "warning"));
     else {
       col.append(node("p", `支出 ${money(branch.cost)} · 留 ${money(budget - branch.cost)}`));
-      const list = node("ul", ""); branch.players.forEach(id => list.append(node("li", `${players.get(id)?.name ?? id} · ${owned.has(id) ? "已持有" : money(id === c.player_id && key === "buy" ? c.price : quotes.get(id))}`))); col.append(list);
+      const other = new Set(c[key === "buy" ? "skip" : "buy"].players ?? []);
+      const ordered = [...branch.players].sort((a,b) => Number(other.has(a))-Number(other.has(b)) || a.localeCompare(b,"en"));
+      const list = node("ul", ""); ordered.forEach(id => list.append(node("li", `${other.has(id) ? "共同" : "差異"} · ${players.get(id)?.name ?? id} · ${owned.has(id) ? "已持有" : money(id === c.player_id && key === "buy" ? c.price : quotes.get(id))}`))); col.append(list);
     }
     grid.append(col);
   }
-  el("comparison").replaceChildren(node("p", c.delta == null ? "至少一個分支無合法方案" : `組隊效用差 ${c.delta.toFixed(3)}`), grid);
+  el("comparison").replaceChildren(node("strong", comparisonLabel(c)), node("p", c.delta == null ? "至少一個分支無合法方案" : `組隊效用差 ${c.delta.toFixed(3)}；不是勝率。`, "muted"), grid);
 }
+import {priceRows, rowTags, comparisonLabel, normalized, floorBackup} from "/presentation.js";

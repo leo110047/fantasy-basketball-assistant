@@ -32,6 +32,7 @@ class JobView(Record):
     status: Literal["updating", "ready", "failed"]
     result: AuctionResult | None
     error: Text | None
+    elapsed_ns: Natural | None = None
 
 
 class DeskState(Record):

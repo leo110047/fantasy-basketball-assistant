@@ -109,6 +109,8 @@ class DeskHandler(BaseHTTPRequestHandler):
                 "/": ("index.html", "text/html"),
                 "/app.js": ("app.js", "text/javascript"),
                 "/view.js": ("view.js", "text/javascript"),
+                "/presentation.js": ("presentation.js", "text/javascript"),
+                "/editing.js": ("editing.js", "text/javascript"),
                 "/timing.js": ("timing.js", "text/javascript"),
                 "/style.css": ("style.css", "text/css"),
             }

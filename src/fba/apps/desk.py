@@ -143,6 +143,7 @@ class LatestCalculation:
         if isinstance(outcome, Exception):
             return self.failure(state, sha, started, outcome)
         result = outcome.model_copy(update={"state_sha256": sha})
+        elapsed = perf_counter_ns() - started
         try:
             self.record(
                 DeskExecution(
@@ -150,14 +151,14 @@ class LatestCalculation:
                     stage=self.mode,
                     state=state,
                     state_sha256=sha,
-                    elapsed_ns=perf_counter_ns() - started,
+                    elapsed_ns=elapsed,
                     solver_calls=result.solver_calls,
                     result=result,
                 )
             )
         except Exception as exc:
             return self.failure(state, sha, started, exc)
-        return JobView(status="ready", result=result, error=None)
+        return JobView(status="ready", result=result, error=None, elapsed_ns=elapsed)
 
     def failure(self, state: DraftState, sha: str, started: int, exc: Exception) -> JobView:
         error = f"{type(exc).__name__}: {exc}"
