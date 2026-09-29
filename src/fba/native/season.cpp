@@ -111,7 +111,7 @@ class Simulation {
     std::vector<uint8_t> seat_seen, ownership_seen;
     int current_day = 0, current_team = 0, current_sample = 0;
     int pool_generation = 0;
-    Candidates short_candidates, long_candidates;
+    Candidates short_candidates, long_candidates, replacement_candidates;
 
     void emit(int kind, int old, int added, const std::vector<int>& started = {}) {
         const auto* o = x.options;
@@ -141,13 +141,19 @@ class Simulation {
     void drop(int p, int day) {
         free[p] = true;
         release[p] = day + x.waiver_days;
-        ++pool_generation;
+        // Waiting players cannot enter today's candidate lists. Daily invalidation
+        // below will admit them once their release date is reached.
+        if (!x.waiver_days) ++pool_generation;
     }
 
     void hold(int p) {
         free[p] = false;
         effective[p] = current_day + x.next_day;
-        ++pool_generation;
+        for (auto* cached : {&short_candidates, &long_candidates, &replacement_candidates}) {
+            if (cached->generation != pool_generation) continue;
+            auto& players = cached->players;
+            players.erase(std::remove(players.begin(), players.end(), p), players.end());
+        }
     }
 
     void returns(Team& team, int day, const uint8_t* today) {
@@ -209,15 +215,18 @@ class Simulation {
         return -1;
     }
 
-    void replacements(int t, int day, const uint8_t* today, const int* ranked) {
+    void replacements(int t, const uint8_t* today, const int* ranked) {
         auto& team = teams[t];
-        for (int j = 0; j < x.N && int(team.active.size()) < x.sizes[t] &&
-                        team.used < x.add_limit; ++j) {
-            int p = ranked[j];
-            if (!today[p] || !free[p] || release[p] > day) continue;
+        if (int(team.active.size()) >= x.sizes[t] || team.used >= x.add_limit) return;
+        auto& players = eligible_candidates(today, ranked, replacement_candidates);
+        size_t j = 0;
+        while (j < players.size() && int(team.active.size()) < x.sizes[t] &&
+               team.used < x.add_limit) {
+            int p = players[j];
             int seat = vacancy(t, p);
-            if (seat < 0) continue;
+            if (seat < 0) { ++j; continue; }
             team.active.push_back({p, seat, -1});
+            // hold removes p from this list; the next candidate now occupies j.
             hold(p);
             addition(InjuryAdd);
             emit(InjuryAdd, -1, p);
@@ -267,20 +276,24 @@ class Simulation {
 
     struct Swap { int old = -1, added = -1, origin = -1; double gain; };
 
-    const std::vector<int>& candidates(const uint8_t* today, bool longer) {
-        auto& cached = longer ? long_candidates : short_candidates;
+    std::vector<int>& eligible_candidates(const uint8_t* today, const int* order,
+                                          Candidates& cached) {
         if (cached.generation == pool_generation) return cached.players;
         cached.players.clear();
-        size_t offset = (size_t(current_sample)*x.D+current_day)*x.N;
-        const auto& o = *x.options;
-        const int* order = (longer ? o.long_order : o.short_order) + offset;
-        for (int j = 0; j < x.N && int(cached.players.size()) < o.candidates; ++j) {
+        for (int j = 0; j < x.N; ++j) {
             int p = order[j];
             if (!today[p] || !free[p] || release[p] > current_day) continue;
             cached.players.push_back(p);
         }
         cached.generation = pool_generation;
         return cached.players;
+    }
+
+    const std::vector<int>& candidates(const uint8_t* today, bool longer) {
+        size_t offset = (size_t(current_sample)*x.D+current_day)*x.N;
+        const auto& o = *x.options;
+        const int* order = (longer ? o.long_order : o.short_order) + offset;
+        return eligible_candidates(today, order, longer ? long_candidates : short_candidates);
     }
 
     Swap choose(Team& team, const uint8_t* today, bool longer) {
@@ -301,7 +314,10 @@ class Simulation {
         });
         double lower = held_values[cheapest->player];
         bool prepared = false;
-        for (int p : candidates(today, longer)) {
+        const auto& available = candidates(today, longer);
+        int count = std::min(int(available.size()), o.candidates);
+        for (int j = 0; j < count; ++j) {
+            int p = available[j];
             // Opportunity cost is nonnegative, so this upper bound cannot discard a better swap.
             if (acquired[p] - lower <= best.gain) continue;
             for (auto held : eligible) {
@@ -415,7 +431,7 @@ public:
                 current_team = t;
                 returns(teams[t], day, today);
                 injuries(teams[t], today);
-                replacements(t, day, today, ranked);
+                replacements(t, today, ranked);
                 tactical(today);
                 if (t < x.scored_teams) score(t, day, sample, today);
                 validate_team(t);
