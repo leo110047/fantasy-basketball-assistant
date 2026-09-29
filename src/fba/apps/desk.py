@@ -17,6 +17,7 @@ from fba.contracts.auction import (
     MarketUpdate,
 )
 from fba.contracts.base import DataError
+from fba.contracts.config import StreamingComparisonModel
 from fba.contracts.desk import (
     Compared,
     CompareRequest,
@@ -30,7 +31,10 @@ from fba.contracts.desk import (
     SaveUnconfirmed,
     SensitivityRequest,
     SensitivityResult,
+    StreamingRequest,
+    StreamingResult,
 )
+from fba.contracts.streaming import StreamingSummary
 from fba.core.auction import (
     ComparisonRunner,
     calculate_auction,
@@ -41,8 +45,10 @@ from fba.core.auction import (
 )
 from fba.core.roster import effective_players, validate_labels
 from fba.core.sensitivity import cap_sensitivity
+from fba.core.streaming import analyze_streaming
 
 Calculator = Callable[[DraftState, str, Event], AuctionResult]
+StreamingRunner = Callable[[DraftState, AuctionResult, Event], StreamingSummary]
 
 
 def same_calculation(before: DraftState, after: DraftState) -> bool:
@@ -199,10 +205,12 @@ class AuctionDesk:
         equal: Calculator,
         fit: Calculator,
         comparison_runner: ComparisonRunner = comparison_plans,
+        streaming_runner: StreamingRunner | None = None,
     ) -> None:
         self.inputs = inputs
         self.input_hash = input_hash
         self.comparison_runner = comparison_runner
+        self.streaming_runner = streaming_runner
         self.path = draft
         self.log = log
         self.lock = Lock()
@@ -257,6 +265,11 @@ class AuctionDesk:
                 details=self.inputs.details,
                 teams=self.inputs.teams,
                 scenarios=self.inputs.scenarios,
+                streaming_candidates=(
+                    self.inputs.config.model.streaming_comparison.slots
+                    if isinstance(self.inputs.config.model, StreamingComparisonModel)
+                    else None
+                ),
                 desk=self.desk,
             )
 
@@ -321,6 +334,38 @@ class AuctionDesk:
             self.require_state(sha)
             self.request()
         return self.results()
+
+    def streaming(self, request: StreamingRequest) -> StreamingResult:
+        with self.lock:
+            self.require_state(request.state_sha256)
+            state = self.desk.state
+            owner = self.equal if request.mode == "equal" else self.fit
+            job = owner.current(request.state_sha256)
+            if job.status != "ready" or job.result is None:
+                raise DataError("streaming: current calculation is not ready")
+            if self.streaming_runner is None:
+                raise DataError("streaming: native analysis runner is unavailable")
+            current, cancelled = job.result, owner.cancelled
+        start = perf_counter_ns()
+        result = StreamingResult(
+            state_sha256=request.state_sha256,
+            mode=request.mode,
+            streaming=self.streaming_runner(state, current, cancelled),
+        )
+        with self.lock:
+            self.require_state(request.state_sha256)
+        self.record(
+            DeskExecution(
+                format_version=1,
+                stage="streaming",
+                state=state,
+                state_sha256=request.state_sha256,
+                elapsed_ns=perf_counter_ns() - start,
+                solver_calls=0,
+                result=result,
+            )
+        )
+        return result
 
     def sensitivity(self, request: SensitivityRequest) -> SensitivityResult:
         with self.lock:
@@ -419,6 +464,18 @@ def session_calculator(
             feature_runner=partial(session.features, cancelled=cancelled)
             if mode == "fit"
             else None,
+        )
+        check_current(cancelled)
+        return result
+
+    return calculate
+
+
+def session_streaming(inputs: AuctionInput, session: AuctionSession) -> StreamingRunner:
+    def calculate(state: DraftState, current: AuctionResult, cancelled: Event) -> StreamingSummary:
+        check_current(cancelled)
+        result = analyze_streaming(
+            inputs, state, current, CancellableKernel(session.native(), cancelled)
         )
         check_current(cancelled)
         return result

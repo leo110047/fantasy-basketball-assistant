@@ -1,5 +1,5 @@
 {
-  "format_version": 12,
+  "format_version": 13,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -396,5 +396,18 @@
   "team_constraints": {
     "minutes": "enforce",
     "offense": "enforce"
+  },
+  "streaming_comparison": {
+    "slots": [
+      0,
+      1,
+      2
+    ],
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Restored streaming-seat policy comparison under the shared management kernel",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Compare configured candidate seat limits under paired health paths and the same opponents and free-agent pool. All health groups must improve before recommending more seats. This on-demand sensitivity study does not automatically change the pricing policy and is not calibrated real-world win probability."
+    }
   }
 }

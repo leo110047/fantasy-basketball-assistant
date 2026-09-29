@@ -457,6 +457,16 @@ class TeamConstraintModel(AvailabilityModel):
     team_constraints: TeamConstraints
 
 
+class StreamingComparisonParameters(Record):
+    slots: Annotated[tuple[Natural, ...], Field(min_length=1)]
+    evidence: Evidence
+
+
+class StreamingComparisonModel(TeamConstraintModel):
+    format_version: Annotated[int, Field(ge=13, le=13)]
+    streaming_comparison: StreamingComparisonParameters
+
+
 class ModelDocument(
     RootModel[
         ModelConfig
@@ -471,6 +481,7 @@ class ModelDocument(
         | TeamOffenseModel
         | AvailabilityModel
         | TeamConstraintModel
+        | StreamingComparisonModel
     ]
 ):
     pass
@@ -504,5 +515,6 @@ class ValidatedConfig(Record):
         | TeamOffenseModel
         | AvailabilityModel
         | TeamConstraintModel
+        | StreamingComparisonModel
     )
     refs: ConfigBundle

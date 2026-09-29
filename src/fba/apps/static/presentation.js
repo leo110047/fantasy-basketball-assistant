@@ -18,11 +18,12 @@ export function priceRows(players, desk, result, watched, filters) {
   const quotes = new Map(desk.market.market.prices.map(q => [q.player_id, q]));
   const caps = new Map(result?.caps.map(c => [c.player_id, c]) ?? []);
   const plan = new Set(result?.plan.purchases ?? []);
+  const flex = new Set(result?.streaming?.flex.map(p => p.player_id) ?? []);
   const rows = [...players.values()].map(player => {
     const quote = quotes.get(player.id), cap = caps.get(player.id), sale = sales.get(player.id);
     const gap = valueGap(player.fair, quote?.expected);
     const edge = cap?.amount == null || quote?.expected == null ? null : cap.amount - quote.expected;
-    return {player, quote, cap, sale, ...gap, edge, inPlan:plan.has(player.id)};
+    return {player, quote, cap, sale, ...gap, edge, inPlan:plan.has(player.id),flex:flex.has(player.id)};
   }).filter(row => visible(row, watched, filters));
   return rows.sort((a,b) => compareRows(a,b,filters.sort) || a.player.id.localeCompare(b.player.id, "en"));
 }
@@ -42,7 +43,8 @@ function compareRows(a,b,sort) {
 }
 export function rowTags(row) {
   const {player, quote, cap, inPlan, difference} = row, tags = [];
-  if (inPlan) tags.push("組隊方案");
+  if (row.flex) tags.push("可操作候選");
+  else if (inPlan) tags.push("組隊方案");
   if (!row.sale && difference > 0) tags.push(row.focused ? "重點價差" : "市場低估");
   if (quote?.anchor == null) tags.push("缺市場報價");
   if (!player.positions_confirmed) tags.push("位置待確認");

@@ -42,6 +42,8 @@ uv run fba serve /path/auction-input-SHA256/auction-input.json \
 
 市場與預算先更新，停損價在背景重算；「更新中」不顯示舊停損價。計算失敗不影響已保存成交，可按重試。成交若顯示「保存未確認」，先重新整理核對紀錄，避免重複登錄。買／不買比較沿用目前選取模式的估值。依陣容調整把傷兵替補、串流與永久升級納入共同模擬；加人額度與期間讀取聯盟設定，管理策略讀取 `pricing` 與 `management`。停止價仍是局部估計，受傷病與對手策略假設影響，並非實戰勝率。 在球員明細按「計算健康抽樣範圍」，可查看固定陣容參考與步長的分組敏感度；按需計算，不會每筆成交重算所有球員範圍。
 
+「串流格數比較」使用 `streaming_comparison.slots`（模型格式 13），共用聯盟加人額度、健康樣本與對手；所有健康分組都改善才建議增加格數。建議不會自動改寫 `pricing.streaming_slots`，可操作候選依實際移除損失排序。
+
 服務僅限本機、離線讀取凍結輸入。`auction.jsonl` 保存各次計算的草稿、設定／資料雜湊、結果與耗時；瀏覽器 console 的 `fba timing` 記錄畫面完成時間。草稿、日誌與備份請放在專案外。
 
 只需結果檔時：`uv run fba auction /path/auction-input.json --draft /path/draft.json --stage equal --workers 8 --output /path/results`。`--stage` 可選 `market`、`equal`、`fit`。

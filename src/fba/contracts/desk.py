@@ -14,6 +14,7 @@ from fba.contracts.auction import (
 from fba.contracts.base import FormatVersion, Natural, PositiveInt, Record, Text
 from fba.contracts.config import LeagueRules
 from fba.contracts.data import Digest, TeamLabel
+from fba.contracts.streaming import StreamingSummary
 
 
 class SaveDraft(Record):
@@ -23,6 +24,16 @@ class SaveDraft(Record):
 
 class StateRequest(Record):
     state_sha256: Digest
+
+
+class StreamingRequest(StateRequest):
+    mode: Literal["equal", "fit"]
+
+
+class StreamingResult(Record):
+    state_sha256: Digest
+    mode: Literal["equal", "fit"]
+    streaming: StreamingSummary
 
 
 class CompareRequest(StateRequest):
@@ -68,6 +79,7 @@ class DeskBootstrap(Record):
     details: tuple[AnnotatedAuctionDetail | AuctionDetail, ...] | None
     teams: tuple[TeamLabel, ...] | None
     scenarios: tuple[ForecastScenario, ...] | None
+    streaming_candidates: tuple[Natural, ...] | None
     desk: DeskState
 
 
@@ -91,9 +103,11 @@ class DeskHealth(Record):
 
 class DeskExecution(Record):
     format_version: FormatVersion
-    stage: Literal["market", "equal", "fit", "compare", "sensitivity"]
+    stage: Literal["market", "equal", "fit", "compare", "sensitivity", "streaming"]
     state: DraftState
     state_sha256: Digest
     elapsed_ns: Natural
     solver_calls: Natural | None
-    result: MarketUpdate | AuctionResult | Compared | SensitivityResult | DeskError
+    result: (
+        MarketUpdate | AuctionResult | Compared | SensitivityResult | StreamingResult | DeskError
+    )

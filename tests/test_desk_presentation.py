@@ -52,6 +52,10 @@ assert.deepEqual(ids(priceRows(players,desk,result,watched,{...filters,position:
 const altered={caps:[{player_id:'a',amount:0}],plan:{purchases:[]}};
 assert.deepEqual(ids(priceRows(players,desk,altered,watched,{...filters,scope:'focus'})),['a']);
 const rows=priceRows(players,desk,result,watched,{...filters,scope:'all',sort:'name'});
+const managed={...result,streaming:{flex:[{player_id:'b',removal_loss:0.1}]}};
+const streamingRows=priceRows(players,desk,managed,watched,filters);
+assert(rowTags(streamingRows.find(r=>r.player.id==='b')).includes('可操作候選'));
+assert(!rowTags(rows.find(r=>r.player.id==='b')).includes('可操作候選'));
 const csv=priceCSV(rows,desk,'fit');
 assert(csv.startsWith('\ufeff'));
 assert(csv.includes('"\'=HYPERLINK(""x"")"'));
@@ -81,6 +85,42 @@ assert.deepEqual(forecastRange({fair:null,scenarios:[{fair:30}]}),{status:'incom
 """
     result = subprocess.run(
         ["node", "--input-type=module", "--eval", script, module.as_uri()],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_streaming_reply_is_discarded_for_changed_state_and_hidden_for_another_mode():
+    app = Path(__file__).parents[1] / "src/fba/apps/static/app.js"
+    script = r"""
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+const source=readFileSync(process.argv[1],'utf8');
+const operation=source.slice(source.indexOf('async function inspectStreaming('),
+  source.indexOf('function renderSensitivity('));
+const getter=source.slice(source.indexOf('function result('),
+  source.indexOf('function unavailable('));
+let identity='first',mode='fit',complete;
+const context={streamingPending:false,streamingReply:null,
+ saving:false,stale:false,changingPrices:false,
+ jobs:{state_sha256:'first',fit:{result:{plan:{players:['a']}}},equal:{result:{plan:{players:['b']}}}},
+ sha:()=>identity,el:()=>({value:mode}),render(){},
+ api:()=>new Promise(resolve=>{complete=resolve})};
+runInNewContext(operation+'\n'+getter,context);
+let pending=context.inspectStreaming();
+identity='second';complete({state_sha256:'first',mode:'fit',streaming:{recommended_slots:1}});
+await pending;assert.equal(context.streamingReply,null);
+identity='first';pending=context.inspectStreaming();mode='equal';
+complete({state_sha256:'first',mode:'fit',streaming:{recommended_slots:1}});
+await pending;assert.equal(context.result().streaming,null);
+mode='fit';assert.equal(context.result().streaming.recommended_slots,1);
+identity='second';assert.equal(context.result(),null);
+"""
+    result = subprocess.run(
+        ["node", "--input-type=module", "--eval", script, str(app)],
         capture_output=True,
         text=True,
         check=False,

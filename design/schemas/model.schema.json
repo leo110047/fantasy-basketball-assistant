@@ -1319,6 +1319,113 @@
       "title": "SolverParameters",
       "type": "object"
     },
+    "StreamingComparisonModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 13,
+          "minimum": 13,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        },
+        "availability_tail": {
+          "$ref": "#/$defs/AvailabilityTail"
+        },
+        "team_constraints": {
+          "$ref": "#/$defs/TeamConstraints"
+        },
+        "streaming_comparison": {
+          "$ref": "#/$defs/StreamingComparisonParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense",
+        "availability_tail",
+        "team_constraints",
+        "streaming_comparison"
+      ],
+      "title": "StreamingComparisonModel",
+      "type": "object"
+    },
+    "StreamingComparisonParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "slots": {
+          "items": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Slots",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "slots",
+        "evidence"
+      ],
+      "title": "StreamingComparisonParameters",
+      "type": "object"
+    },
     "TeamBudgetModel": {
       "additionalProperties": false,
       "properties": {
@@ -1756,6 +1863,9 @@
     },
     {
       "$ref": "#/$defs/TeamConstraintModel"
+    },
+    {
+      "$ref": "#/$defs/StreamingComparisonModel"
     }
   ],
   "title": "ModelDocument"

@@ -15,7 +15,7 @@ from fba.adapters.auction import load_auction
 from fba.adapters.codec import canonical, decode
 from fba.adapters.desk import check_storage, draft_lock
 from fba.apps.auction import AuctionSession
-from fba.apps.desk import AuctionDesk, session_calculator
+from fba.apps.desk import AuctionDesk, session_calculator, session_streaming
 from fba.contracts.auction import AuctionInput, SolverError
 from fba.contracts.base import ConfigError, DataError, Record
 from fba.contracts.desk import (
@@ -26,6 +26,7 @@ from fba.contracts.desk import (
     SaveUnconfirmed,
     SensitivityRequest,
     StateRequest,
+    StreamingRequest,
 )
 
 
@@ -109,6 +110,7 @@ class DeskHandler(BaseHTTPRequestHandler):
             assets = {
                 "/": ("index.html", "text/html"),
                 "/app.js": ("app.js", "text/javascript"),
+                "/streaming.js": ("streaming.js", "text/javascript"),
                 "/view.js": ("view.js", "text/javascript"),
                 "/presentation.js": ("presentation.js", "text/javascript"),
                 "/editing.js": ("editing.js", "text/javascript"),
@@ -164,6 +166,8 @@ class DeskHandler(BaseHTTPRequestHandler):
                 result = desk.comparison(decode(CompareRequest, data, "request.compare"))
             elif self.path == "/api/sensitivity":
                 result = desk.sensitivity(decode(SensitivityRequest, data, "request.sensitivity"))
+            elif self.path == "/api/streaming":
+                result = desk.streaming(decode(StreamingRequest, data, "request.streaming"))
             else:
                 self.respond(DeskError(error="route: not found"), 404)
                 return
@@ -234,6 +238,7 @@ def run_desk(
             log,
             session_calculator(inputs, sha, session, "equal"),
             session_calculator(inputs, sha, session, "fit"),
+            streaming_runner=session_streaming(inputs, session),
         )
         print(
             json.dumps(

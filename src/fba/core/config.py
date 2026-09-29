@@ -17,6 +17,7 @@ from fba.contracts.config import (
     ResourceModel,
     SeasonConfig,
     SeasonModel,
+    StreamingComparisonModel,
     TeamBudgetModel,
     TeamOffenseModel,
     ThresholdCount,
@@ -394,6 +395,16 @@ def validate_team_minutes(
     model: TeamBudgetModel, season: SeasonConfig, league: LeagueRules
 ) -> None:
     p = model.team_minutes
+    if isinstance(model, StreamingComparisonModel):
+        comparison = model.streaming_comparison
+        if comparison.slots[0] != 0 or tuple(sorted(set(comparison.slots))) != comparison.slots:
+            raise ConfigError(
+                "model.streaming_comparison.slots: must start at zero and increase uniquely"
+            )
+        if comparison.slots[-1] > len(league.starter_slots) + league.bench_slots:
+            raise ConfigError("model.streaming_comparison.slots: exceeds roster capacity")
+        if comparison.evidence.as_of > season.snapshot_as_of:
+            raise ConfigError("model.streaming_comparison.evidence: after snapshot cutoff")
     if (
         isinstance(model, AvailabilityModel)
         and model.availability_tail.evidence.as_of > season.snapshot_as_of

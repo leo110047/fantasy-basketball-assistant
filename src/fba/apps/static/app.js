@@ -2,12 +2,14 @@ import {el, money, node, action, option, catalogue, forecastWarning, renderProje
 import {beginTiming, rendered, measure} from "/timing.js";
 import {matches, priceCSV, floorBackup} from "/presentation.js";
 import {installEditors} from "/editing.js";
+import {renderStreamingResult} from "/streaming.js";
 
 let boot, desk, jobs, selected = null, saving = false, comparing = false, composing = false;
 let players = new Map(), watched = new Set(), compareRevision = 0, settingsDirty = false, inspected = null;
 let pollTimer, polling = false;
 let changingPrices = false, stale = false, legacyWatch = [];
 let sensitivityReply = null, sensitivityPending = false;
+let streamingReply = null, streamingPending = false;
 let token = location.hash.slice(1);
 try {
   if (token) sessionStorage.setItem("fba-session", token);
@@ -40,7 +42,8 @@ function confirmChange(message) {
 }
 function sha() { return desk.market.state_sha256; }
 function result() {
-  return !changingPrices && !stale && jobs?.state_sha256 === sha() ? jobs[el("mode").value].result : null;
+  const current = !changingPrices && !stale && jobs?.state_sha256 === sha() ? jobs[el("mode").value].result : null;
+  return current ? {...current, streaming:streamingReply?.state_sha256 === sha() && streamingReply?.mode === el("mode").value ? streamingReply.streaming : null} : null;
 }
 function unavailable() {
   if (stale) return "請重新載入草稿";
@@ -90,7 +93,7 @@ function render() {
   renderRoom(desk, players, editors.sale);
   renderTable(desk, players, current, watched, browse, nominate, watch, unavailable(), saving || stale, boot.league.minimum_bid);
   renderPlan(current, players, desk.market.market, nominate, unavailable());
-  renderNominee(); controls();
+  renderNominee(); controls(); renderStreaming();
   if (el("playerDialog").open) renderDetails(inspected);
   const refs = desk.state.config;
   el("identity").replaceChildren(...[
@@ -127,6 +130,26 @@ function renderDetails(id) {
 }
 function browse(id) {
   inspected = id; renderDetails(id); el("playerDialog").showModal();
+}
+function renderStreaming() {
+  const button = el("streamingCompare"), container = el("streamingResult"), current = result();
+  button.disabled = streamingPending || saving || stale || !boot.streaming_candidates || !current?.plan?.players;
+  button.textContent = streamingPending ? "串流比較計算中…" : `比較串流格數${boot.streaming_candidates ? `（${boot.streaming_candidates.join("／")}）` : ""}`;
+  container.replaceChildren();
+  if (!boot.streaming_candidates) { container.append(node("p", "此份資料尚未設定串流格數比較，請使用包含比較設定的模型重建競標輸入。", "muted")); return; }
+  if (current?.streaming) renderStreamingResult(container,current.streaming,players);
+  else if (streamingReply?.state_sha256 === sha() && streamingReply?.mode === el("mode").value && streamingReply.error) container.append(node("p", streamingReply.error, "error"));
+  else container.append(node("p", "依目前模式的組隊方案按需計算；每筆成交後需重新比較。", "muted"));
+}
+async function inspectStreaming() {
+  if (streamingPending || saving || stale) return;
+  const state = sha(), mode = el("mode").value;
+  streamingPending = true; streamingReply = null; render();
+  try {
+    const reply = await api("streaming", {state_sha256:state,mode});
+    if (reply.state_sha256 === state && sha() === state) streamingReply = reply;
+  } catch(e) { if (sha() === state) streamingReply = {state_sha256:state,mode,error:e.message}; }
+  finally { streamingPending = false; render(); }
 }
 function renderSensitivity(container, id) {
   if (el("mode").value !== "fit") return;
@@ -361,6 +384,7 @@ el("settingsForm").addEventListener("submit", async e => {
   else { el("settingsError").textContent = "請保留設定並檢查頁面錯誤。"; el("settingsError").hidden = false; }
 });
 el("closePlayer").addEventListener("click", () => el("playerDialog").close());
+el("streamingCompare").addEventListener("click", inspectStreaming);
 el("help").addEventListener("click", () => el("helpDialog").showModal());
 el("closeHelp").addEventListener("click", () => el("helpDialog").close());
 el("exportCSV").addEventListener("click", () => download(priceCSV(tableRows(desk,players,result(),watched),desk,el("mode").value),"text/csv;charset=utf-8",`prices-${desk.state.revision}-${el("mode").value}.csv`));
