@@ -250,7 +250,7 @@ def calculate_auction(
         )
     return AuctionResult(
         format_version=1,
-        algorithm="conditional-auction-v4",
+        algorithm="conditional-auction-v5",
         config=inputs.config.refs,
         input_sha256=input_hash,
         state_sha256=state_hash,

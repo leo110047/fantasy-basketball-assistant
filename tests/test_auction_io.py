@@ -120,6 +120,30 @@ def test_auction_model_cannot_change_frozen_projection(frozen_auction, tmp_path)
     assert not (tmp_path / "changed").exists()
 
 
+def test_distribution_market_rebuilds_from_an_unchanged_legacy_projection(annual_case, tmp_path):
+    from test_market_distribution import sampled_parameters
+
+    from fba.contracts.config import MarketParameters
+
+    snapshot, model, _, _ = annual_case
+    current = model.read_bytes()
+    data = json.loads(current)
+    data["market"] = sampled_parameters(
+        MarketParameters.model_validate_json(json.dumps(data["market"]))
+    ).model_dump(mode="json")
+    model.write_text(json.dumps(data))
+    projection = project(snapshot, model, tmp_path / "legacy-projection", None)
+    with pytest.raises(ConfigError, match="prepare-auction"):
+        prepare_auction(projection, model, tmp_path / "legacy-auction")
+    assert not (tmp_path / "legacy-auction").exists()
+    source = (projection / "projection-input.json").read_bytes()
+    model.write_bytes(current)
+    rebuilt = prepare_auction(projection, model, tmp_path / "distribution-auction")
+    loaded, _ = load_auction(rebuilt / "auction-input.json")
+    assert isinstance(loaded.config.model.market, MarketParameters)
+    assert (projection / "projection-input.json").read_bytes() == source
+
+
 def test_auction_rejects_relabelled_frozen_statistic_axes(frozen_auction):
     path, _, _ = frozen_auction
     data = json.loads(path.read_bytes())

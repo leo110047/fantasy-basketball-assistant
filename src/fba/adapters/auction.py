@@ -15,6 +15,7 @@ from fba.core.auction import CapRunner, calculate_auction, market_context, run_c
 from fba.core.config import validate_config
 from fba.core.fit import FeatureRunner
 from fba.core.health import healthy_games
+from fba.core.market import require_distribution
 
 
 class AuctionExecution(Record):
@@ -81,6 +82,7 @@ def load_auction(path: Path) -> tuple[AuctionInput, str]:
     model = inputs.config.model
     if not isinstance(model, AuctionModel):
         raise ConfigError("model: auction requires format_version 5")
+    require_distribution(model.market)
     if inputs.management.stat_ids != (*model.projection.stat_ids, model.projection.threshold_stat):
         raise DataError("auction.management.stat_ids: differs from frozen projection axes")
     ids = tuple(p.id for p in inputs.management.players)
@@ -145,6 +147,7 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
     model, ref = load_parameters(model_path)
     if not isinstance(model, AuctionModel):
         raise ConfigError("model: auction requires format_version 5")
+    require_distribution(model.market)
     # Auction settings cannot silently change the projection represented by these values.
     for name in (
         "calibration",

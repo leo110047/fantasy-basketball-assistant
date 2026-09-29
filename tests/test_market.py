@@ -120,7 +120,7 @@ def test_more_own_cash_does_not_change_the_rule_for_beating_the_same_foe_bid():
     assert costs == sorted(costs)
 
 
-def test_market_samples_follow_bidder_state_instead_of_team_identifiers():
+def test_market_distributions_do_not_depend_on_team_identifiers():
     league = small_league(3)
     inputs = inputs_for(
         tuple(player(i, quote=float(i + 10), utility=float(i)) for i in range(12)), league

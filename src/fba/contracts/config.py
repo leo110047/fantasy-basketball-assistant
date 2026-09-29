@@ -311,17 +311,24 @@ class PreparationModel(CalculationModel):
     preparation: PreparationParameters
 
 
-class MarketParameters(Record):
+class MarketAssumptions(Record):
     volatility: Nonnegative
-    samples: PositiveInt
-    seed: Natural
-    normalization_samples: PositiveInt
-    normalization_seed: Natural
     wealth_lower: Nonnegative
     wealth_upper: Nonnegative
     wealth_exponent: Nonnegative
     competition_bid: PositiveInt
     evidence: Evidence
+
+
+class SampledMarketParameters(MarketAssumptions):
+    samples: PositiveInt
+    seed: Natural
+    normalization_samples: PositiveInt
+    normalization_seed: Natural
+
+
+class MarketParameters(MarketAssumptions):
+    format_version: Literal[2]
 
 
 class SolverParameters(Record):
@@ -360,7 +367,7 @@ class FitParameters(Record):
 
 class AuctionModel(PreparationModel):
     format_version: Annotated[int, Field(ge=5, le=5)]
-    market: MarketParameters
+    market: MarketParameters | SampledMarketParameters
     solver: SolverParameters
     fit: FitParameters
 

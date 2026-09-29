@@ -171,10 +171,6 @@
   },
   "market": {
     "volatility": 0.25,
-    "samples": 512,
-    "seed": 20260926,
-    "normalization_samples": 100000,
-    "normalization_seed": 0,
     "wealth_lower": 0.5,
     "wealth_upper": 2.0,
     "wealth_exponent": 0.5,
@@ -183,8 +179,9 @@
       "kind": "Assumption",
       "reference": "Locked auction-desk engine.py conditional market and exact portfolio model",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Preserve seeded lognormal willingness and paired conditional acquisition. The market model is uncalibrated; price ties may require first nomination."
-    }
+      "reason": "Independent lognormal bidder willingness with exact discrete bid-distribution expectations, bounded quote anchors, remaining-cash inflation and floor-first nomination. Volatility and wealth response remain uncalibrated assumptions. Planning cost is the nearest legal integer bid to expected acquisition cost, with half increments rounded up; it is a point estimate, not a success guarantee."
+    },
+    "format_version": 2
   },
   "solver": {
     "time_limit_seconds": 5.0,

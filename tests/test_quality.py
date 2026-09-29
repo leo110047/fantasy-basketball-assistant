@@ -76,6 +76,7 @@ def test_core_dependency_direction_and_no_io_or_mutable_globals():
         "numpy",
         "numpy.typing",
         "scipy.optimize",
+        "scipy.integrate",  # Pure numerical quadrature for bid-distribution normalization.
         "scipy.special",
         "scipy.stats",
     }

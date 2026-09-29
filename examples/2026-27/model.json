@@ -171,10 +171,6 @@
   },
   "market": {
     "volatility": 0.25,
-    "samples": 512,
-    "seed": 20260926,
-    "normalization_samples": 100000,
-    "normalization_seed": 0,
     "wealth_lower": 0.5,
     "wealth_upper": 2.0,
     "wealth_exponent": 0.5,
@@ -183,8 +179,9 @@
       "kind": "Assumption",
       "reference": "Auction market constraints: floor-aware cash scaling, bounded quote normalization, identity-independent bidder sampling",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Assumption: lognormal willingness is uncalibrated. Scale remaining price levels using remaining cash including minimum bids; keep equal quotes equal at the roster cutoff and cap opening anchors at a legal individual bid. Beating an above-floor rival requires one increment independent of own budget; floor ties assume first nomination. Assign seeded random coordinates by bidder budget, slots and positions, not team labels."
-    }
+      "reason": "Independent lognormal bidder willingness with exact discrete bid-distribution expectations, bounded quote anchors, remaining-cash inflation and floor-first nomination. Volatility and wealth response remain uncalibrated assumptions. Planning cost is the nearest legal integer bid to expected acquisition cost, with half increments rounded up; it is a point estimate, not a success guarantee."
+    },
+    "format_version": 2
   },
   "solver": {
     "time_limit_seconds": 5.0,

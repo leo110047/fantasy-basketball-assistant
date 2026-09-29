@@ -1,15 +1,26 @@
-from math import ceil, fsum
+from math import exp, floor, fsum, isfinite, log, pi
 
 import numpy as np
+from numpy.typing import NDArray
+from scipy.integrate import quad
+from scipy.special import log_ndtr, ndtr
 
 from fba.contracts.auction import AuctionPlayer, DraftState, MarketPrice, MarketResult, TeamBudget
-from fba.contracts.config import LeagueRules, MarketParameters
+from fba.contracts.base import ConfigError
+from fba.contracts.config import (
+    LeagueRules,
+    MarketAssumptions,
+    MarketParameters,
+    SampledMarketParameters,
+)
 from fba.core.roster import capacity, completable
+
+type FloatArray = NDArray[np.float64]
 
 
 def bidders_by_position(
     league: LeagueRules,
-    parameters: MarketParameters,
+    parameters: MarketAssumptions,
     players: tuple[AuctionPlayer, ...],
     room: tuple[TeamBudget, ...],
     average_surplus: float,
@@ -79,29 +90,137 @@ def opening_anchors(
     }
 
 
-def bidder_order(
-    players: tuple[AuctionPlayer, ...], room: tuple[TeamBudget, ...], mine: str
-) -> list[int]:
-    positions = {p.id: tuple(sorted(p.positions)) for p in players}
-    # Equal states are exchangeable; IDs never choose the random coordinate of a bidder.
-    return sorted(
-        range(len(room)),
-        key=lambda j: (
-            room[j].id != mine,
-            room[j].budget,
-            room[j].slots,
-            tuple(sorted(positions[p] for p in room[j].owned)),
-        ),
+def normalization_shift(teams: int, volatility: float) -> float:
+    """Log E[exp(sigma * Z_(n-1))] for the second highest of n normal bids."""
+    if volatility == 0:
+        return 0.0
+
+    def integrand(z: float) -> float:
+        return exp(
+            volatility * z
+            + log(teams * (teams - 1))
+            + (teams - 2) * float(log_ndtr(z))
+            + float(log_ndtr(-z))
+            - z * z / 2
+            - log(2 * pi) / 2
+        )
+
+    try:
+        report = quad(integrand, -np.inf, np.inf, full_output=1, epsabs=1e-10, epsrel=1e-10)
+        value, error, _diagnostics, *message = report
+        if message or not isfinite(value) or value <= 0 or error > 1e-8 * max(1.0, value):
+            raise ArithmeticError("normalization did not converge")
+        return log(value)
+    except (ArithmeticError, ValueError) as error:
+        raise ConfigError("model.market.volatility: cannot resolve bid normalization") from error
+
+
+def bid_cdf(
+    levels: FloatArray,
+    maximum: FloatArray,
+    premium: FloatArray,
+    volatility: float,
+    shift: float,
+    minimum: int,
+    increment: int,
+) -> FloatArray:
+    """P(discrete, capped bid <= level), with a floor at the minimum bid."""
+    threshold = np.maximum(0.0, levels + increment - minimum)
+    ratio = np.divide(
+        threshold[None, :],
+        premium[:, None],
+        out=np.full((len(premium), len(levels)), np.inf),
+        where=premium[:, None] > 0,
     )
+    if volatility == 0:
+        probability = (
+            minimum + premium[:, None] * exp(-shift) < levels[None, :] + increment
+        ).astype(float)
+    else:
+        logarithm = np.full(ratio.shape, -np.inf)
+        np.log(ratio, out=logarithm, where=ratio > 0)
+        probability = ndtr((logarithm + shift) / volatility)
+    return np.where(
+        levels[None, :] < minimum,
+        0.0,
+        np.where(levels[None, :] >= maximum[:, None], 1.0, probability),
+    )
+
+
+def sale_survival(cdf: FloatArray, previous: FloatArray) -> FloatArray:
+    # At level b, the sale price exceeds b unless everybody bids <= b, or
+    # exactly one bids > b while all the others bid < b (one increment below).
+    edge = np.ones((1, cdf.shape[1]))
+    prefix = np.concatenate((edge, np.cumprod(previous, axis=0)), axis=0)
+    suffix = np.concatenate((np.cumprod(previous[::-1], axis=0)[::-1], edge), axis=0)
+    single = np.sum((1 - cdf) * prefix[:-1] * suffix[1:], axis=0)
+    return np.clip(1 - np.prod(cdf, axis=0) - single, 0, 1)
+
+
+def distribution_price(
+    league: LeagueRules,
+    parameters: MarketParameters,
+    anchor: float,
+    participants: tuple[tuple[int, float], ...],
+    room: tuple[TeamBudget, ...],
+    mine: str,
+    shift: float,
+    player_id: str,
+) -> MarketPrice:
+    minimum, increment = league.minimum_bid, league.bid_increment
+    # A stable economic order also makes floating-point reductions independent
+    # of team identifiers. Identical distributions are interchangeable.
+    participants = tuple(
+        sorted(participants, key=lambda p: (room[p[0]].id != mine, room[p[0]].maximum_bid, p[1]))
+    )
+    maximum = np.array([room[j].maximum_bid for j, _ in participants], dtype=float)
+    premium = np.array([max(0.0, anchor - minimum) * wealth for _, wealth in participants])
+    levels = np.arange(minimum, maximum.max(), increment, dtype=float)
+    cdf = bid_cdf(levels, maximum, premium, parameters.volatility, shift, minimum, increment)
+    previous = bid_cdf(
+        levels - increment, maximum, premium, parameters.volatility, shift, minimum, increment
+    )
+    expected = minimum + increment * fsum(sale_survival(cdf, previous))
+    foes = np.array([room[j].id != mine for j, _ in participants])
+    high_survival = 1 - np.prod(cdf[foes], axis=0)
+    # Floor ties assume our nomination; every higher foe bid must be beaten.
+    acquisition = minimum + increment * (
+        fsum(high_survival) + (float(high_survival[0]) if len(levels) else 0)
+    )
+    median = np.floor(np.minimum(maximum, minimum + premium * exp(-shift)) / increment) * increment
+    bidders = int(np.count_nonzero(foes & (median >= parameters.competition_bid)))
+    return MarketPrice(
+        player_id=player_id,
+        anchor=anchor,
+        expected=expected,
+        acquisition=acquisition,
+        # The integer point estimate nearest to E[cost] avoids a full-increment
+        # upward bias for an arbitrarily small upper-tail probability.
+        planning_cost=max(minimum, floor(acquisition / increment + 0.5) * increment),
+        bidders=bidders,
+    )
+
+
+def require_distribution(
+    parameters: MarketParameters | SampledMarketParameters,
+) -> MarketParameters:
+    if not isinstance(parameters, MarketParameters):
+        raise ConfigError(
+            "model.market: sampled pricing is retired; set format_version to 2, remove samples, "
+            "seed, normalization_samples and normalization_seed, "
+            "then prepare-auction with that model"
+        )
+    return parameters
 
 
 def price_market(
     league: LeagueRules,
-    parameters: MarketParameters,
+    parameters: MarketParameters | SampledMarketParameters,
     players: tuple[AuctionPlayer, ...],
     state: DraftState,
     room: tuple[TeamBudget, ...],
 ) -> MarketResult:
+    parameters = require_distribution(parameters)
     anchors = opening_anchors(league, players)
     for override in state.overrides:
         if override.market is not None:
@@ -118,15 +237,7 @@ def price_market(
     cash = sum(t.budget for t in room if t.slots)
     inflation = cash / denominator if denominator > 0 else 1.0
     average_surplus = max(surplus / max(slots, 1), np.finfo(float).eps)
-    z = np.random.default_rng(parameters.seed).standard_normal((parameters.samples, league.teams))
-    normal = np.random.default_rng(parameters.normalization_seed).standard_normal(
-        (parameters.normalization_samples, league.teams)
-    )
-    shift = float(np.log(np.exp(parameters.volatility * np.sort(normal, axis=1)[:, -2]).mean()))
-    multipliers = np.empty_like(z)
-    multipliers[:, bidder_order(players, room, state.mine)] = np.exp(
-        parameters.volatility * z - shift
-    )
+    shift = normalization_shift(league.teams, parameters.volatility)
     eligible = bidders_by_position(league, parameters, players, room, average_surplus)
     prices: dict[str, MarketPrice] = {}
     quotes_by_anchor_position: dict[tuple[float, tuple[str, ...]], MarketPrice] = {}
@@ -142,56 +253,15 @@ def price_market(
         participants = eligible[key[1]]
         if not participants:
             continue
-        indices = [j for j, _ in participants]
-        wealth = np.array([value for _, value in participants])
-        maximum = np.array([room[j].maximum_bid for j in indices])
-        bids = (
-            np.floor(
-                np.minimum(
-                    maximum[:, None],
-                    np.maximum(
-                        league.minimum_bid,
-                        league.minimum_bid
-                        + (anchor - league.minimum_bid)
-                        * inflation
-                        * wealth[:, None]
-                        * multipliers[:, indices].T,
-                    ),
-                )
-                / league.bid_increment
-            )
-            * league.bid_increment
-        )
-        foe_rows = np.array([room[j].id != state.mine for j in indices])
-        foes = bids[foe_rows]
-        lower, upper = (parameters.samples - 1) // 2, parameters.samples // 2
-        middle = np.partition(foes, (lower, upper), axis=1)
-        bidders = int(
-            np.count_nonzero(
-                (maximum[foe_rows] >= parameters.competition_bid)
-                & ((middle[:, lower] + middle[:, upper]) / 2 >= parameters.competition_bid)
-            )
-        )
-        ordered = np.sort(bids, axis=0)
-        expected = (
-            float(np.minimum(ordered[-1], ordered[-2] + league.bid_increment).mean())
-            if len(bids) > 1
-            else float(league.minimum_bid)
-        )
-        high = np.max(foes, axis=0) if len(foes) else np.zeros(parameters.samples)
-        needed = np.where(
-            high <= league.minimum_bid,
-            league.minimum_bid,
-            high + league.bid_increment,
-        )
-        acquisition = float(needed.mean())
-        prices[player.id] = MarketPrice(
-            player_id=player.id,
-            anchor=anchor,
-            expected=expected,
-            acquisition=acquisition,
-            planning_cost=ceil(acquisition / league.bid_increment) * league.bid_increment,
-            bidders=bidders,
+        prices[player.id] = distribution_price(
+            league,
+            parameters,
+            anchor,
+            tuple((j, wealth * inflation) for j, wealth in participants),
+            room,
+            state.mine,
+            shift,
+            player.id,
         )
         quotes_by_anchor_position[key] = prices[player.id]
     return MarketResult(

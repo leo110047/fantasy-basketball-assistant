@@ -1,5 +1,4 @@
 import itertools
-import json
 from pathlib import Path
 
 import numpy as np
@@ -204,29 +203,6 @@ def test_endgame_every_integer_budget_and_null_quotes(minimum):
     assert players[-1].id not in result.plan.purchases
 
 
-def test_original_additive_opening_prices_plan_and_caps():
-    reference = json.loads((Path(__file__).parent / "fixtures/auction-reference.json").read_text())
-    players = tuple(AuctionPlayer.model_validate_json(json.dumps(p)) for p in reference["players"])
-    inp = inputs_for(players)
-    result = calculate_auction(inp, state(inp), "0" * 64, "3" * 64)
-    by = {p["id"]: p for p in reference["expected"]}
-    for p in result.market.prices:
-        expected = by[p.player_id]
-        for field in ("anchor", "expected", "acquisition", "planning_cost"):
-            actual = getattr(p, field)
-            key = "planned_cost" if field == "planning_cost" else field
-            assert (
-                actual == pytest.approx(expected[key], abs=0.01)
-                if actual is not None
-                else expected[key] is None
-            )
-    assert sorted(result.plan.purchases) == sorted(reference["plan"])
-    assert result.plan.cost == reference["plan_cost"]
-    assert {c.player_id: c.amount for c in result.caps} == {
-        p["id"]: p["stop"] for p in reference["expected"]
-    }
-
-
 def test_shuffle_state_validation_and_buy_skip():
     c = config()
     league = c.league.model_copy(
@@ -308,9 +284,6 @@ def test_configured_league_variants_keep_legal_plans(teams):
     model = original.model.model_copy(
         update={
             "fit": original.model.fit.model_copy(update={"category_floors": floors}),
-            "market": original.model.market.model_copy(
-                update={"samples": 16, "normalization_samples": 32}
-            ),
         }
     )
     changed = validate_config(league, original.season, model, original.refs)

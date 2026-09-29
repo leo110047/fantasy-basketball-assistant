@@ -41,7 +41,15 @@
           "$ref": "#/$defs/PreparationParameters"
         },
         "market": {
-          "$ref": "#/$defs/MarketParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
         },
         "solver": {
           "$ref": "#/$defs/SolverParameters"
@@ -85,7 +93,15 @@
           "$ref": "#/$defs/PreparationParameters"
         },
         "market": {
-          "$ref": "#/$defs/MarketParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
         },
         "solver": {
           "$ref": "#/$defs/SolverParameters"
@@ -620,7 +636,15 @@
           "$ref": "#/$defs/PreparationParameters"
         },
         "market": {
-          "$ref": "#/$defs/MarketParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
         },
         "solver": {
           "$ref": "#/$defs/SolverParameters"
@@ -1000,7 +1024,15 @@
           "$ref": "#/$defs/PreparationParameters"
         },
         "market": {
-          "$ref": "#/$defs/MarketParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
         },
         "solver": {
           "$ref": "#/$defs/SolverParameters"
@@ -1110,26 +1142,6 @@
           "title": "Volatility",
           "type": "number"
         },
-        "samples": {
-          "exclusiveMinimum": 0,
-          "title": "Samples",
-          "type": "integer"
-        },
-        "seed": {
-          "minimum": 0,
-          "title": "Seed",
-          "type": "integer"
-        },
-        "normalization_samples": {
-          "exclusiveMinimum": 0,
-          "title": "Normalization Samples",
-          "type": "integer"
-        },
-        "normalization_seed": {
-          "minimum": 0,
-          "title": "Normalization Seed",
-          "type": "integer"
-        },
         "wealth_lower": {
           "minimum": 0,
           "title": "Wealth Lower",
@@ -1152,19 +1164,21 @@
         },
         "evidence": {
           "$ref": "#/$defs/Evidence"
+        },
+        "format_version": {
+          "const": 2,
+          "title": "Format Version",
+          "type": "integer"
         }
       },
       "required": [
         "volatility",
-        "samples",
-        "seed",
-        "normalization_samples",
-        "normalization_seed",
         "wealth_lower",
         "wealth_upper",
         "wealth_exponent",
         "competition_bid",
-        "evidence"
+        "evidence",
+        "format_version"
       ],
       "title": "MarketParameters",
       "type": "object"
@@ -2068,6 +2082,73 @@
       "title": "RosterImport",
       "type": "object"
     },
+    "SampledMarketParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "volatility": {
+          "minimum": 0,
+          "title": "Volatility",
+          "type": "number"
+        },
+        "wealth_lower": {
+          "minimum": 0,
+          "title": "Wealth Lower",
+          "type": "number"
+        },
+        "wealth_upper": {
+          "minimum": 0,
+          "title": "Wealth Upper",
+          "type": "number"
+        },
+        "wealth_exponent": {
+          "minimum": 0,
+          "title": "Wealth Exponent",
+          "type": "number"
+        },
+        "competition_bid": {
+          "exclusiveMinimum": 0,
+          "title": "Competition Bid",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "samples": {
+          "exclusiveMinimum": 0,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "normalization_samples": {
+          "exclusiveMinimum": 0,
+          "title": "Normalization Samples",
+          "type": "integer"
+        },
+        "normalization_seed": {
+          "minimum": 0,
+          "title": "Normalization Seed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "volatility",
+        "wealth_lower",
+        "wealth_upper",
+        "wealth_exponent",
+        "competition_bid",
+        "evidence",
+        "samples",
+        "seed",
+        "normalization_samples",
+        "normalization_seed"
+      ],
+      "title": "SampledMarketParameters",
+      "type": "object"
+    },
     "Scoring": {
       "additionalProperties": false,
       "properties": {
@@ -2212,7 +2293,15 @@
           "$ref": "#/$defs/PreparationParameters"
         },
         "market": {
-          "$ref": "#/$defs/MarketParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
         },
         "solver": {
           "$ref": "#/$defs/SolverParameters"
@@ -2485,7 +2574,15 @@
           "$ref": "#/$defs/PreparationParameters"
         },
         "market": {
-          "$ref": "#/$defs/MarketParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
         },
         "solver": {
           "$ref": "#/$defs/SolverParameters"
@@ -2574,7 +2671,15 @@
           "$ref": "#/$defs/PreparationParameters"
         },
         "market": {
-          "$ref": "#/$defs/MarketParameters"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
         },
         "solver": {
           "$ref": "#/$defs/SolverParameters"
