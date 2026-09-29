@@ -1,5 +1,5 @@
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import CalculationModel, ThresholdCount
+from fba.contracts.config import AvailabilityModel, CalculationModel, ThresholdCount
 from fba.contracts.projection import (
     CalculationResult,
     OffenseInput,
@@ -59,7 +59,11 @@ def calculate_with_offense(
     # Replacement eligibility stays on the original GP scale, before availability calibration.
     ruler = fit_ruler(raw, axes, inputs.config.league, model.valuation)
     projections = calibrate_availability(
-        raw, inputs.calibration, next(iter(season_games)), model.valuation.result_decimals
+        raw,
+        inputs.calibration,
+        next(iter(season_games)),
+        model.valuation.result_decimals,
+        model.availability_tail if isinstance(model, AvailabilityModel) else None,
     )
     by_id = {p.id: p for p in inputs.players}
     adjusted: list[Projected] = []
@@ -100,7 +104,9 @@ def calculate_with_offense(
         )
     result = CalculationResult(
         format_version=1,
-        algorithm="team-offense-projection-v2"
+        algorithm="bounded-availability-projection-v1"
+        if isinstance(model, AvailabilityModel)
+        else "team-offense-projection-v2"
         if offense
         else "role-constrained-projection-v1"
         if allocations

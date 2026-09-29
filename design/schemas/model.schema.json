@@ -44,6 +44,93 @@
       "title": "AuctionModel",
       "type": "object"
     },
+    "AvailabilityModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 11,
+          "minimum": 11,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketParameters"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        },
+        "availability_tail": {
+          "$ref": "#/$defs/AvailabilityTail"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense",
+        "availability_tail"
+      ],
+      "title": "AvailabilityModel",
+      "type": "object"
+    },
+    "AvailabilityTail": {
+      "additionalProperties": false,
+      "properties": {
+        "lower_anchor_games": {
+          "exclusiveMinimum": 0,
+          "title": "Lower Anchor Games",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "lower_anchor_games",
+        "evidence"
+      ],
+      "title": "AvailabilityTail",
+      "type": "object"
+    },
     "CalculationModel": {
       "additionalProperties": false,
       "properties": {
@@ -1451,6 +1538,9 @@
     },
     {
       "$ref": "#/$defs/TeamOffenseModel"
+    },
+    {
+      "$ref": "#/$defs/AvailabilityModel"
     }
   ],
   "title": "ModelDocument"

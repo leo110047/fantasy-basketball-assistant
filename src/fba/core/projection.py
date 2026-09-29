@@ -1,7 +1,7 @@
 from math import fsum
 
 from fba.contracts.base import DataError
-from fba.contracts.config import ProjectionParameters
+from fba.contracts.config import AvailabilityTail, ProjectionParameters
 from fba.contracts.data import Calibration
 from fba.contracts.projection import Projected, ProjectionPlayer, ProjectionTeam
 
@@ -48,13 +48,17 @@ def validate_availability(player: ProjectionPlayer, games: float, team: Projecti
 
 
 def calibrate_availability(
-    players: tuple[Projected, ...], calibration: Calibration, season_games: int, decimals: int
+    players: tuple[Projected, ...],
+    calibration: Calibration,
+    season_games: int,
+    decimals: int,
+    tail: AvailabilityTail | None = None,
 ) -> tuple[Projected, ...]:
     return tuple(
         p.model_copy(
             update={
                 "expected_games": calibrated_games(
-                    p.expected_games, calibration, season_games, decimals
+                    p.expected_games, calibration, season_games, decimals, tail
                 )
             }
         )
@@ -74,12 +78,24 @@ def prior_weights(ids: tuple[str, ...], parameters: ProjectionParameters) -> tup
 
 
 def calibrated_games(
-    games: float, calibration: Calibration, season_games: int, decimals: int
+    games: float,
+    calibration: Calibration,
+    season_games: int,
+    decimals: int,
+    tail: AvailabilityTail | None = None,
 ) -> float:
+    games = round(games, decimals)
+    if tail is not None:
+        anchor = tail.lower_anchor_games
+        at_anchor = calibrated_games(anchor, calibration, season_games, decimals)
+        if anchor > season_games or at_anchor <= 0:
+            raise DataError("availability_tail: anchor exceeds season or has nonpositive fitted GP")
+        if games < anchor:
+            return round(games * at_anchor / anchor, decimals)
     return round(
         min(
             season_games,
-            max(0, calibration.intercept + calibration.slope * round(games, decimals)),
+            max(0, calibration.intercept + calibration.slope * games),
         ),
         decimals,
     )

@@ -1,7 +1,7 @@
 from math import fsum
 
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import TeamBudgetModel
+from fba.contracts.config import AvailabilityModel, TeamBudgetModel
 from fba.contracts.projection import (
     BudgetedInput,
     PlayerMinuteAllocation,
@@ -44,7 +44,13 @@ def member_minutes(
     if gp > full:
         raise DataError(f"team_minutes.{member.id}: expected games exceed full season")
     if expected is None:
-        expected = calibrated_games(gp, inputs.calibration, full, model.valuation.result_decimals)
+        expected = calibrated_games(
+            gp,
+            inputs.calibration,
+            full,
+            model.valuation.result_decimals,
+            model.availability_tail if isinstance(model, AvailabilityModel) else None,
+        )
     return expected, minutes
 
 

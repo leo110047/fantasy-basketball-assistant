@@ -4,6 +4,7 @@ from math import fsum
 from fba.contracts.base import ConfigError
 from fba.contracts.config import (
     AuctionModel,
+    AvailabilityModel,
     CalculationModel,
     ConfigBundle,
     HealthModel,
@@ -393,6 +394,11 @@ def validate_team_minutes(
     model: TeamBudgetModel, season: SeasonConfig, league: LeagueRules
 ) -> None:
     p = model.team_minutes
+    if (
+        isinstance(model, AvailabilityModel)
+        and model.availability_tail.evidence.as_of > season.snapshot_as_of
+    ):
+        raise ConfigError("model.availability_tail.evidence: after snapshot cutoff")
     if isinstance(model, TeamOffenseModel):
         validate_team_offense(model, season)
     if isinstance(model, ManagedPricingModel):

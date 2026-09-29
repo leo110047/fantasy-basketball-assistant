@@ -1,5 +1,5 @@
 {
-  "format_version": 10,
+  "format_version": 11,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -385,6 +385,15 @@
       "reference": "Minutes-screened previous-season team totals and configured possession proxy",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "Carry forward regulation-normalized FGA + 0.44 FTA + TO - OREB. Reserve historical average usage for unsupported team minutes; share excess usage reductions proportionally across all modeled players, preserve shooting percentages, and bound team AST by FGM. Source coverage is evidence metadata, not priority. Not official pace or a calibrated future team pace forecast."
+    }
+  },
+  "availability_tail": {
+    "lower_anchor_games": 40.0,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "2025-26 retrospective same-cohort GP-tail comparison, 2026-09-29",
+      "as_of": "2026-09-27T11:15:43.799266+00:00",
+      "reason": "Below 40 predicted games, interpolate from zero to the fitted GP at 40; above it retain OLS. The training tail is sparse. Same-cohort rank 0.76971786 to 0.76977989, median absolute dollar error 8.02991457 to 8.02903318, hits 105 unchanged. No future actuals used to override players. Evidence cutoff refers to frozen training inputs; this retrospective comparison was performed on 2026-09-29."
     }
   }
 }

@@ -430,6 +430,16 @@ class TeamOffenseModel(ManagedPricingModel):
     team_offense: TeamOffenseParameters
 
 
+class AvailabilityTail(Record):
+    lower_anchor_games: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    evidence: Evidence
+
+
+class AvailabilityModel(TeamOffenseModel):
+    format_version: Annotated[int, Field(ge=11, le=11)]
+    availability_tail: AvailabilityTail
+
+
 class ModelDocument(
     RootModel[
         ModelConfig
@@ -442,6 +452,7 @@ class ModelDocument(
         | HealthModel
         | ManagedPricingModel
         | TeamOffenseModel
+        | AvailabilityModel
     ]
 ):
     pass
@@ -473,5 +484,6 @@ class ValidatedConfig(Record):
         | HealthModel
         | ManagedPricingModel
         | TeamOffenseModel
+        | AvailabilityModel
     )
     refs: ConfigBundle
