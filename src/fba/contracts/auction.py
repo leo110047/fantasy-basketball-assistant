@@ -218,12 +218,27 @@ class FitStep(Record):
     block_maximum: Finite
 
 
+class FitCategory(Record):
+    id: Text
+    lead_share: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+    marginal_weight: Nonnegative
+
+
+class FitDiagnostics(Record):
+    categories: tuple[FitCategory, ...]
+    baseline_score: Finite
+    selected_score: Finite
+    compared_roster: tuple[Text, ...]
+    opponents: tuple[tuple[Text, ...], ...]
+
+
 class FitSummary(Record):
     anchor: tuple[Text, ...]
     selected_step: Nonnegative
     steps: tuple[FitStep, ...]
     samples: PositiveInt
     health_samples: PositiveInt
+    diagnostics: FitDiagnostics | None = None
 
 
 class FittedPlayer(Record):

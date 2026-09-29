@@ -7,6 +7,8 @@ from scipy.stats import norm, qmc
 
 from fba.contracts.auction import (
     AuctionPlayer,
+    FitCategory,
+    FitDiagnostics,
     FitStep,
     FitSummary,
     FittedPlayer,
@@ -69,6 +71,40 @@ def paired_project(
 def matrix_root(covariance: FloatArray) -> FloatArray:
     values, vectors = np.linalg.eigh((covariance + covariance.T) / 2)
     return (vectors * np.sqrt(np.maximum(values, 0))) @ vectors.T
+
+
+def margin_score(difference: FloatArray, bandwidth: float) -> FloatArray:
+    pivot = (difference.shape[-1] - 1) // 2
+    return expit(np.partition(difference, pivot, axis=-1)[..., pivot] / bandwidth)
+
+
+def category_diagnostics(
+    difference: FloatArray, ids: tuple[str, ...], parameters: FitParameters
+) -> tuple[FitCategory, ...]:
+    step = parameters.gradient_fraction
+    slopes: list[float] = []
+    for index in range(len(ids)):
+        plus, minus = difference.copy(), difference.copy()
+        plus[:, index] += step
+        minus[:, index] -= step
+        slopes.append(
+            float(
+                (
+                    margin_score(plus, parameters.bandwidth).mean()
+                    - margin_score(minus, parameters.bandwidth).mean()
+                )
+                / (2 * step)
+            )
+        )
+    total = sum(slopes)
+    return tuple(
+        FitCategory(
+            id=cid,
+            lead_share=float((difference[:, index] > 0).mean()),
+            marginal_weight=slope / total * len(ids) if total > 0 else 0.0,
+        )
+        for index, (cid, slope) in enumerate(zip(ids, slopes, strict=True))
+    )
 
 
 def opponent_rosters(
@@ -259,16 +295,13 @@ class FittedUtility:
         covariance = result.covariance.mean(axis=0) + np.cov(result.mean, rowvar=False, bias=True)
         return mean, self.draws @ matrix_root(covariance).T
 
-    def score(self, mean: FloatArray, noise: FloatArray) -> float:
-        difference = (
+    def difference(self, mean: FloatArray, noise: FloatArray) -> FloatArray:
+        return (
             categories(mean + noise, self.league, self.manager.stat_ids) - self.opponent
         ) / self.scale
-        pivot = (len(self.league.categories) - 1) // 2
-        return float(
-            expit(
-                np.partition(difference, pivot, axis=-1)[..., pivot] / self.parameters.bandwidth
-            ).mean()
-        )
+
+    def score(self, mean: FloatArray, noise: FloatArray) -> float:
+        return float(margin_score(self.difference(mean, noise), self.parameters.bandwidth).mean())
 
     def block_scores(self, roster: tuple[int, ...], noise: FloatArray) -> FloatArray:
         boxes = self.project(roster).boxes
@@ -282,10 +315,7 @@ class FittedUtility:
             categories(means[:, None] + noise[None], self.league, self.manager.stat_ids)
             - self.opponent_blocks
         ) / self.scale
-        pivot = (len(self.league.categories) - 1) // 2
-        return expit(
-            np.partition(difference, pivot, axis=-1)[..., pivot] / self.parameters.bandwidth
-        ).mean(axis=1)
+        return margin_score(difference, self.parameters.bandwidth).mean(axis=1)
 
     def gradient(self, mean: FloatArray, noise: FloatArray) -> FloatArray:
         step = np.maximum(
@@ -361,6 +391,9 @@ class FittedUtility:
         mean, noise = self.context(self.anchor)
         gradient = self.gradient(mean, noise)
         score = self.score(mean, noise)
+        baseline_score = score
+        selected_difference = self.difference(mean, noise)
+        selected_opponents = self.opponent_rosters
         block_scores = self.block_scores(self.anchor, noise)
         feature = self.marginals(base, gradient, mean, runner)
         utility = feature @ gradient
@@ -422,6 +455,8 @@ class FittedUtility:
                 )
             )
             if accepted:
+                selected_difference = self.difference(proposed_mean, proposed_noise)
+                selected_opponents = self.opponent_rosters
                 score, block_scores, best, selected, alpha = (
                     proposed_score,
                     blocks,
@@ -436,6 +471,19 @@ class FittedUtility:
             steps=tuple(steps),
             samples=len(self.draws),
             health_samples=self.parameters.health_samples,
+            diagnostics=FitDiagnostics(
+                categories=category_diagnostics(
+                    selected_difference,
+                    tuple(c.id for c in self.league.categories),
+                    self.parameters,
+                ),
+                baseline_score=baseline_score,
+                selected_score=score,
+                compared_roster=best.players,
+                opponents=tuple(
+                    tuple(self.manager.ids[i] for i in roster) for roster in selected_opponents
+                ),
+            ),
         )
         if self.pricing is not None:
             summary = ManagedFitSummary(

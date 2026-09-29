@@ -159,7 +159,33 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
 function text(element, value) { if (element.textContent !== value) element.textContent = value; }
 
 
+function renderFitExplanation(fit) {
+  const target = el("fitExplanation"), wasOpen = target.firstElementChild?.open;
+  target.replaceChildren();
+  if (!fit) return;
+  const detail = node("details", ""), data = fit.diagnostics;
+  detail.open = Boolean(wasOpen);
+  detail.append(node("summary", "陣容調整的依據"));
+  detail.append(node("p", fit.selected_step === 0 ? "本輪調整未通過改善檢查，停損價保留類別加總估值。" : "停損價使用通過檢查的局部管理邊際估值；步長越大，管理估值的占比越高。"));
+  detail.append(node("p", `採用步長 ${fit.selected_step} · 數據樣本 ${fit.samples} · 健康路徑 ${fit.health_samples}。中央指標與每組健康樣本都須通過檢查。${fit.method === "paired_managed_marginal" ? "相同陣容允許持平。" : ""}`, "muted"));
+  if (data) {
+    detail.append(node("p", `平滑模型指標 ${data.baseline_score.toFixed(4)} → ${data.selected_score.toFixed(4)}`));
+    const table = node("table", ""), head = node("tr", ""), body = node("tbody", "");
+    for (const title of ["類別", "模擬領先份額", "邊際權重"]) head.append(node("th", title));
+    const thead = node("thead", ""); thead.append(head); table.append(thead);
+    for (const category of data.categories) {
+      const row = node("tr", "");
+      for (const value of [category.id, `${(category.lead_share*100).toFixed(1)}%`, quantity(category.marginal_weight)]) row.append(node("td", value));
+      body.append(row);
+    }
+    table.append(body); detail.append(table);
+    detail.append(node("p", "領先份額比較選中陣容與假設對手，平手不算領先；權重衡量小幅改善此類別的局部影響，有訊號時平均為 1。兩者都不是實戰勝率，未涵蓋全部估計誤差。", "muted"));
+  } else detail.append(node("p", "這份結果未含類別明細。", "muted"));
+  target.append(detail);
+}
+
 export function renderPlan(result, players, market, nominate, unavailable) {
+  renderFitExplanation(result?.fit);
   el("plan").replaceChildren(); el("nominations").replaceChildren();
   if (!result) { el("planNote").textContent = `${unavailable}；完成後顯示目前狀態的方案。`; return; }
   if (result.plan.reason) { el("planNote").textContent = `無合法方案：${result.plan.reason}`; return; }
