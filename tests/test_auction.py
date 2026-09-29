@@ -232,7 +232,9 @@ def test_shuffle_state_validation_and_buy_skip():
     league = c.league.model_copy(
         update={"teams": 2, "starter_slots": c.league.starter_slots[:1], "bench_slots": 1}
     )
-    inp = inputs_for(tuple(player(i, utility=float(i)) for i in range(6)), league)
+    # A floor pool keeps this identity/comparison test affordable. Equal positive quotes
+    # no longer create artificially cheap players by splitting a tie at the roster cutoff.
+    inp = inputs_for(tuple(player(i, utility=float(i), quote=0.0) for i in range(6)), league)
     s = state(inp)
     original = calculate_auction(inp, s, "0" * 64, "3" * 64)
     shuffled = calculate_auction(

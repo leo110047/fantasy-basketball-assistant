@@ -181,9 +181,9 @@
     "competition_bid": 3,
     "evidence": {
       "kind": "Assumption",
-      "reference": "Locked auction-desk engine.py conditional market and exact portfolio model",
+      "reference": "Auction market constraints: floor-aware cash scaling, bounded quote normalization, identity-independent bidder sampling",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Preserve seeded lognormal willingness and paired conditional acquisition. The market model is uncalibrated; price ties may require first nomination."
+      "reason": "Assumption: lognormal willingness is uncalibrated. Scale remaining price levels using remaining cash including minimum bids; keep equal quotes equal at the roster cutoff and cap opening anchors at a legal individual bid. Beating an above-floor rival requires one increment independent of own budget; floor ties assume first nomination. Assign seeded random coordinates by bidder budget, slots and positions, not team labels."
     }
   },
   "solver": {
