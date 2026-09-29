@@ -413,6 +413,23 @@ class ManagedPricingModel(HealthModel):
     pricing: PricingParameters
 
 
+class TeamOffenseParameters(Record):
+    used_terms: tuple[Term, ...]
+    second_chance_stat: Text
+    scaled_stats: tuple[Text, ...]
+    assist_stat: Text
+    made_stat: Text
+    historical_minimum_games: PositiveInt
+    historical_overtime_minutes: PositiveInt
+    historical_minute_tolerance: Nonnegative
+    evidence: Evidence
+
+
+class TeamOffenseModel(ManagedPricingModel):
+    format_version: Annotated[int, Field(ge=10, le=10)]
+    team_offense: TeamOffenseParameters
+
+
 class ModelDocument(
     RootModel[
         ModelConfig
@@ -424,6 +441,7 @@ class ModelDocument(
         | TeamBudgetModel
         | HealthModel
         | ManagedPricingModel
+        | TeamOffenseModel
     ]
 ):
     pass
@@ -454,5 +472,6 @@ class ValidatedConfig(Record):
         | TeamBudgetModel
         | HealthModel
         | ManagedPricingModel
+        | TeamOffenseModel
     )
     refs: ConfigBundle

@@ -1,5 +1,5 @@
 {
-  "format_version": 9,
+  "format_version": 10,
   "calibration": {
     "value": "ordinary_least_squares",
     "evidence": {
@@ -347,6 +347,44 @@
       "reference": "Shared daily management kernel; configured league acquisition limits and periods",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
       "reason": "One managed streaming seat and permanent upgrades compete with injury replacement for configured acquisition capacity and shared free agents. Local paired marginal approximation, not an exact counterfactual championship probability."
+    }
+  },
+  "team_offense": {
+    "used_terms": [
+      {
+        "stat_id": "FGA",
+        "coefficient": 1
+      },
+      {
+        "stat_id": "FTA",
+        "coefficient": 0.44
+      },
+      {
+        "stat_id": "TO",
+        "coefficient": 1
+      }
+    ],
+    "second_chance_stat": "OREB",
+    "scaled_stats": [
+      "FGM",
+      "FGA",
+      "FTM",
+      "FTA",
+      "PTS",
+      "3PM",
+      "AST",
+      "TO"
+    ],
+    "assist_stat": "AST",
+    "made_stat": "FGM",
+    "historical_minimum_games": 50,
+    "historical_overtime_minutes": 5,
+    "historical_minute_tolerance": 5,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "Minutes-screened previous-season team totals and configured possession proxy",
+      "as_of": "2026-09-27T12:51:24.362612+00:00",
+      "reason": "Carry forward regulation-normalized FGA + 0.44 FTA + TO - OREB. Reserve historical average usage for unsupported team minutes; allocate remaining usage by prior coverage, preserve shooting percentages, and bound team AST by FGM. Not official pace or a calibrated future team pace forecast."
     }
   }
 }

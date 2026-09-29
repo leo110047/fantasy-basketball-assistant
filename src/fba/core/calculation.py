@@ -2,18 +2,27 @@ from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import CalculationModel, ThresholdCount
 from fba.contracts.projection import (
     CalculationResult,
+    OffenseInput,
     PreparedInput,
     PreparedPlayer,
     ProductionInput,
     Projected,
+    TeamOffenseAllocation,
 )
 from fba.core.distribution import moments
 from fba.core.projection import calibrate_availability, prior, validate_availability
 from fba.core.team_minutes import constrain_participation, minute_allocations, validate_minutes
+from fba.core.team_offense import constrain_offense, offense_allocations, validate_offense
 from fba.core.valuation import fit_ruler, value
 
 
 def calculate(inputs: ProductionInput, input_sha256: str) -> CalculationResult:
+    return calculate_with_offense(inputs, input_sha256)[0]
+
+
+def calculate_with_offense(
+    inputs: ProductionInput, input_sha256: str
+) -> tuple[CalculationResult, tuple[TeamOffenseAllocation, ...]]:
     model = inputs.config.model
     if not isinstance(model, CalculationModel):
         raise ConfigError(
@@ -70,9 +79,30 @@ def calculate(inputs: ProductionInput, input_sha256: str) -> CalculationResult:
             raise DataError(f"projection.{player.id}: calibrated games exceed explicit cap")
     projections = constrain_participation(projections, allocations, model.valuation.result_decimals)
     validate_minutes(projections, inputs, allocations)
-    return CalculationResult(
+    offense = offense_allocations(inputs, projections, allocations)
+    if isinstance(inputs, OffenseInput):
+        projections = constrain_offense(projections, inputs, offense, threshold)
+        validate_offense(projections, inputs, offense)
+        adjusted_stats = {p.id: p for p in projections}
+        ruler = fit_ruler(
+            tuple(
+                p.model_copy(
+                    update={
+                        "stats": adjusted_stats[p.id].stats,
+                        "covariance": adjusted_stats[p.id].covariance,
+                    }
+                )
+                for p in raw
+            ),
+            axes,
+            inputs.config.league,
+            model.valuation,
+        )
+    result = CalculationResult(
         format_version=1,
-        algorithm="role-constrained-projection-v1"
+        algorithm="team-offense-projection-v1"
+        if offense
+        else "role-constrained-projection-v1"
         if allocations
         else "calibrated-prior-projection-v3",
         input_sha256=input_sha256,
@@ -88,6 +118,7 @@ def calculate(inputs: ProductionInput, input_sha256: str) -> CalculationResult:
             ruler,
         ),
     )
+    return result, offense
 
 
 def project_population(

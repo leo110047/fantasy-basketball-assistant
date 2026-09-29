@@ -16,6 +16,7 @@ from fba.contracts.projection import (
     CalibratedData,
     EvaluationInput,
     FrozenCalculationInput,
+    OffenseInput,
     ProductionInput,
 )
 from fba.core.calculation import calculate
@@ -75,6 +76,14 @@ def verify_calculation_input(
         snapshot = load_snapshot(snapshot_root)
         if team_members(snapshot_root, snapshot, inputs.config) != inputs.team_members:
             raise DataError("team_minutes: population differs from frozen sources")
+        if isinstance(inputs, OffenseInput):
+            from fba.adapters.team_offense import offense_sources
+
+            outside, baselines = offense_sources(
+                snapshot_root, snapshot, inputs.config, inputs.team_members
+            )
+            if outside != inputs.outside_priors or baselines != inputs.offense_baselines:
+                raise DataError("team_offense: priors or baselines differ from frozen sources")
 
 
 def validate_calibration_snapshot(inputs: CalibratedData, root: Path) -> None:

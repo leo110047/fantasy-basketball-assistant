@@ -2415,6 +2415,136 @@
       "title": "TeamMinuteParameters",
       "type": "object"
     },
+    "TeamOffenseModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 10,
+          "minimum": 10,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "$ref": "#/$defs/MarketParameters"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense"
+      ],
+      "title": "TeamOffenseModel",
+      "type": "object"
+    },
+    "TeamOffenseParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "used_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Used Terms",
+          "type": "array"
+        },
+        "second_chance_stat": {
+          "minLength": 1,
+          "title": "Second Chance Stat",
+          "type": "string"
+        },
+        "scaled_stats": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Scaled Stats",
+          "type": "array"
+        },
+        "assist_stat": {
+          "minLength": 1,
+          "title": "Assist Stat",
+          "type": "string"
+        },
+        "made_stat": {
+          "minLength": 1,
+          "title": "Made Stat",
+          "type": "string"
+        },
+        "historical_minimum_games": {
+          "exclusiveMinimum": 0,
+          "title": "Historical Minimum Games",
+          "type": "integer"
+        },
+        "historical_overtime_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Historical Overtime Minutes",
+          "type": "integer"
+        },
+        "historical_minute_tolerance": {
+          "minimum": 0,
+          "title": "Historical Minute Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "used_terms",
+        "second_chance_stat",
+        "scaled_stats",
+        "assist_stat",
+        "made_stat",
+        "historical_minimum_games",
+        "historical_overtime_minutes",
+        "historical_minute_tolerance",
+        "evidence"
+      ],
+      "title": "TeamOffenseParameters",
+      "type": "object"
+    },
     "Term": {
       "additionalProperties": false,
       "properties": {
@@ -2554,6 +2684,9 @@
             },
             {
               "$ref": "#/$defs/ManagedPricingModel"
+            },
+            {
+              "$ref": "#/$defs/TeamOffenseModel"
             }
           ],
           "title": "Model"

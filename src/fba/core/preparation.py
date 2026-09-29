@@ -10,6 +10,7 @@ from fba.contracts.data import (
     Forecast,
     Multiply,
     Player,
+    PlayerGame,
     Snapshot,
 )
 from fba.contracts.projection import (
@@ -33,10 +34,16 @@ def position_pool(player: Player, parameters: PreparationParameters) -> str:
 def history_samples(
     snapshot: Snapshot, axes: tuple[str, ...]
 ) -> tuple[dict[str, tuple[tuple[float, ...], ...]], tuple[PreparationNote, ...]]:
+    return game_samples(snapshot.history, axes)
+
+
+def game_samples(
+    games: tuple[PlayerGame, ...], axes: tuple[str, ...]
+) -> tuple[dict[str, tuple[tuple[float, ...], ...]], tuple[PreparationNote, ...]]:
     grouped: dict[str, list[tuple[float, ...]]] = defaultdict(list)
     seen: set[tuple[str, str]] = set()
     notes: list[PreparationNote] = []
-    for game in sorted(snapshot.history, key=lambda g: (g.player_id, g.game_id)):
+    for game in sorted(games, key=lambda g: (g.player_id, g.game_id)):
         key = (game.player_id, game.game_id)
         values = {s.id: s.value for s in game.stats}
         if key in seen or len(values) != len(game.stats):

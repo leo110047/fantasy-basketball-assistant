@@ -10,11 +10,12 @@ from fba.adapters.config import load_config, load_parameters
 from fba.adapters.migration import frozen_calibration
 from fba.adapters.snapshots import artifact, publish_bundle
 from fba.adapters.team_minutes import team_members
+from fba.adapters.team_offense import offense_sources
 from fba.contracts.base import ConfigError, DataError
-from fba.contracts.config import PreparationModel, TeamBudgetModel
+from fba.contracts.config import PreparationModel, TeamBudgetModel, TeamOffenseModel
 from fba.contracts.data import ManualAdjustments, ReturnAt
-from fba.contracts.projection import BudgetedInput, CalculationResult, PreparedInput
-from fba.core.calculation import calculate
+from fba.contracts.projection import BudgetedInput, CalculationResult, OffenseInput, PreparedInput
+from fba.core.calculation import calculate_with_offense
 from fba.core.config import validate_config
 from fba.core.preparation import prepare
 from fba.core.team_minutes import minute_allocations
@@ -86,6 +87,17 @@ def projection_input(root: Path, model_path: Path) -> tuple[PreparedInput, dict[
                 "team_members": team_members(root, snapshot, config),
             }
         )
+    if isinstance(model, TeamOffenseModel):
+        assert isinstance(inputs, BudgetedInput)
+        outside, baselines = offense_sources(root, snapshot, config, inputs.team_members)
+        inputs = OffenseInput.model_validate(
+            {
+                **inputs.model_dump(),
+                "format_version": 6,
+                "outside_priors": outside,
+                "offense_baselines": baselines,
+            }
+        )
     return inputs, files
 
 
@@ -146,7 +158,18 @@ def project(root: Path, model_path: Path, output: Path, previous: Path | None) -
                 "projection-input",
             )
             verify_calculation_input(inputs, bundle / "projection-input.json")
-            result = calculate(inputs, digest(canonical(inputs)))
+            result, offense = calculate_with_offense(inputs, digest(canonical(inputs)))
+            if offense:
+                (bundle / "team-offense.json").write_text(
+                    json.dumps(
+                        {
+                            "input_sha256": result.input_sha256,
+                            "allocations": [a.model_dump(mode="json") for a in offense],
+                        },
+                        indent=2,
+                    )
+                    + "\n"
+                )
             if isinstance(inputs, BudgetedInput):
                 (bundle / "team-minutes.json").write_text(
                     json.dumps(

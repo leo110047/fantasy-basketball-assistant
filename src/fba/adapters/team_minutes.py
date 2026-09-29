@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fba.adapters.acquisition import Acquired
 from fba.adapters.codec import read_bytes
-from fba.adapters.sources import parse_sources
+from fba.adapters.sources import SourceData, parse_sources
 from fba.contracts.base import DataError
 from fba.contracts.config import PreparationModel, ValidatedConfig
 from fba.contracts.data import Forecast, PlayerGame, Snapshot
@@ -54,9 +54,7 @@ def minute_estimates(
     return tuple(estimates)
 
 
-def team_members(root: Path, snapshot: Snapshot, config: ValidatedConfig) -> tuple[TeamMember, ...]:
-    model = config.model
-    assert isinstance(model, PreparationModel)
+def team_observations(root: Path, snapshot: Snapshot, config: ValidatedConfig) -> SourceData:
     sources: list[Acquired] = []
     for source in config.season.sources:
         matches = [
@@ -77,6 +75,14 @@ def team_members(root: Path, snapshot: Snapshot, config: ValidatedConfig) -> tup
         raise DataError("team_minutes: duplicate forecasts")
     if len({(g.player_id, g.game_id) for g in data.history}) != len(data.history):
         raise DataError("team_minutes: duplicate historical game")
+    return data
+
+
+def team_members(root: Path, snapshot: Snapshot, config: ValidatedConfig) -> tuple[TeamMember, ...]:
+    model = config.model
+    assert isinstance(model, PreparationModel)
+    data = team_observations(root, snapshot, config)
+    forecast = {f.player_id: f for f in data.current}
     logs: dict[str, list[PlayerGame]] = defaultdict(list)
     for game in data.history:
         logs[game.player_id].append(game)

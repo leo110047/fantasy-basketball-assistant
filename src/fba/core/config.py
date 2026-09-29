@@ -17,6 +17,7 @@ from fba.contracts.config import (
     SeasonConfig,
     SeasonModel,
     TeamBudgetModel,
+    TeamOffenseModel,
     ThresholdCount,
     ValidatedConfig,
 )
@@ -392,6 +393,8 @@ def validate_team_minutes(
     model: TeamBudgetModel, season: SeasonConfig, league: LeagueRules
 ) -> None:
     p = model.team_minutes
+    if isinstance(model, TeamOffenseModel):
+        validate_team_offense(model, season)
     if isinstance(model, ManagedPricingModel):
         if model.pricing.streaming_slots > len(league.starter_slots) + league.bench_slots:
             raise ConfigError("model.pricing.streaming_slots: exceeds roster capacity")
@@ -405,3 +408,41 @@ def validate_team_minutes(
         raise ConfigError("model.team_minutes: reserve leaves no minutes for modeled players")
     if p.evidence.as_of > season.snapshot_as_of:
         raise ConfigError("model.team_minutes.evidence: after snapshot cutoff")
+
+
+def validate_team_offense(model: TeamOffenseModel, season: SeasonConfig) -> None:
+    p = model.team_offense
+    axes, scaled = set(model.projection.stat_ids), set(p.scaled_stats)
+    used = tuple(t.stat_id for t in p.used_terms)
+    unique(p.scaled_stats, "model.team_offense.scaled_stats")
+    unique(used, "model.team_offense.used_terms")
+    require_members(
+        (*used, *p.scaled_stats, p.second_chance_stat, p.assist_stat, p.made_stat),
+        axes,
+        "model.team_offense",
+    )
+    if not used or any(t.coefficient <= 0 for t in p.used_terms) or not set(used) <= scaled:
+        raise ConfigError("model.team_offense.used_terms: positive scalable terms required")
+    if p.second_chance_stat in scaled or p.assist_stat in used:
+        raise ConfigError("model.team_offense: rebounds and assists cannot consume possessions")
+    required = {model.projection.scoring_stat, p.assist_stat, p.made_stat}
+    required.update(t.stat_id for t in model.projection.scoring_terms)
+    if p.assist_stat in (
+        model.projection.scoring_stat,
+        p.made_stat,
+        *(t.stat_id for t in model.projection.scoring_terms),
+        *(s for pair in model.projection.nested_counts for s in (pair.child, pair.parent)),
+    ):
+        raise ConfigError("model.team_offense.assist_stat: requires an independent count")
+    if not required <= scaled:
+        raise ConfigError(
+            "model.team_offense.scaled_stats: scoring dependencies must scale together"
+        )
+    for pair in model.projection.nested_counts:
+        if (pair.child in scaled) != (pair.parent in scaled):
+            raise ConfigError("model.team_offense.scaled_stats: nested counts must scale together")
+    overtime = p.historical_overtime_minutes * model.team_minutes.players_on_court
+    if p.historical_minute_tolerance >= overtime / 2:
+        raise ConfigError("model.team_offense.historical_minute_tolerance: ambiguous overtime")
+    if p.evidence.as_of > season.snapshot_as_of:
+        raise ConfigError("model.team_offense.evidence: after snapshot cutoff")

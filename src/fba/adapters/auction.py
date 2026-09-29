@@ -146,7 +146,14 @@ def prepare_auction(projection: Path, model_path: Path, output: Path) -> Path:
     if not isinstance(model, AuctionModel):
         raise ConfigError("model: auction requires format_version 5")
     # Auction settings cannot silently change the projection represented by these values.
-    for name in ("calibration", "projection", "valuation", "preparation", "team_minutes"):
+    for name in (
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "team_minutes",
+        "team_offense",
+    ):
         if getattr(model, name, None) != getattr(inputs.config.model, name, None):
             raise ConfigError(f"model.{name}: differs from frozen projection; rebuild it first")
     config = validate_config(

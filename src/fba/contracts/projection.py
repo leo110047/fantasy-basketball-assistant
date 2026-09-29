@@ -125,6 +125,51 @@ class BudgetedInput(PreparedInput):
     team_members: tuple[TeamMember, ...]
 
 
+class TeamBoxPrior(Record):
+    member_id: Text
+    priors: tuple[Prior, ...]
+    source_ids: tuple[Text, ...]
+    notes: tuple[PreparationNote, ...]
+
+
+class TeamOffenseBaseline(Record):
+    team_id: Text
+    stats: tuple[Nonnegative, ...]
+    game_ids: tuple[Text, ...]
+    excluded_game_ids: tuple[Text, ...]
+    source_ids: tuple[Text, ...]
+
+
+class OffenseInput(BudgetedInput):
+    format_version: Annotated[int, Field(ge=6, le=6)]
+    outside_priors: tuple[TeamBoxPrior, ...]
+    offense_baselines: tuple[TeamOffenseBaseline, ...]
+
+
+class PlayerOffenseAllocation(Record):
+    member_id: Text
+    catalog_id: Text | None
+    expected_games: Nonnegative
+    minutes: Nonnegative
+    prior_coverage: Nonnegative
+    before: tuple[Nonnegative, ...]
+    after: tuple[Nonnegative, ...]
+    usage_factor: Nonnegative
+    assist_factor: Nonnegative
+
+
+class TeamOffenseAllocation(Record):
+    team_id: Text
+    baseline_games: PositiveInt
+    unmodeled_ids: tuple[Text, ...]
+    residual_minutes: Nonnegative
+    possession_budget: Nonnegative
+    reserved_possessions: Nonnegative
+    before: Nonnegative
+    after: Nonnegative
+    allocations: tuple[PlayerOffenseAllocation, ...]
+
+
 class PlayerMinuteAllocation(Record):
     member_id: Text
     catalog_id: Text | None
@@ -146,7 +191,7 @@ class TeamMinuteAllocation(Record):
     reserve: Nonnegative
 
 
-type ProductionInput = CalibratedInput | PreparedInput | BudgetedInput
+type ProductionInput = CalibratedInput | PreparedInput | BudgetedInput | OffenseInput
 
 
 class Projected(Record):
