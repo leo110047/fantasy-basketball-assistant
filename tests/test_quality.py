@@ -10,6 +10,9 @@ from fba.contracts.auction import DraftState
 from fba.contracts.backtest import ReplayDocument
 from fba.contracts.config import LeagueRules, ModelDocument, SeasonConfig
 from fba.contracts.data import IdentityMap, ManualAdjustments
+from fba.contracts.inseason import InseasonLeague, InseasonParameters, PlayerSnapshot
+from fba.contracts.inseason_backtest import BacktestStudy
+from fba.contracts.inseason_replay import PolicyReplayStudy
 
 
 def root():
@@ -26,6 +29,11 @@ def test_runtime_types_own_schemas():
         ("model", ModelDocument),
         ("identity-map", IdentityMap),
         ("manual-adjustments", ManualAdjustments),
+        ("inseason-league", InseasonLeague),
+        ("inseason-parameters", InseasonParameters),
+        ("inseason-players", PlayerSnapshot),
+        ("inseason-backtest", BacktestStudy),
+        ("inseason-replay", PolicyReplayStudy),
     )
     assert {p.name for p in (root() / "design/schemas").glob("*.json")} == {
         f"{name}.schema.json" for name, _ in schemas
@@ -58,6 +66,7 @@ def test_non_python_runtime_and_test_assets_have_entrypoint_references():
     assert set(p.name for p in (root() / "scripts").iterdir() if p.is_file()) == {
         "check",
         "verify.py",
+        "package_inseason.py",
     }
     assert "scripts/check" in (root() / ".github/workflows/check.yml").read_text()
     assert "scripts/verify.py" in (root() / "scripts/check").read_text()
@@ -67,10 +76,12 @@ def test_non_python_runtime_and_test_assets_have_entrypoint_references():
 def test_core_dependency_direction_and_no_io_or_mutable_globals():
     allowed = {
         "collections",
+        "collections.abc",  # Pure callback contracts used by the exact lineup solver.
         "datetime",
         "fractions",
         "typing",
         "fba.contracts",
+        "fba.formulas",  # Registry resolves implementations inside the same pure package.
         "math",
         "itertools",
         "numpy",
@@ -81,12 +92,17 @@ def test_core_dependency_direction_and_no_io_or_mutable_globals():
         "scipy.stats",
     }
     forbidden_calls = {"open", "eval", "exec", "__import__", "print", "input"}
-    for path in (root() / "src/fba/core").glob("*.py"):
+    paths = [*(root() / "src/fba/core").glob("*.py"), *(root() / "src/fba/formulas").glob("*.py")]
+    for path in paths:
         tree = ast.parse(path.read_text())
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
                 assert node.module in allowed or node.module.startswith(
-                    ("fba.contracts.", "fba.core.")
+                    (
+                        "fba.contracts.",
+                        "fba.core.",
+                        *(("fba.formulas.",) if path.parent.name == "formulas" else ()),
+                    )
                 ), path
             if isinstance(node, ast.Import):
                 assert all(n.name in allowed for n in node.names), path
@@ -120,6 +136,40 @@ def test_core_contains_no_league_literals():
                 if isinstance(node.value, int):
                     # Language/domain cardinalities; no league budget, team count or roster size.
                     assert node.value in {0, 1, 2}, (path, node.lineno, node.value)
+
+
+def test_calculation_workflows_do_not_embed_league_category_or_season_facts():
+    forbidden = {
+        "PG",
+        "SG",
+        "SF",
+        "PF",
+        "C",
+        "UTIL",
+        "FG%",
+        "FT%",
+        "A/T",
+        "OREB",
+        "DD",
+        "PTS",
+        "REB",
+        "AST",
+        "STL",
+        "BLK",
+        "TO",
+    }
+    # Provider wire names belong in adapters/catalogs; test examples and schemas
+    # describe inputs. Neither is an exception for a calculation or workflow.
+    for area in ("core", "formulas", "auction", "projection", "inseason"):
+        for path in (root() / "src/fba" / area).glob("*.py"):
+            for node in ast.walk(ast.parse(path.read_text())):
+                if not isinstance(node, ast.Constant):
+                    continue
+                if isinstance(node.value, str):
+                    assert node.value not in forbidden, (path, node.lineno, node.value)
+                if isinstance(node.value, int):
+                    assert node.value not in {14, 82, 200}, (path, node.lineno, node.value)
+                    assert not 2000 <= node.value <= 2100, (path, node.lineno, node.value)
 
 
 def test_every_runtime_module_is_import_reachable_from_cli():

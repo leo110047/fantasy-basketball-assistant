@@ -1,0 +1,41 @@
+name: Inseason desktop
+env:
+  PYTHONUTF8: "1"
+  FBA_PORTABILITY_REPORT: reports/portability.json
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  portable:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+        with:
+          version: "0.9.18"
+          python-version: "3.13.7"
+          enable-cache: false
+      - run: uv sync --locked
+      - name: Complete offline verification on every platform
+        run: uv run --locked python scripts/verify.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: portability-${{ runner.os }}
+          path: reports/portability.json
+          if-no-files-found: error
+      - name: Build self-contained installer
+        if: runner.os != 'Linux'
+        run: uv run --locked python scripts/package_inseason.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: runner.os != 'Linux'
+        with:
+          name: inseason-${{ runner.os }}
+          path: |
+            dist/inseason/*.dmg
+            dist/inseason/*-Windows.exe
+          if-no-files-found: error

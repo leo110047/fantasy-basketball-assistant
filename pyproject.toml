@@ -6,10 +6,15 @@ dependencies = [
     "numpy==2.3.5",
     "scipy==1.18.1",
     "pydantic>=2.12,<3",
+    "keyring>=25.7.0",
+    "platformdirs>=4.12.1",
+    "portalocker>=4.4.0",
+    "tzdata>=2026.4",
 ]
 
 [project.scripts]
 fba = "fba.apps.cli:main"
+fba-inseason = "fba.apps.inseason.launcher:main"
 
 [build-system]
 requires = ["hatchling==1.32.4"]
@@ -23,7 +28,9 @@ dev = [
     "basedpyright",
     "deptry",
     "hypothesis",
+    "import-linter>=2.15",
     "lizard==1.21.2",
+    "pyinstaller>=6.22.3",
     "pytest",
     "ruff",
     "vulture",
@@ -50,3 +57,47 @@ pythonpath = ["src"]
 
 [tool.deptry]
 known_first_party = ["fba"]
+
+[tool.deptry.per_rule_ignores]
+# zoneinfo loads tzdata as a resource fallback on Windows, without an import.
+DEP002 = ["tzdata"]
+
+[tool.importlinter]
+root_package = "fba"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Applications and business workflows are independent"
+type = "independence"
+modules = ["fba.inseason", "fba.auction", "fba.projection"]
+
+[[tool.importlinter.contracts]]
+name = "Inseason UI does not import the auction desk"
+type = "forbidden"
+source_modules = ["fba.apps.inseason"]
+forbidden_modules = ["fba.apps.desk", "fba.apps.server", "fba.apps.auction"]
+
+[[tool.importlinter.contracts]]
+name = "Shared layers cannot depend on application workflows"
+type = "forbidden"
+source_modules = ["fba.core", "fba.formulas", "fba.data", "fba.runtime", "fba.contracts"]
+forbidden_modules = ["fba.apps", "fba.inseason", "fba.auction", "fba.projection", "fba.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "Core contracts and data do not depend on formulas"
+type = "forbidden"
+source_modules = ["fba.core", "fba.contracts", "fba.data"]
+forbidden_modules = ["fba.formulas"]
+
+[[tool.importlinter.contracts]]
+name = "Pure layers cannot access local or remote IO"
+type = "forbidden"
+source_modules = ["fba.core", "fba.formulas"]
+forbidden_modules = ["fba.data", "fba.runtime", "pathlib", "os", "http", "urllib", "socket", "subprocess", "requests", "keyring"]
+
+
+[[tool.importlinter.contracts]]
+name = "The auction desk does not import the inseason UI"
+type = "forbidden"
+source_modules = ["fba.apps.desk", "fba.apps.server", "fba.apps.auction"]
+forbidden_modules = ["fba.apps.inseason"]
