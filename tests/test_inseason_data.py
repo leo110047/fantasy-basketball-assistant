@@ -237,8 +237,11 @@ def test_previous_season_does_not_enter_current_blend():
     assert before == after
 
 
+@pytest.mark.parametrize("steals_label", ["ST", "STL"])
 @pytest.mark.parametrize("at", ["2026-10-13T08:00:00+00:00", "2026-10-15T01:00:00+00:00"])
-def test_yahoo_xml_normalization_covers_settings_rosters_scores_and_unmapped_free_agents(at):
+def test_yahoo_xml_normalization_covers_settings_rosters_scores_and_unmapped_free_agents(
+    at, steals_label
+):
     from pathlib import Path
 
     from fba.contracts.yahoo import DiscoveredLeague, IdentityMappings, YahooCatalog
@@ -247,6 +250,9 @@ def test_yahoo_xml_normalization_covers_settings_rosters_scores_and_unmapped_fre
 
     raw = json.loads((Path(__file__).parent / "fixtures/yahoo-example.json").read_bytes())
     assert "not a recorded Yahoo response" in raw["kind"]
+    raw["documents"]["stat-catalog"] = raw["documents"]["stat-catalog"].replace(
+        "<display_name>STL</display_name>", f"<display_name>{steals_label}</display_name>"
+    )
     catalog = YahooCatalog.model_validate_json((DEFAULTS / "yahoo-catalog.json").read_bytes())
     bundle = SyncBundle(
         league_key="fixture.l.1",
@@ -275,4 +281,6 @@ def test_yahoo_xml_normalization_covers_settings_rosters_scores_and_unmapped_fre
     assert result.teams[0].selected_slots == {"PG:0": "p0", "C:0": "p1"}
     assert len(result.pairings) == 3 and len(result.actual) == 4
     assert result.actual[0].totals["FGM"] == 1.0
+    assert result.actual[0].totals["STL"] == 1.0
+    assert any(c.id == "STL" for c in league.categories)
     assert result.free_agents[0].player_id == "p6"

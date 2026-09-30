@@ -83,6 +83,22 @@ class InseasonSession:
         if self.preferences.stale_warning_seconds > self.preferences.stale_limit_seconds:
             raise ConfigError("preferences.json.stale_warning_seconds: exceeds stale limit")
         self.catalog = self.store.read("yahoo-catalog.json", YahooCatalog)
+        installed_catalog = decode(
+            YahooCatalog,
+            (defaults / "yahoo-catalog.json").read_bytes(),
+            str(defaults / "yahoo-catalog.json"),
+        )
+        # New provider labels must also reach an existing source installation.
+        # Existing user mappings take precedence; do not rewrite their file.
+        self.catalog = self.catalog.model_copy(
+            update={
+                "category_labels": {
+                    **installed_catalog.category_labels,
+                    **self.catalog.category_labels,
+                },
+                "stat_labels": {**installed_catalog.stat_labels, **self.catalog.stat_labels},
+            }
+        )
         self.auth = YahooAuth(vault or SystemVault("default"), self.params)
         self.reader = YahooReader(self.auth)
         self.cancelled = Event()

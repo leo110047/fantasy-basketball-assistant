@@ -305,3 +305,26 @@ def test_saved_plan_requires_current_snapshot_ledger_and_parameters(tmp_path, ch
         )
     with pytest.raises(DataError, match="重新計算 F3"):
         recorded_plan(session, plan.id)
+
+
+def test_new_yahoo_labels_reach_existing_catalog_without_overwriting_user_mapping(tmp_path):
+    session = InseasonSession(tmp_path, DEFAULTS, Vault())
+    old = session.catalog.model_copy(
+        update={
+            "category_labels": {
+                key: value for key, value in session.catalog.category_labels.items() if key != "ST"
+            },
+            "stat_labels": {
+                key: value for key, value in session.catalog.stat_labels.items() if key != "ST"
+            },
+        }
+    )
+    session.store.write("yahoo-catalog.json", old)
+    original = (tmp_path / "yahoo-catalog.json").read_bytes()
+    updated = InseasonSession(tmp_path, DEFAULTS, Vault())
+    assert updated.catalog.category_labels["ST"].id == "STL"
+    assert updated.catalog.stat_labels["ST"] == ("STL",)
+    assert (tmp_path / "yahoo-catalog.json").read_bytes() == original
+    custom = old.model_copy(update={"stat_labels": {**old.stat_labels, "ST": ("CUSTOM",)}})
+    session.store.write("yahoo-catalog.json", custom)
+    assert InseasonSession(tmp_path, DEFAULTS, Vault()).catalog.stat_labels["ST"] == ("CUSTOM",)

@@ -292,6 +292,22 @@
       "direction": "higher",
       "comparison_decimals": 6,
       "tie_value": 0.5
+    },
+    "ST": {
+      "id": "STL",
+      "label": "STL",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "STL",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
     }
   },
   "stat_labels": {
@@ -348,6 +364,9 @@
     "3PTM/A": [
       "3PM",
       "3PA"
+    ],
+    "ST": [
+      "STL"
     ]
   },
   "positions": {
