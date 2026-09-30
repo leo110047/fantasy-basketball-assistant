@@ -1,0 +1,1 @@
+"""Independent seasonal web application."""

@@ -17,12 +17,21 @@ from fba.adapters.snapshots import frozen_inputs, inventory_json, load_snapshot,
 from fba.apps.annual import finish_annual
 from fba.apps.auction import AuctionSession
 from fba.apps.build import assemble
+from fba.apps.inseason.launcher import main as inseason_main
 from fba.apps.server import serve
 from fba.apps.workers import worker_limit
 from fba.contracts.auction import SolverError
 from fba.contracts.base import ConfigError, DataError, IdentityError
 from fba.contracts.config import ValidatedConfig
+from fba.contracts.inseason import InseasonParameters
+from fba.contracts.inseason_backtest import BacktestStudy
+from fba.contracts.inseason_replay import PolicyReplayStudy
+from fba.contracts.inseason_results import CalibrationHistory
 from fba.data.codec import canonical, decode, digest, read_bytes
+from fba.data.storage import atomic_write
+from fba.inseason.backtest import run_study
+from fba.inseason.replay import run_policy_replay
+from fba.inseason.review import refit_history
 
 
 def build(league: Path, season: Path, model: Path, output: Path, version: int) -> Path:
@@ -183,12 +192,39 @@ def parser() -> argparse.ArgumentParser:
         help="Total worker ceiling: auto or a positive integer",
     )
     desk.add_argument("--port", type=int, default=0)
+    study = commands.add_parser(
+        "inseason-backtest", help="Fit on one season and verify on the next"
+    )
+    study.add_argument("input", type=Path)
+    study.add_argument("--parameters", type=Path, required=True)
+    study.add_argument("--output", type=Path, required=True)
+    replay = commands.add_parser(
+        "inseason-replay", help="Replay dated weekly decisions against final outcomes"
+    )
+    replay.add_argument("input", type=Path)
+    replay.add_argument("--parameters", type=Path, required=True)
+    replay.add_argument("--output", type=Path, required=True)
+    calibrate = commands.add_parser(
+        "inseason-calibrate", help="Fit next-season c from exported immutable records"
+    )
+    calibrate.add_argument("input", type=Path)
+    calibrate.add_argument("--output", type=Path, required=True)
     return root
 
 
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "inseason":
+        sys.argv.pop(1)
+        inseason_main()
+        return 0
+    return run_cli()
+
+
+def run_cli() -> int:
     args = parser().parse_args()
     try:
+        if args.command in ("inseason-replay", "inseason-backtest", "inseason-calibrate"):
+            return run_inseason_study(args)
         if args.command == "serve":
             serve(args.input, args.draft, args.log, args.workers, args.port)
             return 0
@@ -284,6 +320,54 @@ def main() -> int:
         print(json.dumps({"error": str(exc)}), file=sys.stderr)
         return 2
     return 0
+
+
+def run_inseason_study(args: argparse.Namespace) -> int:
+    if args.command == "inseason-calibrate":
+        data = read_bytes(args.input)
+        result = refit_history(decode(CalibrationHistory, data, str(args.input)), digest(data))
+        atomic_write(args.output, json.dumps(result, ensure_ascii=False, allow_nan=False).encode())
+        print(json.dumps({"report": str(args.output), "holdout_passed": False}))
+        return 0
+    if args.command == "inseason-replay":
+        report = run_policy_replay(
+            decode(PolicyReplayStudy, read_bytes(args.input), str(args.input)),
+            decode(InseasonParameters, read_bytes(args.parameters), str(args.parameters)),
+        )
+        atomic_write(args.output, canonical(report))
+        print(
+            json.dumps(
+                {
+                    "report": str(args.output),
+                    "recall_passed": report.recall_passed,
+                    "policy_passed": report.policy_passed,
+                }
+            )
+        )
+        return 0
+    if args.command == "inseason-backtest":
+        raw = read_bytes(args.input)
+        parameters = decode(InseasonParameters, read_bytes(args.parameters), str(args.parameters))
+        report = run_study(
+            decode(BacktestStudy, raw, str(args.input)),
+            parameters,
+            digest(raw),
+            digest(canonical(parameters)),
+        )
+        atomic_write(args.output, canonical(report))
+        print(
+            json.dumps(
+                {
+                    "report": str(args.output),
+                    "projection_passed": report.projection_passed,
+                    "calibration_passed": report.calibration_passed,
+                    "availability_passed": report.availability_passed,
+                    "production_passed": report.production_passed,
+                }
+            )
+        )
+        return 0
+    raise ConfigError("unknown in-season study")
 
 
 if __name__ == "__main__":
