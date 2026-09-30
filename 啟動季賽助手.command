@@ -2,11 +2,15 @@
 
 cd -- "${0:A:h}" || exit 1
 
-if [[ ! -x .venv/bin/python ]]; then
-  print -r -- '尚未建立執行環境。請先在此專案目錄執行：uv sync --locked'
-  read -r '?按 Enter 結束。'
-  exit 1
+fba_uv="$(command -v uv)"
+if [[ -z "$fba_uv" && -x "$HOME/.local/bin/uv" ]]; then
+  fba_uv="$HOME/.local/bin/uv"
+fi
+if [[ -z "$fba_uv" ]]; then
+  print -r -- '請先安裝 uv，再重新開啟命令檔：'
+  print -r -- 'https://docs.astral.sh/uv/getting-started/installation/'
+  [[ -t 0 ]] && read -r '?按 Enter 結束。'
+  exit 127
 fi
 
-export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
-exec .venv/bin/python -m fba.apps.inseason.launcher "$@"
+exec "$fba_uv" run --locked --no-dev fba-inseason "$@"

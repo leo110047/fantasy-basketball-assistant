@@ -30,7 +30,6 @@ dev = [
     "hypothesis",
     "import-linter>=2.15",
     "lizard==1.21.2",
-    "pyinstaller>=6.22.3",
     "pytest",
     "ruff",
     "vulture",

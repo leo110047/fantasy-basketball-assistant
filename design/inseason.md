@@ -3,27 +3,30 @@
 季賽助手是獨立本機應用，入口為 `fba-inseason` 或 `fba inseason`。
 Yahoo Fantasy 的名單、交易、排陣均由使用者在 Yahoo 操作；本程式的 Fantasy API adapter 只有 GET。
 
-## 啟動
+## Clone 與啟動
 
-開發者一次安裝：`uv sync --locked`。啟動：
+1. 安裝 Git 與 [uv](https://docs.astral.sh/uv/getting-started/installation/)。
+2. 執行 `git clone https://github.com/leo110047/fantasy-basketball-assistant.git`。
+3. 進入專案資料夾，macOS 雙擊 `啟動季賽助手.command`，Windows 雙擊 `start-inseason.cmd`；Linux 或終端機使用：
 
 ```sh
-uv run --locked fba-inseason
+uv run --locked --no-dev fba-inseason
 ```
 
+命令檔會切換到自身所在的專案目錄。首次啟動由 `uv` 依 `.python-version` 準備 Python 3.13.7，
+依 `uv.lock` 建立 `.venv` 並安裝執行依賴，完成後自動開啟本機網頁。
+不必另外安裝 Python；第一次需要連網下載，缺少 `uv` 會顯示安裝指引。
+後續啟動沿用既有環境；鎖定檔與專案設定不一致會明確失敗，不在啟動時重寫鎖定檔。
+季賽助手的一般啟動不需要 Node.js、C++ 編譯器或開發測試套件。
+
+更新前先從網頁「結束助手」，執行 `git pull --ff-only` 後再啟動；`uv` 會同步新版本的依賴。
+原始碼和命令檔要一起保留，`.venv` 可重新建立，使用者資料不存放在專案內。
 隔離資料或開發測試可使用 `--data "/path/中文 資料"`，不開瀏覽器時加 `--no-browser`。
 預設資料位置由 `platformdirs` 決定：macOS 的 Application Support、Windows 的 AppData/Roaming。
 
-安裝檔建置命令：
-
-```sh
-uv run --locked python scripts/package_inseason.py
-```
-
-macOS 產生 `.dmg`，把其中的應用移到 Applications 再啟動；Windows 產生每位使用者安裝的 `.exe`。
-建置含 Python、NumPy、SciPy、靜態頁面、預設設定與 `tzdata`，使用者不用編譯 C++。
-目前建置沒有 Apple Developer ID、notarization 或 Windows Authenticode 簽章；不應當成已簽署的正式發布版本。
-CI 的 `Inseason desktop` 工作會在三種作業系統執行完整 `scripts/verify.py`（含既有競標回歸），macOS/Windows 再建置安裝檔。跨平台固定輸入使用共同基準檢查排序及數值容差；定義工作流程不等於已取得遠端執行結果。
+交付方式依使用者要求改為 clone 原始碼，取代原規格中的安裝檔要求。
+CI 的 `Inseason source` 工作保留三平台完整 `scripts/verify.py`（含既有競標回歸）、啟動入口與數值容差檢查，
+僅上傳數值比較報告。定義工作流程不等於已取得遠端執行結果。
 
 ## Yahoo 首次設定
 
@@ -90,7 +93,7 @@ scripts/check
 ```
 
 安裝完鎖定依賴後，`uv run --no-sync python scripts/verify.py` 可離線執行門檻。
-開發者的完整檢查另需 Node.js 執行 ES module 語法驗證；一般安裝檔使用者不需要 Node.js。
+開發者先執行 `uv sync --locked` 安裝包含開發工具的依賴。完整檢查另需 Node.js 與 C++ 編譯器；一般季賽助手使用者不需要。
 檢查包含 ES module 語法、lint、型別、死碼、依賴、純計算層邊界與測試。
 合成資料測試、macOS 本機執行、Windows CI 與真正 Yahoo API 是不同證據範圍，不可互相替代。
 
@@ -132,6 +135,6 @@ uv run --locked fba inseason-calibrate /path/calibration-history.json \
 - 對手採固定名單及固定合法基準排陣；不模擬對手串流或即時反應。
 - 進行中 NBA 比賽的剩餘貢獻、Yahoo 比分欄位仍需實際 API 回應核對；最終更正分數會追加新版回顧，累積統計只採每週最新版。
 - 真實兩季樣本外門檻、2026–27 實際聯盟 p50/p95、三平台數值比較尚未驗證。
-- Windows 原生編譯、鎖、子行程、原子替換與完整測試入口已補上；尚未在實際 Windows 執行全部測試與安裝。
-- 未完成乾淨 macOS／Windows 11 首次同步驗收，也未取得正式簽章。
-- Goldband 獨立審查及遠端 CI 尚未通過，因此沒有里程碑 commit 或 tag。
+- Windows 原生編譯、鎖、子行程、原子替換與完整測試入口已補上；尚未在實際 Windows 執行全部測試與 clone 啟動驗收。
+- 未完成乾淨 macOS／Windows 11 從 clone 到 Yahoo 首次同步的完整驗收。
+- 核心實作已完成一輪 Goldband 修正複審並分批 commit。本次 clone 啟動已在 macOS 無 `.venv` 的乾淨專案副本驗證；測試機已有 Python 3.13.7，尚未驗證缺少 Python 時的自動下載與遠端 CI。

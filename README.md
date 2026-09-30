@@ -4,9 +4,20 @@
 
 ## 季賽助手
 
-獨立的唯讀 Yahoo 季賽應用：`uv sync --locked` 後執行 `uv run --locked fba-inseason`。
-macOS 也可直接雙擊專案目錄的 `啟動季賽助手.command`，啟動本機服務並自動開啟瀏覽器；命令檔須保留在專案目錄，沿用 `.venv` 執行環境。從網頁按「結束」可停止服務。
-首次授權、資料來源、安裝檔、換季與回測流程見 [季賽助手說明](design/inseason.md)。
+以原始碼交付。先安裝 Git 與 [uv](https://docs.astral.sh/uv/getting-started/installation/)，再 clone：
+
+```sh
+git clone https://github.com/leo110047/fantasy-basketball-assistant.git
+cd fantasy-basketball-assistant
+uv run --locked --no-dev fba-inseason
+```
+
+也可在專案資料夾雙擊：macOS 的 `啟動季賽助手.command`，或 Windows 的 `start-inseason.cmd`。
+首次啟動會依 `.python-version` 與 `uv.lock` 準備 Python 和套件，建立專案內的 `.venv`，再自動開啟本機網頁；需要網路與下載時間，不必另行安裝 Python。
+命令檔須保留在專案目錄。關閉網頁後服務仍會執行，從頁首「結束助手」停止。
+更新時先結束助手，再執行 `git pull --ff-only` 並重新啟動，讓 `uv` 同步更新後的依賴。
+
+首次授權、資料來源、換季與回測流程見 [季賽助手說明](design/inseason.md)。
 真實 API、模型樣本外與乾淨機器驗收需要各自的資料及環境，不能用離線測試替代。
 
 ## 競標桌安裝

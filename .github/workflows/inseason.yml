@@ -1,4 +1,4 @@
-name: Inseason desktop
+name: Inseason source
 env:
   PYTHONUTF8: "1"
   FBA_PORTABILITY_REPORT: reports/portability.json
@@ -21,21 +21,19 @@ jobs:
           python-version: "3.13.7"
           enable-cache: false
       - run: uv sync --locked
+      - name: Check source entry point
+        run: uv run --locked --no-dev fba-inseason --help
+      - name: Check macOS double-click command
+        if: runner.os == 'macOS'
+        run: ./啟動季賽助手.command --help
+      - name: Check Windows double-click command
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: call start-inseason.cmd --help
       - name: Complete offline verification on every platform
         run: uv run --locked python scripts/verify.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: portability-${{ runner.os }}
           path: reports/portability.json
-          if-no-files-found: error
-      - name: Build self-contained installer
-        if: runner.os != 'Linux'
-        run: uv run --locked python scripts/package_inseason.py
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: runner.os != 'Linux'
-        with:
-          name: inseason-${{ runner.os }}
-          path: |
-            dist/inseason/*.dmg
-            dist/inseason/*-Windows.exe
           if-no-files-found: error

@@ -66,7 +66,6 @@ def test_non_python_runtime_and_test_assets_have_entrypoint_references():
     assert set(p.name for p in (root() / "scripts").iterdir() if p.is_file()) == {
         "check",
         "verify.py",
-        "package_inseason.py",
     }
     assert "scripts/check" in (root() / ".github/workflows/check.yml").read_text()
     assert "scripts/verify.py" in (root() / "scripts/check").read_text()
