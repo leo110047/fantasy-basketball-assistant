@@ -44,7 +44,9 @@ def redistribute(
     teammates = tuple(
         p
         for p in projection.players
-        if p.player.team_id == player.player.team_id and p.player.id != player_id
+        if p.player.team_id == player.player.team_id
+        and p.player.id != player_id
+        and p.probability > 0
     )
     total = sum(p.minutes for p in teammates)
     delta = minutes - player.minutes

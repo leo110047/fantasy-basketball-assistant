@@ -134,6 +134,7 @@ class PredictionRecord(Record):
     without_adjustments: WeekForecast
     recommendations: tuple[AddPlan, ...]
     proposal_probabilities: dict[str, Probability]
+    week_score_kind: Literal["standings_points", "win_probability"] = "standings_points"
 
 
 class CalibrationBin(Record):
@@ -157,6 +158,8 @@ class WeeklyReview(Record):
     refit_alert: bool
     recommendation_outcomes: tuple[dict[str, JsonValue], ...]
     traces: tuple[FormulaTrace, ...]
+    week_score_kind: Literal["standings_points", "win_probability"] = "standings_points"
+    week_prediction_ids: tuple[Text, ...] = ()
 
 
 class CalibrationObservationRecord(Record):

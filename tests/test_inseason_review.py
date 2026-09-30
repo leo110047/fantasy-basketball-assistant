@@ -29,6 +29,7 @@ def prediction(sim):
         without_adjustments=forecast,
         recommendations=(),
         proposal_probabilities={},
+        week_score_kind="win_probability",
     )
 
 
@@ -93,3 +94,46 @@ def test_sync_appends_only_changed_weekly_reports_and_preserves_history(tmp_path
     assert len(store.history("reviews")) == 2
     assert store.history("reviews")[0] == first[0]
     assert store.load_snapshot(original).payload == saved.model_dump(mode="json")
+
+
+def test_old_tie_credit_and_new_win_probabilities_are_not_mixed():
+    import pytest
+
+    sim = simulation()
+    original = prediction(sim)
+    equal = sim.snapshot.model_copy(
+        update={
+            "actual": tuple(
+                row.model_copy(update={"final": True, "totals": dict.fromkeys(row.totals, 1.0)})
+                for row in sim.snapshot.actual
+            )
+        }
+    )
+    legacy = original.model_copy(
+        update={
+            "id": "legacy",
+            "with_adjustments": original.with_adjustments.model_copy(update={"score": 0.5}),
+            "without_adjustments": original.without_adjustments.model_copy(update={"score": 0.5}),
+        }
+    )
+    # Files saved before the contract change do not contain this field.
+    legacy = PredictionRecord.model_validate(legacy.model_dump(exclude={"week_score_kind"}))
+    assert legacy.week_score_kind == "standings_points"
+    current = original.model_copy(
+        update={
+            "id": "current",
+            "with_adjustments": original.with_adjustments.model_copy(update={"score": 0.25}),
+            "without_adjustments": original.without_adjustments.model_copy(update={"score": 0.25}),
+        }
+    )
+    old_review = weekly_review(sim.league, sim.params, equal, (legacy,), "2", {})
+    assert old_review.week_brier == 0
+    combined = weekly_review(sim.league, sim.params, equal, (legacy, current), "2", {})
+    assert combined.week_score_kind == "win_probability"
+    assert combined.week_prediction_ids == ("current",)
+    assert combined.week_brier == pytest.approx(0.25**2)
+    cumulative = cumulative_review(
+        (old_review.model_copy(update={"week_id": "1"}), combined), sim.params
+    )
+    assert cumulative["week_brier"] == pytest.approx(0.25**2)
+    assert cumulative["excluded_legacy_weeks"] == 1

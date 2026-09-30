@@ -50,6 +50,8 @@ def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
         "sampling_covariance": [[3, 1], [1, 3]],
         "standardized_margins": [[1, 2]],
         "logistic_objective": np.log(2),
+        "logistic_gradient": [-0.25],
+        "logistic_hessian": [[0.625]],
         "calibration_fit": 0.5,
         "health_transitions": [[0.5, 0.5], [0.5, 0.125]],
         "conditional_health": [0.75, 0.85],

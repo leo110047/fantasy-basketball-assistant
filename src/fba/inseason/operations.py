@@ -139,7 +139,7 @@ def player_bootstrap(session: InseasonSession, now: datetime) -> dict[str, JsonV
 def calibration_status(session: InseasonSession) -> JsonValue:
     path = session.league_store().root / "validation.json"
     if not path.exists():
-        return {"enabled": False, "reason": "尚無樣本外回測報告，換人建議尚未開放"}
+        return {"enabled": False, "reason": "尚無樣本外回測報告；建議未校準，尚未通過交付驗收"}
     report = decode(BacktestReport, path.read_bytes(), str(path))
     matches = report.parameters_sha256 == digest(canonical(session.params))
     return {
@@ -188,6 +188,7 @@ def week_result(
         without_adjustments=baseline,
         recommendations=plans,
         proposal_probabilities={},
+        week_score_kind="win_probability",
     )
     session.league_store().append_snapshot(
         "predictions", "inseason forecast", sim.as_of, json_value(record.model_dump(mode="json"))
@@ -196,10 +197,6 @@ def week_result(
 
 
 def recommendations(session: InseasonSession, week_id: str) -> tuple[AddPlan, ...]:
-    status = calibration_status(session)
-    if not isinstance(status, dict) or not status.get("enabled"):
-        raise DataError("recommendations: 樣本外預測與勝率校準關卡尚未通過")
-
     def progress(value: float) -> None:
         session.progress = value
 

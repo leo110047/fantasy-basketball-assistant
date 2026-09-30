@@ -425,7 +425,7 @@ ARRAY_FORMULAS = (
     ArrayFormula(
         "bootstrap_scale",
         "逐場樣本均值校準",
-        r"X'_{is}=\operatorname{round}(X_{is}\mu_s/\bar H_s);\quad "
+        r"X'_{is}=X_{is}\mu_s/\bar H_s;\quad "
         r"\bar H_s=0\Rightarrow X'_{is}=Z_{is},\ Z_{is}\sim Poisson(\mu_s)",
         "count per game",
         (),
@@ -479,6 +479,30 @@ ARRAY_FORMULAS = (
             "coefficients": "inverse feature units",
             "outcomes": "binary acceptance",
         },
+    ),
+    ArrayFormula(
+        "logistic_gradient",
+        "接受模型損失梯度",
+        r"\nabla L=X^T(\sigma(X\beta)-y)/n",
+        "negative log likelihood per coefficient",
+        (),
+        vector.logistic_gradient,
+        {"features": ((1.0,), (2.0,)), "coefficients": (0.0,), "outcomes": (0.0, 1.0)},
+        {
+            "features": "model feature units",
+            "coefficients": "inverse feature units",
+            "outcomes": "binary acceptance",
+        },
+    ),
+    ArrayFormula(
+        "logistic_hessian",
+        "接受模型損失曲率",
+        r"H=X^T\operatorname{diag}(p(1-p))X/n",
+        "negative log likelihood per squared coefficient",
+        (),
+        vector.logistic_hessian,
+        {"features": ((1.0,), (2.0,)), "coefficients": (0.0,)},
+        {"features": "model feature units", "coefficients": "inverse feature units"},
     ),
     ArrayFormula(
         "calibration_fit",

@@ -52,6 +52,12 @@ def weekly_review(
     records = tuple(p for p in predictions if p.week_id == week_id)
     if not records:
         raise DataError(f"review.{week_id}: no contemporaneously recorded forecasts")
+    week_score_kind = (
+        "win_probability"
+        if any(p.week_score_kind == "win_probability" for p in records)
+        else "standings_points"
+    )
+    week_prediction_ids: list[str] = []
     axes = (*league.base_stats, *(d.id for d in league.derived))
     scores = {s.team_id: s for s in snapshot.actual if s.week_id == week_id and s.final}
     cp: list[float] = []
@@ -92,7 +98,7 @@ def weekly_review(
             axes,
             league.scoring,
             league.category_ties,
-            league.week_tie_value,
+            league.week_tie_value if prediction.week_score_kind == "standings_points" else 0.0,
         )
         actual_values = category_values(final, league.categories, axes, directed=False)
         for i, category in enumerate(forecast.categories):
@@ -112,9 +118,10 @@ def weekly_review(
                     "away": float(actual_values[1, i]),
                 }
             )
-        if league.scoring == "h2h_one_win":
+        if league.scoring == "h2h_one_win" and prediction.week_score_kind == week_score_kind:
             wp.append(forecast.score)
             wy.append(float(result[0]))
+            week_prediction_ids.append(prediction.id)
         outcomes.extend(
             {
                 "plan_id": plan.id,
@@ -136,6 +143,8 @@ def weekly_review(
         rows=tuple(rows),
         category_brier=category_brier.result,
         week_brier=week_brier.result if week_brier else None,
+        week_score_kind=week_score_kind,
+        week_prediction_ids=tuple(week_prediction_ids),
         with_adjustments_mae=with_error.result,
         without_adjustments_mae=without_error.result,
         bins=bins,
@@ -170,13 +179,15 @@ def cumulative_review(
             predicted.append(float(p))
             observed.append(float(y))
     score = evaluate("brier", predicted=tuple(predicted), observed=tuple(observed))
-    played = tuple(r for r in reviews if r.week_brier is not None)
-    count = sum(len(r.prediction_ids) for r in played)
+    played = tuple(
+        r for r in reviews if r.week_brier is not None and r.week_score_kind == "win_probability"
+    )
+    count = sum(len(r.week_prediction_ids) for r in played)
     weekly = (
         evaluate(
             "weighted_mean",
             values=tuple(r.week_brier for r in played if r.week_brier is not None),
-            weights=tuple(float(len(r.prediction_ids)) for r in played),
+            weights=tuple(float(len(r.week_prediction_ids)) for r in played),
         )
         if count
         else None
@@ -187,6 +198,9 @@ def cumulative_review(
         "category_predictions": len(predicted),
         "category_brier": score.result,
         "week_brier": weekly.result if weekly else None,
+        "excluded_legacy_weeks": sum(
+            r.week_brier is not None and r.week_score_kind == "standings_points" for r in reviews
+        ),
         "traces": [
             trace.model_dump(mode="json") for trace in (score, *((weekly,) if weekly else ()))
         ],

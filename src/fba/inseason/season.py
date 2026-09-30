@@ -58,8 +58,8 @@ def playoff_probability(
         if pair.week_id not in weeks:
             continue
         a, b, _ = sim.matchup_totals(pair.home, pair.away, pair.week_id, changed)
-        scores[pair.home] += sim.score(a, b)[1]
-        scores[pair.away] += sim.score(b, a)[1]
+        scores[pair.home] += sim.score(a, b, standings=True)[1]
+        scores[pair.away] += sim.score(b, a, standings=True)[1]
         covered.update(((pair.week_id, pair.home), (pair.week_id, pair.away)))
     missing = {(w, t.id) for w in weeks for t in teams} - covered
     if missing:

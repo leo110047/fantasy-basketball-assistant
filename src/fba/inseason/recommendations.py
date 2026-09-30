@@ -20,18 +20,7 @@ def legal_roster(sim: Simulation, roster: tuple[str, ...], on: date) -> bool:
     positions = {p.player.id: p.player.positions for p in sim.projection(on).players}
     if set(roster) - positions.keys():
         return False
-    # Empty starter slots may be filled by the remaining unoccupied roster spots.
-    from fba.core.roster import match_slots
-
-    eligible = tuple(
-        tuple(
-            bool(set(positions[p]).intersection(s.eligible_positions))
-            for s in sim.league.starter_slots
-        )
-        for p in roster
-    )
-    chosen, _ = match_slots(eligible, tuple(range(len(roster))), len(sim.league.starter_slots))
-    return len(chosen) + capacity - len(roster) >= len(sim.league.starter_slots)
+    return True  # Yahoo permits unfilled starter slots on an otherwise valid roster.
 
 
 def earliest_move(sim: Simulation) -> date:
@@ -147,7 +136,7 @@ def search_add_plans(
     before = sim.week(team.id, opponent, week_id)
     keys = tuple(c.id for c in before.categories if c.strategy == "key")
     if not keys:
-        return ()
+        keys = tuple(c.id for c in before.categories)
     future = season_value(sim, team.id, after=week.end + timedelta(days=1))
     beam: list[tuple[tuple[RosterMove, ...], tuple[str, ...]]] = [((), team.players)]
     results: list[AddPlan] = []

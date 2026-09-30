@@ -4,10 +4,28 @@
     "parameters_sha256": "bc21c509b02e7737b1e11a2f668c007bda65a1249d95373767456744153c910e",
     "plans": [
       {
-        "id": "4782eec78bb00281f826bb7310bacd3fa8e3ee435ad24fe5cc9be8020ab87a8b",
+        "id": "b73844f0ffec30a890dd84941d5d11c31f0af09ed853be074ea2a6d49f49d8d1",
         "moves": [
           {
-            "add": "p6",
+            "add": "p8",
+            "drop": "p0",
+            "effective_on": "2025-10-13",
+            "starter_games": 0
+          },
+          {
+            "add": "p7",
+            "drop": "p1",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 0.8720000000000001
+      },
+      {
+        "id": "e4b43a612feeda887276a42b10cc8718c027b310d7874ef95e39607ba5d9d72e",
+        "moves": [
+          {
+            "add": "p7",
             "drop": "p0",
             "effective_on": "2025-10-13",
             "starter_games": 1
@@ -16,31 +34,13 @@
             "add": "p8",
             "drop": "p1",
             "effective_on": "2025-10-13",
-            "starter_games": 1
+            "starter_games": 0
           }
         ],
-        "score": 1.016
+        "score": 0.8720000000000001
       },
       {
-        "id": "8a6e712f38c766006a7f152e1f8da0fc80e05b2b594e724ef32e1e96137eed2c",
-        "moves": [
-          {
-            "add": "p6",
-            "drop": "p0",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p8",
-            "drop": "p2",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 1.016
-      },
-      {
-        "id": "6498405636345d2c8bd46b088d9541a3c81facb2cd663cc4c00bfd61a71eecf4",
+        "id": "f39720908a6fa3c1bb7d3a14b748edc80b16978270b477215c856361a3cf9a70",
         "moves": [
           {
             "add": "p7",
@@ -50,12 +50,12 @@
           },
           {
             "add": "p8",
-            "drop": "p2",
+            "drop": "p0",
             "effective_on": "2025-10-13",
-            "starter_games": 1
+            "starter_games": 0
           }
         ],
-        "score": 1.0
+        "score": 0.8720000000000001
       },
       {
         "id": "2599eb7efb231fadf29012cf60c0a9ec71ebfe98be4e8a4b4270684a3646b7c5",
@@ -73,28 +73,10 @@
             "starter_games": 1
           }
         ],
-        "score": 0.996
+        "score": 0.8480000000000001
       },
       {
-        "id": "e4b43a612feeda887276a42b10cc8718c027b310d7874ef95e39607ba5d9d72e",
-        "moves": [
-          {
-            "add": "p7",
-            "drop": "p0",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p8",
-            "drop": "p1",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 0.988
-      },
-      {
-        "id": "f39720908a6fa3c1bb7d3a14b748edc80b16978270b477215c856361a3cf9a70",
+        "id": "6498405636345d2c8bd46b088d9541a3c81facb2cd663cc4c00bfd61a71eecf4",
         "moves": [
           {
             "add": "p7",
@@ -104,18 +86,18 @@
           },
           {
             "add": "p8",
-            "drop": "p0",
+            "drop": "p2",
             "effective_on": "2025-10-13",
             "starter_games": 1
           }
         ],
-        "score": 0.988
+        "score": 0.8480000000000001
       },
       {
-        "id": "118608218cca37e27a99ed6705cb44116558a3f7893bc880a2cd2330bd785004",
+        "id": "7e52a83fff66c9d69cc36c5289b73ebc2a718acbe53d2d388c4203ba1b870866",
         "moves": [
           {
-            "add": "p6",
+            "add": "p8",
             "drop": "p0",
             "effective_on": "2025-10-13",
             "starter_games": 1
@@ -127,7 +109,7 @@
             "starter_games": 1
           }
         ],
-        "score": 0.9079999999999999
+        "score": 0.8480000000000001
       },
       {
         "id": "2a4d4a9357b02738c80367dcd7e83ace830eba4f26d4e850e61d2fdb3844ec05",
@@ -145,25 +127,7 @@
             "starter_games": 1
           }
         ],
-        "score": 0.9079999999999999
-      },
-      {
-        "id": "93ed29ce23f33bd2cd0f7f418be35599f700749920c77cf2b3c401da65e77963",
-        "moves": [
-          {
-            "add": "p6",
-            "drop": "p0",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p7",
-            "drop": "p1",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 0.9079999999999999
+        "score": 0.832
       },
       {
         "id": "c8635ea1f0d4b3eedbb9091e7bb231e43e18dbd4fd4897a2a2094ad8eb112816",
@@ -181,7 +145,43 @@
             "starter_games": 1
           }
         ],
-        "score": 0.9079999999999999
+        "score": 0.832
+      },
+      {
+        "id": "ea2d8444a04e47b80225b371b0e708c229a5c5e9ee04dc09ca13b4157543f589",
+        "moves": [
+          {
+            "add": "p7",
+            "drop": "p0",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p6",
+            "drop": "p2",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 0.824
+      },
+      {
+        "id": "3ef94d282d1af79d80849b4686aed0fa94651e8da0687cfad9a447528efed628",
+        "moves": [
+          {
+            "add": "p8",
+            "drop": "p0",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p6",
+            "drop": "p1",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 0.8
       },
       {
         "id": "437d0ce73d0704ff9f4f2de6dae9067b7e5c9d33f535b964d28f801f6c899f10",
@@ -193,7 +193,7 @@
             "starter_games": 1
           }
         ],
-        "score": 0.6200000000000001
+        "score": 0.6000000000000001
       },
       {
         "id": "670f0dd0b7982d5a654a4b33fbb969a98ff48112567d76eb8222f97fab986be3",
@@ -205,43 +205,7 @@
             "starter_games": 1
           }
         ],
-        "score": 0.6200000000000001
-      },
-      {
-        "id": "07cd8e45bc18207c4c747e4efb6c2b5f81a5821fca994ae8b4babe188a5b20be",
-        "moves": [
-          {
-            "add": "p6",
-            "drop": "p0",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 0.5880000000000001
-      },
-      {
-        "id": "d06ad28579d210645ef1a7c6fc9a7dcdb21a4a783ef6e08ed9b6579e565108e5",
-        "moves": [
-          {
-            "add": "p6",
-            "drop": "p1",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 0.5680000000000001
-      },
-      {
-        "id": "73fab352811487ea4fd8397be32860697767ec887f61f60bca46e14550b09f86",
-        "moves": [
-          {
-            "add": "p8",
-            "drop": "p2",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 0.528
+        "score": 0.6000000000000001
       },
       {
         "id": "f360e8950d23d8027cb96effa92454360014a701d983ca6e20d352f72d48ea9b",
@@ -253,7 +217,7 @@
             "starter_games": 1
           }
         ],
-        "score": 0.528
+        "score": 0.592
       },
       {
         "id": "3eb08a1a902077a9c127da62e317a11b0d92ce07034a55b340c6dc87bff05f9c",
@@ -265,7 +229,19 @@
             "starter_games": 1
           }
         ],
-        "score": 0.512
+        "score": 0.5519999999999999
+      },
+      {
+        "id": "73fab352811487ea4fd8397be32860697767ec887f61f60bca46e14550b09f86",
+        "moves": [
+          {
+            "add": "p8",
+            "drop": "p2",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 0.39200000000000007
       },
       {
         "id": "5ae94538a102e0ded7531b40f00880580765654befd45c9e0574ae1ed6aca3ca",
@@ -277,7 +253,19 @@
             "starter_games": 1
           }
         ],
-        "score": 0.508
+        "score": 0.32000000000000006
+      },
+      {
+        "id": "07cd8e45bc18207c4c747e4efb6c2b5f81a5821fca994ae8b4babe188a5b20be",
+        "moves": [
+          {
+            "add": "p6",
+            "drop": "p0",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 0.3040000000000001
       },
       {
         "id": "8ca2b38178cbecd47c4c5c5e9c187786194d76e16811de7bb664526a8b220415",
@@ -289,7 +277,7 @@
             "starter_games": 1
           }
         ],
-        "score": 0.44400000000000006
+        "score": 0.26400000000000007
       },
       {
         "id": "ede12f0fdcc4c33a7f5a4221b82ab19ca8ab805396b6cdb5aac4c8321ee01552",
@@ -301,7 +289,19 @@
             "starter_games": 0
           }
         ],
-        "score": 0.376
+        "score": 0.26400000000000007
+      },
+      {
+        "id": "d06ad28579d210645ef1a7c6fc9a7dcdb21a4a783ef6e08ed9b6579e565108e5",
+        "moves": [
+          {
+            "add": "p6",
+            "drop": "p1",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 0.2320000000000001
       }
     ],
     "players": [
@@ -568,15 +568,15 @@
       }
     ],
     "review": {
-      "category_brier": 0.3731911111111111,
-      "week_brier": 0.506944
+      "category_brier": 0.314608,
+      "week_brier": 0.404496
     },
     "today": {
       "actions": [
         {
-          "kind": "bench",
+          "kind": "start",
           "player": "p0",
-          "slot": null
+          "slot": "guard"
         },
         {
           "kind": "start",
@@ -584,50 +584,50 @@
           "slot": "big"
         },
         {
-          "kind": "start",
+          "kind": "bench",
           "player": "p2",
-          "slot": "guard"
+          "slot": null
         }
       ],
       "lineup": {
         "bench": [
-          "p0"
+          "p2"
         ],
         "on": "2025-10-13",
         "slots": {
           "big": "p1",
-          "guard": "p2"
+          "guard": "p0"
         },
         "team_id": "team0"
       }
     },
     "trade": {
-      "acceptance": 0.9990326670419323,
-      "mine": 0.06799999999999995,
-      "opponent": -0.06000000000000005,
-      "playoffs": 0.0
+      "acceptance": 0.9988513286261541,
+      "mine": 0.136,
+      "opponent": -0.2320000000000002,
+      "playoffs": 0.07
     },
     "week": {
       "categories": [
-        0.26,
-        0.3,
-        0.38,
-        0.296,
-        0.296,
-        0.296,
-        0.26,
-        0.8240000000000001,
-        0.536
+        0.364,
+        0.364,
+        0.364,
+        0.364,
+        0.364,
+        0.364,
+        0.5,
+        0.5,
+        0.636
       ],
       "lineups": [
         {
           "bench": [
-            "p0"
+            "p2"
           ],
           "on": "2025-10-13",
           "slots": {
             "big": "p1",
-            "guard": "p2"
+            "guard": "p0"
           },
           "team_id": "team0"
         },
@@ -663,13 +663,151 @@
           "team_id": "team1"
         }
       ],
-      "score": 0.288
+      "score": 0.364
     }
   },
   "2026": {
     "fixture_sha256": "bed586517dc0249497f393b062201f177d0e0363aeb7ab2ef6346b7e4df6aafa",
     "parameters_sha256": "bc21c509b02e7737b1e11a2f668c007bda65a1249d95373767456744153c910e",
     "plans": [
+      {
+        "id": "0129889c475f634386ada5b0ac0c6b3e8d1bd64024939c93bbb1fe5bcf954951",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "29baa6aa87866ce17c1d4ca892d4b077d8d54f810c026f7f268b1396a6dd5a12",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 0
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "3878e959dd3d5d33a83b1ece9ee509c30f9e97bd8300b1b71e03293547f15b19",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p31",
+            "drop": "p2",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "63ee04dcbaa51b330f052ae3f6f3bf90e23faedf528d92ebd351e50ada2fa438",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p1",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "645c9b6202e9e66c0654ad04fed84f5f1fddc38587541821560ba6bc76fba649",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 0
+          },
+          {
+            "add": "p31",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "6f4bbbf0d7f7be84e07b2e9a2eed5dd6ceba3cf8de46adf3c7c50edc1d4d687f",
+        "moves": [
+          {
+            "add": "p31",
+            "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "72d2707e150ae05148c0af461d9bc35a603e96d8d20e4da9034b091721107f41",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 0
+          },
+          {
+            "add": "p31",
+            "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "7d40b236fed94e532c0062c3e53cd908ea35ddfe3c5eb0ca49a51b026deb4451",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "b3f1c69c78e8051183fbbd4c02d0dce024f67e632bb1baae23ec9a1944239566",
+        "moves": [
+          {
+            "add": "p31",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 6.2
+      },
       {
         "id": "b5ba543de121d9d16e0bf444b7357d49a45b0b59020b208a549009e59c9aff4c",
         "moves": [
@@ -683,46 +821,40 @@
             "add": "p30",
             "drop": "p2",
             "effective_on": "2026-10-13",
-            "starter_games": 1
+            "starter_games": 0
           }
         ],
-        "score": 6.508
+        "score": 6.2
       },
       {
-        "id": "c66b199467733df7aab70e6f379d5bec534e92d0635de45f44d259c69e0f6315",
+        "id": "ba8e9780e4b5507ed0ee1577c961515bc30c304c23bc804a7efff5eb90ef4c84",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p2",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 6.2
+      },
+      {
+        "id": "c05e7e4bbd8e6d298c95a640e9d03fc08545256dfa27ffab7c794a307e1087c8",
         "moves": [
           {
             "add": "p32",
             "drop": "p2",
             "effective_on": "2026-10-13",
             "starter_games": 1
-          },
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
           }
         ],
-        "score": 6.508
-      },
-      {
-        "id": "d51fed1a5c64841d6cfd0e953d002e7474cb70cfaea80878eaed203c2695fb25",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p32",
-            "drop": "p2",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.508
+        "score": 6.2
       },
       {
         "id": "c7351dba58506d77ecc28f66f954a641099683c1f17b524421273b819098ebf4",
@@ -737,46 +869,28 @@
             "add": "p31",
             "drop": "p2",
             "effective_on": "2026-10-13",
-            "starter_games": 1
+            "starter_games": 0
           }
         ],
-        "score": 6.444000000000001
+        "score": 6.2
       },
       {
-        "id": "432d81e36b8878034041300780225602e884040e5fa5baab15535163374da3e3",
+        "id": "d4785dcd3868150ee01aa420a34c9a06ab30a46ed497c4a68c1e67575141bfe1",
         "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p2",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.44
-      },
-      {
-        "id": "65ffe99e2c1730ce60089dce14518055e92f2755fb21f37d79065188e8e1bbd0",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
           {
             "add": "p32",
             "drop": "p1",
             "effective_on": "2026-10-13",
             "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p2",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
           }
         ],
-        "score": 6.340000000000001
+        "score": 6.2
       },
       {
         "id": "fb380b009a486f5708252e23d196d8b92359c2bcb6e1eace53c0aeb0efb751c4",
@@ -791,70 +905,10 @@
             "add": "p30",
             "drop": "p1",
             "effective_on": "2026-10-13",
-            "starter_games": 1
+            "starter_games": 0
           }
         ],
-        "score": 6.340000000000001
-      },
-      {
-        "id": "0129889c475f634386ada5b0ac0c6b3e8d1bd64024939c93bbb1fe5bcf954951",
-        "moves": [
-          {
-            "add": "p32",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.304
-      },
-      {
-        "id": "101bba608f2034d6b45bb10f3dd7788ab6485770895ac1fd2eb0ed255affea81",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p1",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.296
-      },
-      {
-        "id": "72d2707e150ae05148c0af461d9bc35a603e96d8d20e4da9034b091721107f41",
-        "moves": [
-          {
-            "add": "p32",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p1",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.296
-      },
-      {
-        "id": "c05e7e4bbd8e6d298c95a640e9d03fc08545256dfa27ffab7c794a307e1087c8",
-        "moves": [
-          {
-            "add": "p32",
-            "drop": "p2",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.288
+        "score": 6.2
       },
       {
         "id": "24ee17c3c3fa431484ad2bb4a02e14a51dced346656ee259760cf12a8a0ab3f2",
@@ -866,49 +920,7 @@
             "starter_games": 1
           }
         ],
-        "score": 6.264
-      },
-      {
-        "id": "c3435c84cfddd9d79f13a32674f95503e12774a59b74d0205882ec8cc141d19d",
-        "moves": [
-          {
-            "add": "p32",
-            "drop": "p2",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p30",
-            "drop": "p1",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.264
-      },
-      {
-        "id": "ec8032b8a5a3f5f8977923cdb57d0f86af775d60538c64045e1dbecc110d9da2",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p2",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.260000000000001
-      },
-      {
-        "id": "7d40b236fed94e532c0062c3e53cd908ea35ddfe3c5eb0ca49a51b026deb4451",
-        "moves": [
-          {
-            "add": "p32",
-            "drop": "p1",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 6.172
+        "score": 6.0
       },
       {
         "id": "f283ef249e8d6d4f49e1982c99733f4a6ae2cf0258e6e4da202d4109f7f3464d",
@@ -920,31 +932,7 @@
             "starter_games": 1
           }
         ],
-        "score": 6.0360000000000005
-      },
-      {
-        "id": "b3f1c69c78e8051183fbbd4c02d0dce024f67e632bb1baae23ec9a1944239566",
-        "moves": [
-          {
-            "add": "p31",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 5.96
-      },
-      {
-        "id": "6f4bbbf0d7f7be84e07b2e9a2eed5dd6ceba3cf8de46adf3c7c50edc1d4d687f",
-        "moves": [
-          {
-            "add": "p31",
-            "drop": "p1",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 5.9239999999999995
+        "score": 6.0
       },
       {
         "id": "ff3a4d234c4305bd6940c5e8c4baa170ce2278dc5c198678c7d720d18268d344",
@@ -956,7 +944,19 @@
             "starter_games": 1
           }
         ],
-        "score": 5.672
+        "score": 5.84
+      },
+      {
+        "id": "ec8032b8a5a3f5f8977923cdb57d0f86af775d60538c64045e1dbecc110d9da2",
+        "moves": [
+          {
+            "add": "p30",
+            "drop": "p2",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 5.760000000000001
       },
       {
         "id": "f82018eb96b6a276ddc5808717a68050216648a91e5a75f0cf06da4dd5e98a18",
@@ -968,7 +968,7 @@
             "starter_games": 0
           }
         ],
-        "score": 3.712
+        "score": 3.52
       }
     ],
     "players": [
@@ -1931,15 +1931,15 @@
       }
     ],
     "review": {
-      "category_brier": 0.3731911111111111,
+      "category_brier": 0.314608,
       "week_brier": null
     },
     "today": {
       "actions": [
         {
-          "kind": "bench",
+          "kind": "start",
           "player": "p0",
-          "slot": null
+          "slot": "guard"
         },
         {
           "kind": "start",
@@ -1947,50 +1947,50 @@
           "slot": "big"
         },
         {
-          "kind": "start",
+          "kind": "bench",
           "player": "p2",
-          "slot": "guard"
+          "slot": null
         }
       ],
       "lineup": {
         "bench": [
-          "p0"
+          "p2"
         ],
         "on": "2026-10-13",
         "slots": {
           "big": "p1",
-          "guard": "p2"
+          "guard": "p0"
         },
         "team_id": "team0"
       }
     },
     "trade": {
-      "acceptance": 0.999013144904479,
-      "mine": 0.15999999999999925,
-      "opponent": -0.08000000000000007,
-      "playoffs": 0.0
+      "acceptance": 0.9970995941982158,
+      "mine": 0.5800000000000001,
+      "opponent": -1.1599999999999984,
+      "playoffs": 0.07999999999999999
     },
     "week": {
       "categories": [
-        0.26,
-        0.3,
-        0.38,
-        0.296,
-        0.296,
-        0.296,
-        0.26,
-        0.8240000000000001,
-        0.536
+        0.364,
+        0.364,
+        0.364,
+        0.364,
+        0.364,
+        0.364,
+        0.5,
+        0.5,
+        0.636
       ],
       "lineups": [
         {
           "bench": [
-            "p0"
+            "p2"
           ],
           "on": "2026-10-13",
           "slots": {
             "big": "p1",
-            "guard": "p2"
+            "guard": "p0"
           },
           "team_id": "team0"
         },
@@ -2026,7 +2026,7 @@
           "team_id": "team1"
         }
       ],
-      "score": 3.448
+      "score": 3.82
     }
   }
 }

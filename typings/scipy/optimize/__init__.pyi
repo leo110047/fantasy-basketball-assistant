@@ -25,4 +25,12 @@ class MinimizeResult:
     x: NDArray[np.float64]
     message: str
 
+class LinprogResult:
+    success: bool
+    status: int
+
+def linprog(c: NDArray[np.float64], *, A_ub: NDArray[np.float64], b_ub: NDArray[np.float64], bounds: tuple[None, None], method: str) -> LinprogResult: ...
+
+def root(fun: Callable[[NDArray[np.float64]], NDArray[np.float64]], x0: NDArray[np.float64], *, jac: Callable[[NDArray[np.float64]], NDArray[np.float64]], method: str, tol: float) -> MinimizeResult: ...
+
 def minimize(fun: Callable[[NDArray[np.float64]], float], x0: NDArray[np.float64], *, method: str, tol: float) -> MinimizeResult: ...

@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from fba.contracts.base import DataError
-from fba.contracts.config import Linear
+from fba.contracts.config import Linear, StarterSlot
 from fba.contracts.formula import FormulaTrace
 from fba.contracts.inseason import (
     AdjustmentLedger,
@@ -235,18 +235,23 @@ class Simulation:
                 if effective <= on:
                     current_roster = changed_roster
             draws = self.daily_draws(current_roster, on, max(through, self.as_of))
-            players = {p.player.id: p for p in self.projection(on).players}
-            positions = {pid: players[pid].player.positions for pid in draws}
+            fixed, slots, positions = self.lineup_constraints(team_id, on, draws)
 
             # Initial plan is a deterministic, legal expected-category lineup.
             # optimize_day below evaluates the actual whole-week objective.
-            def objective(ids: tuple[str, ...], draws: dict[str, Array] = draws) -> float:
-                box = sum((draws[p].mean(axis=0) for p in ids), start=np.zeros(len(self.axes)))
+            def objective(
+                ids: tuple[str, ...],
+                draws: dict[str, Array] = draws,
+                fixed_ids: tuple[str, ...] = tuple(fixed.values()),
+            ) -> float:
+                box = sum(
+                    (draws[p].mean(axis=0) for p in (*fixed_ids, *ids)),
+                    start=np.zeros(len(self.axes)),
+                )
                 return float(category_values(box, self.league.categories, self.axes).sum())
 
-            assignment, _ = best_lineup(
-                self.league.starter_slots, positions, objective, self.params.tolerance.value
-            )
+            assignment, _ = best_lineup(slots, positions, objective, self.params.tolerance.value)
+            assignment = {**fixed, **assignment}
             total += sum((draws[p] for p in assignment.values()), start=np.zeros_like(total))
             lineups.append(
                 DayLineup(
@@ -261,7 +266,7 @@ class Simulation:
         self.team_cache[key] = result
         return result
 
-    def score(self, home: Array, away: Array) -> tuple[Array, Array]:
+    def score(self, home: Array, away: Array, *, standings: bool = False) -> tuple[Array, Array]:
         return score_samples(
             home,
             away,
@@ -269,7 +274,7 @@ class Simulation:
             self.axes,
             self.league.scoring,
             self.league.category_ties,
-            self.league.week_tie_value,
+            self.league.week_tie_value if standings else 0.0,
         )
 
     def optimize_total(
@@ -310,6 +315,17 @@ class Simulation:
                 return own, updated
             current = updated
 
+    def lineup_constraints(
+        self, team: str, on: date, draws: dict[str, Array]
+    ) -> tuple[dict[str, str], tuple[StarterSlot, ...], dict[str, tuple[str, ...]]]:
+        players = {p.player.id: p for p in self.projection(on).players}
+        roster = next(t for t in self.snapshot.teams if t.id == team)
+        locked = {pid for pid in draws if self.locked(pid, on)}
+        fixed = {slot: pid for slot, pid in roster.selected_slots.items() if pid in locked}
+        slots = tuple(s for s in self.league.starter_slots if s.id not in fixed)
+        free = {p: players[p].player.positions for p in draws if p not in locked}
+        return fixed, slots, free
+
     def optimize_assignment(
         self,
         team: str,
@@ -321,8 +337,6 @@ class Simulation:
         required: tuple[str, ...] = (),
         excluded: tuple[str, ...] = (),
     ) -> tuple[dict[str, str], float]:
-        players = {p.player.id: p for p in self.projection(on).players}
-
         def objective(ids: tuple[str, ...]) -> float:
             self.check_limits()
             if monotonic() - started > self.params.budgets["week"].value:
@@ -330,14 +344,9 @@ class Simulation:
             total = rest + sum((draws[p] for p in ids), start=np.zeros_like(rest))
             return self.calibrated_score(float(self.score(total, opponent_total)[1].mean())).result
 
-        roster = next(t for t in self.snapshot.teams if t.id == team)
-        locked = {pid for pid in draws if self.locked(pid, on)}
-        fixed = {slot: pid for slot, pid in roster.selected_slots.items() if pid in locked}
-        slots = tuple(s for s in self.league.starter_slots if s.id not in fixed)
+        fixed, slots, free = self.lineup_constraints(team, on, draws)
         fixed_ids = tuple(fixed.values())
-        free = {
-            p: players[p].player.positions for p in draws if p not in locked and p not in excluded
-        }
+        free = {p: positions for p, positions in free.items() if p not in excluded}
 
         def movable_objective(ids: tuple[str, ...]) -> float:
             return objective((*fixed_ids, *ids))

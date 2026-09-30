@@ -63,23 +63,23 @@ def fallback_prior(
         if set(g.positions).intersection(player.positions)
         and g.minimum_minutes <= minutes < g.maximum_minutes
     )
-    if len(groups) != 1:
-        raise DataError(
-            f"prior.{player.id}: expected one position/minutes prior group; got {len(groups)}"
-        )
-    group = groups[0]
-    ids = {
-        p.id
-        for p in players
-        if set(p.positions).intersection(group.positions).intersection(player.positions)
-    }
+    if not groups:
+        raise DataError(f"prior.{player.id}: no matching position/minutes prior group")
+    positions = {p.id: set(p.positions) for p in players}
+    # A multi-position player belongs to the union of matching peer groups.
+    # Iterate priors once so peers eligible at multiple positions get one vote.
     peers = tuple(
         p
         for p in priors.players
-        if p.player_id in ids and group.minimum_minutes <= p.minutes < group.maximum_minutes
+        if p.player_id != player.id
+        and any(
+            positions.get(p.player_id, set()).intersection(group.positions, player.positions)
+            and group.minimum_minutes <= p.minutes < group.maximum_minutes
+            for group in groups
+        )
     )
     if not peers:
-        raise DataError(f"prior.{player.id}: no observed peers in group {group.id}")
+        raise DataError(f"prior.{player.id}: no observed peers in matching groups")
     return PlayerPrior(
         player_id=player.id,
         minutes=evaluate("mean", values=tuple(p.minutes for p in peers)).result,
@@ -103,8 +103,7 @@ def observed_boxes(snapshot: PlayerSnapshot, as_of: datetime) -> dict[str, tuple
             latest[box.player_id, box.game_id] = box
     grouped: dict[str, list[BoxScore]] = {}
     for box in sorted(latest.values(), key=lambda b: (b.played_at, b.game_id)):
-        if box.minutes > 0:
-            grouped.setdefault(box.player_id, []).append(box)
+        grouped.setdefault(box.player_id, []).append(box)
     return {k: tuple(v) for k, v in grouped.items()}
 
 
@@ -202,7 +201,7 @@ def adjusted_values(
         **{"shot:" + k: v for k, v in shots.items()},
     }
     fields = {f.id: f for f in params.fields}
-    for entry in entries:
+    for entry in sorted(entries, key=lambda e: fields[e.field].only_back_to_back):
         field = fields[entry.field]
         if field.only_back_to_back and not back_to_back:
             continue
@@ -247,13 +246,14 @@ def player_flags(
                 traces=(recent_trace,) if recent_trace else (),
             )
         )
+    played = tuple(b for b in boxes if b.minutes > 0)
     samples = (
         evaluate_array(
             "row_rates",
-            counts=np.array([[b.stats[s] for s in rates] for b in boxes]),
-            minutes=np.array([b.minutes for b in boxes]),
+            counts=np.array([[b.stats[s] for s in rates] for b in played]),
+            minutes=np.array([b.minutes for b in played]),
         ).result
-        if boxes
+        if played
         else None
     )
     for index, (stat, rate) in enumerate(rates.items()):
@@ -343,6 +343,7 @@ def effective_projection(
         raise DataError("projection: prior is unavailable at decision time or season differs")
     players = visible_players(snapshot, as_of)
     zone = ZoneInfo(league.timezone)
+    today = as_of.astimezone(zone).date()
     history = {
         pid: tuple(
             b
@@ -364,8 +365,13 @@ def effective_projection(
             prior = prior.model_copy(
                 update={"probabilities": {**peer.probabilities, **prior.probabilities}}
             )
-        if player.status not in params.availability:
-            raise DataError(f"parameters.availability.{player.status}: missing status probability")
+        status = (
+            "healthy"
+            if player.return_on is not None and today < player.return_on <= on
+            else player.status
+        )
+        if status not in params.availability:
+            raise DataError(f"parameters.availability.{status}: missing status probability")
         m, rates, shots, traces, weights, totals = blend_player(
             player, prior, boxes, league, params
         )
@@ -380,7 +386,7 @@ def effective_projection(
             for g in games
         )
         m, q, rates, shots = adjusted_values(
-            m, params.availability[player.status].value, rates, shots, own, params, b2b
+            m, params.availability[status].value, rates, shots, own, params, b2b
         )
         for shot in league.shots:
             if shot.id in shots:

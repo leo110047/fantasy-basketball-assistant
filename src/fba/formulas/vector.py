@@ -137,7 +137,7 @@ def bootstrap_scale(inputs: Inputs) -> Array:
     mean = source.mean(axis=0)
     result = fallback.copy()
     np.divide(samples * target, mean, out=result, where=mean > 0)
-    return np.rint(result)
+    return result
 
 
 def sampling_covariance(inputs: Inputs) -> Array:
@@ -161,6 +161,21 @@ def logistic_objective(inputs: Inputs) -> Array:
         raise DataError("formula.logistic_objective: paired feature/outcome samples required")
     z = x @ beta
     return np.asarray(np.mean(np.logaddexp(0.0, z) - y * z), dtype=np.float64)
+
+
+def logistic_gradient(inputs: Inputs) -> Array:
+    x, beta, y = (inputs[k] for k in ("features", "coefficients", "outcomes"))
+    if x.ndim != 2 or not len(x) or beta.shape != x.shape[1:] or y.shape != x.shape[:1]:
+        raise DataError("formula.logistic_gradient: paired feature/outcome samples required")
+    return np.asarray(x.T @ (expit(x @ beta) - y) / len(y), dtype=np.float64)
+
+
+def logistic_hessian(inputs: Inputs) -> Array:
+    x, beta = inputs["features"], inputs["coefficients"]
+    if x.ndim != 2 or not len(x) or beta.shape != x.shape[1:]:
+        raise DataError("formula.logistic_hessian: feature matrix and coefficients required")
+    p = expit(x @ beta)
+    return np.asarray(x.T @ (x * (p * (1 - p))[:, None]) / len(x), dtype=np.float64)
 
 
 def calibration_fit(inputs: Inputs) -> Array:
