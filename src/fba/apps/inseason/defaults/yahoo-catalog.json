@@ -1,0 +1,502 @@
+{
+  "category_labels": {
+    "REB": {
+      "id": "REB",
+      "label": "REB",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "REB",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "OREB": {
+      "id": "OREB",
+      "label": "OREB",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "OREB",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "FG%": {
+      "id": "FG%",
+      "label": "FG%",
+      "formula": {
+        "kind": "ratio",
+        "numerator": [
+          {
+            "stat_id": "FGM",
+            "coefficient": 1.0
+          }
+        ],
+        "denominator": [
+          {
+            "stat_id": "FGA",
+            "coefficient": 1.0
+          }
+        ],
+        "zero_denominator": "zero"
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "FT%": {
+      "id": "FT%",
+      "label": "FT%",
+      "formula": {
+        "kind": "ratio",
+        "numerator": [
+          {
+            "stat_id": "FTM",
+            "coefficient": 1.0
+          }
+        ],
+        "denominator": [
+          {
+            "stat_id": "FTA",
+            "coefficient": 1.0
+          }
+        ],
+        "zero_denominator": "zero"
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "AST": {
+      "id": "AST",
+      "label": "AST",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "AST",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "A/T": {
+      "id": "A/T",
+      "label": "A/T",
+      "formula": {
+        "kind": "ratio",
+        "numerator": [
+          {
+            "stat_id": "AST",
+            "coefficient": 1.0
+          }
+        ],
+        "denominator": [
+          {
+            "stat_id": "TO",
+            "coefficient": 1.0
+          }
+        ],
+        "zero_denominator": "zero"
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "PTS": {
+      "id": "PTS",
+      "label": "PTS",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "PTS",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "3PM": {
+      "id": "3PM",
+      "label": "3PM",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "3PM",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "STL": {
+      "id": "STL",
+      "label": "STL",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "STL",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "BLK": {
+      "id": "BLK",
+      "label": "BLK",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "BLK",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "DD": {
+      "id": "DD",
+      "label": "DD",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "DD",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "3PTM": {
+      "id": "3PM",
+      "label": "3PM",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "3PM",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "TO": {
+      "id": "TO",
+      "label": "TO",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "TO",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "lower",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "FGM": {
+      "id": "FGM",
+      "label": "FGM",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "FGM",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "FGA": {
+      "id": "FGA",
+      "label": "FGA",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "FGA",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "FTM": {
+      "id": "FTM",
+      "label": "FTM",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "FTM",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    },
+    "FTA": {
+      "id": "FTA",
+      "label": "FTA",
+      "formula": {
+        "kind": "linear",
+        "terms": [
+          {
+            "stat_id": "FTA",
+            "coefficient": 1.0
+          }
+        ]
+      },
+      "direction": "higher",
+      "comparison_decimals": 6,
+      "tie_value": 0.5
+    }
+  },
+  "stat_labels": {
+    "FGA": [
+      "FGA"
+    ],
+    "FGM": [
+      "FGM"
+    ],
+    "FTA": [
+      "FTA"
+    ],
+    "FTM": [
+      "FTM"
+    ],
+    "3PM": [
+      "3PM"
+    ],
+    "REB": [
+      "REB"
+    ],
+    "OREB": [
+      "OREB"
+    ],
+    "AST": [
+      "AST"
+    ],
+    "TO": [
+      "TO"
+    ],
+    "STL": [
+      "STL"
+    ],
+    "BLK": [
+      "BLK"
+    ],
+    "PTS": [
+      "PTS"
+    ],
+    "DD": [
+      "DD"
+    ],
+    "3PTM": [
+      "3PM"
+    ],
+    "FGM/A": [
+      "FGM",
+      "FGA"
+    ],
+    "FTM/A": [
+      "FTM",
+      "FTA"
+    ],
+    "3PTM/A": [
+      "3PM",
+      "3PA"
+    ]
+  },
+  "positions": {
+    "PG": [
+      "PG"
+    ],
+    "SG": [
+      "SG"
+    ],
+    "G": [
+      "PG",
+      "SG"
+    ],
+    "SF": [
+      "SF"
+    ],
+    "PF": [
+      "PF"
+    ],
+    "F": [
+      "SF",
+      "PF"
+    ],
+    "C": [
+      "C"
+    ],
+    "Util": [
+      "PG",
+      "SG",
+      "SF",
+      "PF",
+      "C"
+    ],
+    "UTIL": [
+      "PG",
+      "SG",
+      "SF",
+      "PF",
+      "C"
+    ]
+  },
+  "bench_labels": [
+    "BN"
+  ],
+  "injury_labels": {
+    "IL": [
+      "INJ",
+      "O"
+    ],
+    "IL+": [
+      "INJ",
+      "O",
+      "GTD"
+    ],
+    "IR": [
+      "INJ",
+      "O"
+    ],
+    "IR+": [
+      "INJ",
+      "O",
+      "GTD"
+    ]
+  },
+  "base_stats": [
+    "FGA",
+    "FGM",
+    "FTA",
+    "FTM",
+    "3PM",
+    "REB",
+    "OREB",
+    "AST",
+    "TO",
+    "STL",
+    "BLK"
+  ],
+  "shots": [
+    {
+      "id": "FG%",
+      "made": "FGM",
+      "attempted": "FGA"
+    },
+    {
+      "id": "FT%",
+      "made": "FTM",
+      "attempted": "FTA"
+    }
+  ],
+  "derived": [
+    {
+      "id": "PTS",
+      "kind": "linear",
+      "terms": [
+        {
+          "stat_id": "FGM",
+          "coefficient": 2.0
+        },
+        {
+          "stat_id": "3PM",
+          "coefficient": 1.0
+        },
+        {
+          "stat_id": "FTM",
+          "coefficient": 1.0
+        }
+      ],
+      "threshold": 0.0,
+      "minimum_hits": 1
+    },
+    {
+      "id": "DD",
+      "kind": "threshold",
+      "terms": [
+        {
+          "stat_id": "PTS",
+          "coefficient": 1.0
+        },
+        {
+          "stat_id": "REB",
+          "coefficient": 1.0
+        },
+        {
+          "stat_id": "AST",
+          "coefficient": 1.0
+        },
+        {
+          "stat_id": "STL",
+          "coefficient": 1.0
+        },
+        {
+          "stat_id": "BLK",
+          "coefficient": 1.0
+        }
+      ],
+      "threshold": 10.0,
+      "minimum_hits": 2
+    }
+  ],
+  "confirmation_defaults": {
+    "timezone": "America/New_York",
+    "category_ties": "exclude",
+    "week_tie_value": 0.5,
+    "effective": "next_day",
+    "cutoff_local_time": "23:59:59",
+    "lineup_lock": "player_game",
+    "lineup_lock_time": "00:00:00",
+    "trade_deadline": null,
+    "players_on_court": 5,
+    "regulation_minutes": 48
+  }
+}

@@ -1,0 +1,628 @@
+{
+  "format_version": 1,
+  "version": "initial-uncalibrated",
+  "rate_k": {
+    "FGA": {
+      "value": 200,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "FGM": {
+      "value": 200,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "FTA": {
+      "value": 300,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "FTM": {
+      "value": 300,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "3PM": {
+      "value": 300,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "REB": {
+      "value": 400,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "OREB": {
+      "value": 400,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "No OREB backtest is available. Assumed k=400; not a validated value."
+      }
+    },
+    "AST": {
+      "value": 300,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "TO": {
+      "value": 400,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "STL": {
+      "value": 800,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "BLK": {
+      "value": 600,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    }
+  },
+  "shot_k": {
+    "FG%": {
+      "value": 300,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "FT%": {
+      "value": 100,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    }
+  },
+  "availability": {
+    "healthy": {
+      "value": 1,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "GTD": {
+      "value": 0.5,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "O": {
+      "value": 0,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "INJ": {
+      "value": 0,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "DTD": {
+      "value": 0.5,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    }
+  },
+  "budgets": {
+    "sync": {
+      "value": 60,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "projection": {
+      "value": 1,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "team": {
+      "value": 0.3,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "week": {
+      "value": 2,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "recommendations": {
+      "value": 15,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "trade_one": {
+      "value": 30,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "trade_many": {
+      "value": 30,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    },
+    "today": {
+      "value": 1,
+      "evidence": {
+        "kind": "Assumption",
+        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "as_of": "2026-09-29T16:00:00Z",
+        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      }
+    }
+  },
+  "prior_groups": [
+    {
+      "id": "all-minutes",
+      "positions": [
+        "PG",
+        "SG",
+        "SF",
+        "PF",
+        "C"
+      ],
+      "minimum_minutes": 0,
+      "maximum_minutes": 100
+    }
+  ],
+  "group_evidence": {
+    "kind": "Assumption",
+    "reference": "季賽助手規格 sections 4, 6, 7, 9",
+    "as_of": "2026-09-29T16:00:00Z",
+    "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+  },
+  "fields_evidence": {
+    "kind": "Assumption",
+    "reference": "季賽助手規格 sections 4, 6, 7, 9",
+    "as_of": "2026-09-29T16:00:00Z",
+    "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+  },
+  "minute_k": {
+    "value": 3,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "minute_half_life": {
+    "value": 10,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "role_window": {
+    "value": 10,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "role_threshold": {
+    "value": 6,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "override_window": {
+    "value": 5,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "override_threshold": {
+    "value": 6,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "production_sigma": {
+    "value": 3,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "simulations": {
+    "value": 1000,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "season_simulations": {
+    "value": 200,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "seed": {
+    "value": 731,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "calibration": {
+    "value": 0.8,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "safe_probability": {
+    "value": 0.85,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "abandon_probability": {
+    "value": 0.15,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "shortlist": {
+    "value": 10,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "beam_width": {
+    "value": 3,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "max_trade_players": {
+    "value": 2,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "beta_rank": {
+    "value": 0.1,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "beta_need": {
+    "value": 1,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "acceptance_threshold": {
+    "value": 0.5,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "acceptance_noise": {
+    "value": 1,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "fit_minimum": {
+    "value": 30,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "rank_exponent": {
+    "value": 1,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "rank_scale": {
+    "value": 100,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "calibration_bins": {
+    "value": 10,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "calibration_alert": {
+    "value": 0.05,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "tolerance": {
+    "value": 1e-09,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "retry_count": {
+    "value": 3,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "retry_seconds": {
+    "value": 1,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "request_timeout": {
+    "value": 10,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "maximum_requests": {
+    "value": 100,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "as_of": "2026-09-29T16:00:00Z",
+      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+    }
+  },
+  "fields": [
+    {
+      "id": "minutes",
+      "label": "每場分鐘",
+      "kind": "override",
+      "targets": [
+        "minutes"
+      ],
+      "minimum": 0,
+      "maximum": 60,
+      "statuses": {},
+      "only_back_to_back": false
+    },
+    {
+      "id": "usage",
+      "label": "球權倍數",
+      "kind": "multiply",
+      "targets": [
+        "rate:FGA",
+        "rate:FTA",
+        "rate:AST",
+        "rate:TO",
+        "rate:3PM"
+      ],
+      "minimum": 0,
+      "maximum": 3,
+      "statuses": {},
+      "only_back_to_back": false
+    },
+    {
+      "id": "status",
+      "label": "狀態與回歸日",
+      "kind": "status",
+      "targets": [
+        "q"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "statuses": {
+        "healthy": 1,
+        "GTD": 0.5,
+        "O": 0,
+        "INJ": 0
+      },
+      "only_back_to_back": false
+    },
+    {
+      "id": "back_to_back",
+      "label": "背靠背休兵",
+      "kind": "status",
+      "targets": [
+        "q"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "statuses": {
+        "rest": 0,
+        "play": 1
+      },
+      "only_back_to_back": true
+    },
+    {
+      "id": "fg",
+      "label": "投籃命中率",
+      "kind": "override",
+      "targets": [
+        "shot:FG%"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "statuses": {},
+      "only_back_to_back": false
+    },
+    {
+      "id": "ft",
+      "label": "罰球命中率",
+      "kind": "override",
+      "targets": [
+        "shot:FT%"
+      ],
+      "minimum": 0,
+      "maximum": 1,
+      "statuses": {},
+      "only_back_to_back": false
+    }
+  ]
+}

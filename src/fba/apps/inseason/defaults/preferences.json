@@ -1,0 +1,15 @@
+{
+  "format_version": 1,
+  "preferred_port": 8766,
+  "port_attempts": 10,
+  "shutdown_seconds": 10.0,
+  "sync_interval_seconds": 3600,
+  "stale_warning_seconds": 14400,
+  "stale_limit_seconds": 86400,
+  "timezone": "Asia/Taipei",
+  "reserve_adds": 1,
+  "future_weight": 1.0,
+  "untouchable": [],
+  "ignored_opponents": [],
+  "selected_league": null
+}
