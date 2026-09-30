@@ -102,17 +102,19 @@ class InstanceLock:
 
 class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
+    allow_reuse_port = False
 
     def __init__(self, port: int, handler: type[BaseHTTPRequestHandler], attempts: int = 1) -> None:
         self.token = secrets.token_urlsafe(32)
         self.started_at = datetime.now(UTC)
         self.stopping = Event()
+        self.allow_reuse_address = sys.platform != "win32"
         super().__init__(("127.0.0.1", port), handler, bind_and_activate=False)
         try:
+            retryable = {errno.EADDRINUSE, errno.EACCES}
             if sys.platform == "win32":
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
-            else:
-                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                retryable.update((10048, 10013))  # WSAEADDRINUSE and WSAEACCES.
             ports = (
                 [0] if port == 0 else [p for p in range(port, min(65536, port + attempts))] + [0]
             )
@@ -122,7 +124,7 @@ class LocalServer(ThreadingHTTPServer):
                     self.server_bind()
                     break
                 except OSError as exc:
-                    if exc.errno not in (errno.EADDRINUSE, errno.EACCES) or candidate == 0:
+                    if exc.errno not in retryable or candidate == 0:
                         raise
             self.server_activate()
         except OSError as exc:

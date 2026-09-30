@@ -81,3 +81,44 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
             if process.poll() is None:
                 process.kill()
             process.communicate(timeout=5)
+
+
+@pytest.mark.parametrize("error", [10013, 10048])
+def test_windows_exclusive_bind_retries_reserved_or_busy_ports(monkeypatch, error):
+    from http.server import BaseHTTPRequestHandler
+    from types import SimpleNamespace
+
+    from fba.runtime import local
+
+    options, bound = [], []
+
+    class Socket:
+        def setsockopt(self, level, name, value):
+            options.append((level, name, value))
+
+        def bind(self, address):
+            bound.append(address)
+            if len(bound) == 1:
+                raise OSError(error, "Windows port unavailable")
+
+        def getsockname(self):
+            return bound[-1]
+
+        def listen(self, backlog):
+            pass
+
+        def close(self):
+            pass
+
+    exclusive = -5
+    monkeypatch.setattr(local, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setattr(local.socket, "SO_EXCLUSIVEADDRUSE", exclusive, raising=False)
+    monkeypatch.setattr(local.socket, "socket", lambda *args: Socket())
+    monkeypatch.setattr(local.socket, "getfqdn", lambda host: host)
+    server = local.LocalServer(8766, BaseHTTPRequestHandler, attempts=2)
+    try:
+        assert bound == [("127.0.0.1", 8766), ("127.0.0.1", 8767)]
+        assert options == [(local.socket.SOL_SOCKET, exclusive, 1)]
+        assert server.origin == "http://127.0.0.1:8767"
+    finally:
+        server.server_close()
