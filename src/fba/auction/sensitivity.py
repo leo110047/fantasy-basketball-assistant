@@ -1,5 +1,6 @@
 from collections import abc
 
+from fba.auction.auction import portfolio_for
 from fba.contracts.auction import (
     AuctionInput,
     AuctionResult,
@@ -11,7 +12,6 @@ from fba.contracts.auction import (
 )
 from fba.contracts.base import DataError
 from fba.contracts.config import ManagedPricingModel
-from fba.core.auction import portfolio_for
 from fba.core.roster import effective_players
 
 

@@ -1,5 +1,8 @@
 import numpy as np
 
+from fba.auction.auction import portfolio_for
+from fba.auction.fit import FittedUtility
+from fba.auction.managed import FloatArray
 from fba.contracts.auction import AuctionInput, AuctionResult, DraftState, Plan
 from fba.contracts.base import DataError
 from fba.contracts.config import FitParameters, StreamingComparisonModel
@@ -10,10 +13,8 @@ from fba.contracts.streaming import (
     StreamingScenario,
     StreamingSummary,
 )
-from fba.core.auction import portfolio_for
-from fba.core.fit import FittedUtility
-from fba.core.managed import FloatArray
 from fba.core.roster import effective_players
+from fba.formulas.arrays import evaluate_array
 
 
 def select_streaming(
@@ -71,8 +72,11 @@ def flex_candidates(
             primary_only=True,
         )
         realized, expected = manager.control_mean(rest)
-        removed = (run.counts[:, 0] @ manager.raw - (realized - expected)).mean(axis=(0, 1))
-        loss = float((mean - removed) @ gradient)
+        physical = evaluate_array("matrix_product", left=run.counts[:, 0], right=manager.raw).result
+        removed = evaluate_array(
+            "control_variate", physical=physical, realized=realized, expected=expected
+        ).result.mean(axis=(0, 1))
+        loss = float(evaluate_array("matrix_product", left=mean - removed, right=gradient).result)
         losses.append(FlexPlayer(player_id=manager.ids[player], removal_loss=loss))
     return tuple(sorted(losses, key=lambda p: (p.removal_loss, p.player_id))[:count])
 
@@ -121,9 +125,14 @@ def analyze_streaming(
             arrays, rosters, manager.pool, tactics.with_policy(selected), False, primary_only=True
         )
         realized, expected = manager.control_mean(fitted.anchor)
-        boxes = run.counts[:, 0] @ manager.raw - (realized - expected)
+        physical = evaluate_array("matrix_product", left=run.counts[:, 0], right=manager.raw).result
+        boxes = evaluate_array(
+            "control_variate", physical=physical, realized=realized, expected=expected
+        ).result
         means[slots] = boxes.mean(axis=(0, 1))
-        values.append(boxes.mean(axis=1) @ gradient)
+        values.append(
+            evaluate_array("matrix_product", left=boxes.mean(axis=1), right=gradient).result
+        )
         injury, upgrade, stream = run.adds[:, 0].mean(axis=(0, 1))
         rows.append(
             StreamingScenario(

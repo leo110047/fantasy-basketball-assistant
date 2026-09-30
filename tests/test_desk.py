@@ -1,4 +1,3 @@
-import fcntl
 import json
 import os
 import threading
@@ -6,17 +5,18 @@ from concurrent.futures import CancelledError
 from http.client import HTTPConnection
 from time import monotonic, sleep
 
+import portalocker
 import pytest
 from test_auction import config, inputs_for, player, state
 
 import fba.adapters.desk as ledger
-from fba.adapters.codec import canonical, decode, digest
 from fba.apps.desk import AuctionDesk, LatestCalculation
 from fba.apps.server import DeskServer, serve
+from fba.auction.auction import calculate_auction
 from fba.contracts.auction import DraftState, Sale
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.desk import CompareRequest, DeskError, DeskExecution, SaveDraft
-from fba.core.auction import calculate_auction
+from fba.data.codec import canonical, decode, digest
 
 
 def wait_for(predicate):
@@ -377,7 +377,7 @@ def test_invalid_watch_lists_cannot_be_imported(desk, watch):
 
 def test_service_shares_background_pool_and_comparison_never_queues_behind_it(desk, monkeypatch):
     import fba.apps.server as server
-    from fba.core.auction import comparison_plans
+    from fba.auction.auction import comparison_plans
 
     owners = []
 
@@ -402,7 +402,7 @@ def test_service_shares_background_pool_and_comparison_never_queues_behind_it(de
             assert owners[0] is owners[1]
             assert self.service.comparison_runner is comparison_plans
             wait_for(lambda: self.service.results().equal.status == "ready")
-            from fba.core.auction import compare, market_context, portfolio_for
+            from fba.auction.auction import compare, market_context, portfolio_for
 
             draft = self.service.bootstrap().desk.state
             players, market = market_context(desk.inputs, draft, desk.input_hash)
@@ -446,7 +446,11 @@ def request(server, method, path, body=None, headers=None):
             method,
             path,
             body=body,
-            headers={"Authorization": f"Bearer {server.token}", **(headers or {})},
+            headers={
+                "Authorization": f"Bearer {server.token}",
+                "Origin": server.origin,
+                **(headers or {}),
+            },
         )
         response = connection.getresponse()
         return response.status, dict(response.getheaders()), response.read()
@@ -533,18 +537,18 @@ def test_all_service_writers_share_the_canonical_draft_lock(desk, monkeypatch):
     monkeypatch.setattr("fba.apps.server.load_auction", lambda path: (desk.inputs, desk.input_hash))
     calls = []
 
-    def run(inputs, sha, draft, log, workers, port):
+    def run(inputs, sha, draft, log, workers, port, instance_lock):
         calls.append(draft)
         assert draft == desk.path.resolve()
         # A second server through a symlink must fail before it can read or write the ledger.
-        with pytest.raises(DataError, match="exclusively lock"):
+        with pytest.raises(DataError, match="已在執行但沒有回應"):
             serve(desk.path.parent / "input.json", desk.path, desk.log, 1, 0)
         original = ledger.atomic_exchange
 
         def interleave(source, target):
             with draft.with_suffix(draft.suffix + ".lock").open("a") as editor:
-                with pytest.raises(BlockingIOError):
-                    fcntl.flock(editor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with pytest.raises(portalocker.exceptions.LockException):
+                    portalocker.lock(editor, portalocker.LOCK_EX | portalocker.LOCK_NB)
             original(source, target)
 
         monkeypatch.setattr(ledger, "atomic_exchange", interleave)
@@ -555,7 +559,7 @@ def test_all_service_writers_share_the_canonical_draft_lock(desk, monkeypatch):
     assert calls == [desk.path.resolve()]
     # Once the service exits, an editor honoring the protocol may save normally.
     with desk.path.with_suffix(".json.lock").open("a") as editor:
-        fcntl.flock(editor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        portalocker.lock(editor, portalocker.LOCK_EX | portalocker.LOCK_NB)
         edited = desk.bootstrap().desk.state.model_copy(update={"revision": 99})
         desk.path.write_bytes(canonical(edited))
     assert decode(DraftState, desk.path.read_bytes(), "edited") == edited

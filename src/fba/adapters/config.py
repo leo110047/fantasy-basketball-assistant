@@ -3,7 +3,6 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import ValidationError
 
-from fba.adapters.codec import canonical, checked_json, decode, digest, read_bytes
 from fba.adapters.espn import validate_source_season
 from fba.contracts.base import ConfigError, DataError, Record
 from fba.contracts.config import (
@@ -21,6 +20,7 @@ from fba.contracts.config import (
     ValidatedConfig,
 )
 from fba.core.config import validate_config
+from fba.data.codec import canonical, checked_json, decode, digest, read_bytes
 
 
 def load_one[T: Record](path: Path, model: type[T], schema: str) -> tuple[T, ConfigRef]:

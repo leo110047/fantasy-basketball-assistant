@@ -1,7 +1,6 @@
 from collections import Counter
 
 from fba.adapters.acquisition import Acquired
-from fba.adapters.codec import decode
 from fba.adapters.roster import import_roster
 from fba.adapters.sources import parse_sources
 from fba.contracts.base import DataError
@@ -17,6 +16,7 @@ from fba.contracts.data import (
     Snapshot,
 )
 from fba.core.data import fit_availability, resolve_players, validate_schedule
+from fba.data.codec import decode
 
 
 def map_observations(

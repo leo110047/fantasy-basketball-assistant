@@ -7,11 +7,11 @@ from test_team_minutes import budget_case as budget_case
 from test_team_offense import offense_case as offense_case
 
 from fba.adapters.auction import prepare_auction, prepare_management
-from fba.adapters.codec import canonical, digest
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import ModelDocument, TeamConstraintModel
-from fba.core.calculation import calculate_with_offense
-from fba.core.team_minutes import minute_allocations
+from fba.data.codec import canonical, digest
+from fba.formulas.team_minutes import minute_allocations
+from fba.projection.calculation import calculate_with_offense
 
 
 def controlled(inputs, minutes="enforce", offense="enforce"):

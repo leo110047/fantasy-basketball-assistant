@@ -19,9 +19,9 @@ from fba.contracts.projection import (
     TeamMember,
     TeamOffenseBaseline,
 )
-from fba.core.calculation import calculate, calculate_with_offense
 from fba.core.config import validate_team_offense
-from fba.core.team_offense import validate_offense, validate_offense_input
+from fba.formulas.team_offense import validate_offense, validate_offense_input
+from fba.projection.calculation import calculate, calculate_with_offense
 
 
 @pytest.fixture
@@ -237,7 +237,7 @@ def test_double_double_is_recomputed_when_usage_crosses_threshold(offense_case, 
 @pytest.mark.parametrize("budget", [9.9, 10.0, 10.1, 15.0, 20.0])
 def test_positive_usage_is_shared_continuously_across_source_coverage(offense_case, budget):
     from fba.contracts.projection import PlayerOffenseAllocation
-    from fba.core.team_offense import allocate_usage
+    from fba.formulas.team_offense import allocate_usage
 
     stats = (4.0, 10.0, 0.0, 0.0, 8.0, 0.0, 3.0, 1.0, 8.0, 0.0, 0.0, 0.0)
     rows = tuple(

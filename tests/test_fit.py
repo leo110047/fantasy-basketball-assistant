@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 from test_auction import config, inputs_for, player, state
 
-from fba.adapters.codec import canonical
 from fba.adapters.native import NativeKernel
+from fba.auction.auction import calculate_auction, market_context, portfolio_for
+from fba.auction.fit import FittedUtility, categories, opponent_rosters
 from fba.contracts.auction import AuctionPlayer, Infeasible, Plan, Sale
 from fba.contracts.base import DataError
 from fba.contracts.season import ManagedPlayer, ManagementInput
-from fba.core.auction import calculate_auction, market_context, portfolio_for
-from fba.core.fit import FittedUtility, categories, opponent_rosters
+from fba.data.codec import canonical
 
 
 @pytest.fixture
@@ -153,8 +153,8 @@ def test_category_direction_zero_denominator_and_empty_buy_branch(fitted_case):
 
 
 def test_fit_failure_contracts_and_full_opponent_roster(fitted_case, monkeypatch):
+    from fba.auction.portfolio import Portfolio
     from fba.contracts.auction import Sale, SolverError
-    from fba.core.portfolio import Portfolio
 
     inputs, draft, kernel = fitted_case
     sales = tuple(Sale(id=str(i), player_id=f"{i:03}", buyer="team-01", amount=1) for i in range(2))

@@ -5,7 +5,6 @@ from zoneinfo import ZoneInfo
 
 from fba.adapters.annual import forecast_archive
 from fba.adapters.calculation import load_projection, publish_result, verify_calculation_input
-from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config, load_parameters
 from fba.adapters.migration import frozen_calibration
 from fba.adapters.snapshots import artifact, publish_bundle
@@ -26,10 +25,11 @@ from fba.contracts.projection import (
     PreparedInput,
     PreparedPopulation,
 )
-from fba.core.calculation import calculate_with_offense
 from fba.core.config import validate_config
-from fba.core.preparation import prepare
-from fba.core.team_minutes import minute_allocations
+from fba.data.codec import canonical, decode, digest, read_bytes
+from fba.formulas.team_minutes import minute_allocations
+from fba.projection.calculation import calculate_with_offense
+from fba.projection.preparation import prepare
 
 
 def prepare_snapshot(snapshot: Snapshot, config: ValidatedConfig) -> PreparedPopulation:

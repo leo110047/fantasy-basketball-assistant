@@ -11,9 +11,10 @@ from fba.adapters.calculation import (
     require_completed_season,
     verify_calculation_input,
 )
-from fba.adapters.codec import canonical, checked_json, decode, digest, read_bytes
 from fba.adapters.native import NativeKernel
 from fba.adapters.snapshots import checked_path
+from fba.auction.managed import management_calendar
+from fba.auction.season import replay
 from fba.contracts.auction import AuctionInput
 from fba.contracts.backtest import (
     ActualArchive,
@@ -26,9 +27,8 @@ from fba.contracts.backtest import (
 )
 from fba.contracts.base import DataError, FormatVersion, Natural, Record
 from fba.contracts.data import Digest, Snapshot
-from fba.core.managed import management_calendar
 from fba.core.replay_schedule import season_days
-from fba.core.season import replay
+from fba.data.codec import canonical, checked_json, decode, digest, read_bytes
 
 
 class ReplayExecution(Record):

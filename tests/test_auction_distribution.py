@@ -8,9 +8,9 @@ from scipy.optimize import Bounds, LinearConstraint, milp
 from test_auction import independent_legal, inputs_for, state
 from test_market_distribution import bid_mass
 
+from fba.auction.auction import calculate_auction
 from fba.contracts.auction import AuctionPlayer, Plan
-from fba.core.auction import calculate_auction
-from fba.core.market import normalization_shift
+from fba.formulas.market import normalization_shift
 
 
 def opening_price_oracle(league, parameters, anchor):

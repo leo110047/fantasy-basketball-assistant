@@ -9,10 +9,10 @@ import pytest
 from test_auction import config
 
 from fba.adapters.native import NativeKernel
+from fba.auction.managed import ManagedSeason
 from fba.contracts.auction import AuctionPlayer, SolverError
 from fba.contracts.base import DataError
 from fba.contracts.season import ManagedPlayer, ManagementInput, SeasonArrays
-from fba.core.managed import ManagedSeason
 
 
 @pytest.fixture(scope="module")

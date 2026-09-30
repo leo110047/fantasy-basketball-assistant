@@ -3,9 +3,10 @@ import pytest
 from test_auction import config
 from test_fit import fitted_case as fitted_case
 
+from fba.auction.auction import calculate_auction
+from fba.auction.fit import FittedUtility
 from fba.contracts.auction import Infeasible, Plan
-from fba.core.auction import calculate_auction
-from fba.core.fit import FittedUtility, category_diagnostics, margin_score
+from fba.formulas.auction_fit import category_diagnostics, margin_score
 
 
 def test_category_explanation_uses_configured_axes_steps_and_strict_lead_shares():

@@ -1,6 +1,6 @@
-from fba.adapters.codec import decode
 from fba.contracts.base import DataError, FormatVersion, Record, Text
 from fba.contracts.data import ProviderPlayer, ScheduleCount
+from fba.data.codec import decode
 
 
 class CountsFile(Record):

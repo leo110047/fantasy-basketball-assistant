@@ -1,8 +1,9 @@
 from itertools import product
-from math import floor, fsum
+from math import fsum
 
 import numpy as np
 
+from fba.auction.auction import portfolio_for
 from fba.contracts.auction import (
     AuctionInput,
     AuctionPlayer,
@@ -18,15 +19,15 @@ from fba.contracts.auction import (
 from fba.contracts.base import DataError
 from fba.contracts.config import AuctionModel, LeagueRules
 from fba.contracts.paths import AuctionPath, Order, PathBid, PathPair, Regime, StressSettings
-from fba.core.auction import portfolio_for
-from fba.core.market import (
+from fba.core.roster import completable, effective_players, validate_draft
+from fba.formulas.market import (
     bidders_by_position,
     market_factors,
     normalization_shift,
     price_market,
     require_distribution,
 )
-from fba.core.roster import completable, effective_players, validate_draft
+from fba.formulas.registry import evaluate
 
 
 def clearing(
@@ -175,16 +176,21 @@ class AuctionPaths:
                 and len(self.stars.intersection(team.owned)) < self.settings.premium_per_team
                 else 1.0
             )
-            willingness = (
-                self.league.minimum_bid
-                + max(0.0, anchor - self.league.minimum_bid)
-                * inflation
-                * participants[i]
-                * taste[i]
-                * premium
+            bids.append(
+                int(
+                    evaluate(
+                        "path_bid",
+                        minimum=float(self.league.minimum_bid),
+                        anchor=anchor,
+                        inflation=inflation,
+                        participation=float(participants[i]),
+                        taste=float(taste[i]),
+                        premium=premium,
+                        maximum=float(team.maximum_bid),
+                        increment=float(self.league.bid_increment),
+                    ).result
+                )
             )
-            amount = min(team.maximum_bid, willingness)
-            bids.append(floor(amount / self.league.bid_increment) * self.league.bid_increment)
         return tuple(bids)
 
     def continuation(

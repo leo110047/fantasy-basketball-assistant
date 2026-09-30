@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from fba.adapters.codec import digest, read_bytes
 from fba.adapters.espn import team_labels
 from fba.adapters.snapshots import checked_path
 from fba.contracts.base import DataError
 from fba.contracts.config import ValidatedConfig
 from fba.contracts.data import Artifact, Snapshot, TeamLabel
+from fba.data.codec import digest, read_bytes
 
 
 def label_sources(snapshot: Snapshot, config: ValidatedConfig) -> tuple[Artifact, ...]:

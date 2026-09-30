@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 from test_auction import config, inputs_for, player, state
 
+from fba.auction.auction import calculate_auction, market_context
 from fba.contracts.auction import DraftOverride, Plan, Sale
-from fba.core.auction import calculate_auction, market_context
-from fba.core.market import opening_anchors
+from fba.formulas.market import opening_anchors
 
 
 def small_league(teams=2):

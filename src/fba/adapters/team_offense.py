@@ -14,7 +14,7 @@ from fba.contracts.projection import (
     TeamMember,
     TeamOffenseBaseline,
 )
-from fba.core.preparation import complete_forecast, game_samples
+from fba.projection.preparation import complete_forecast, game_samples
 
 
 def outside_prior(

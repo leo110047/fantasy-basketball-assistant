@@ -9,14 +9,14 @@ from test_auction_io import frozen_auction as frozen_auction
 from test_preparation import annual_case as annual_case
 from test_preparation import projection_bundle as projection_bundle
 
-from fba.adapters.codec import canonical
 from fba.adapters.paths import verdict
+from fba.auction.auction import calculate_auction, market_context
+from fba.auction.paths import AuctionPaths, clearing, own_bid
 from fba.contracts.auction import DraftOverride, Sale
 from fba.contracts.base import DataError
 from fba.contracts.paths import StressSettings
-from fba.core.auction import calculate_auction, market_context
-from fba.core.paths import AuctionPaths, clearing, own_bid
 from fba.core.roster import validate_draft
+from fba.data.codec import canonical
 
 
 def settings():
@@ -207,9 +207,9 @@ def test_paths_cli_publishes_bound_result_without_changing_draft(frozen_auction,
     import sys
 
     from fba.adapters.auction import draft_template, load_auction
-    from fba.adapters.codec import digest
     from fba.contracts.auction import DraftState
     from fba.contracts.paths import StressResult
+    from fba.data.codec import digest
 
     path, _, _ = frozen_auction
     inputs, input_hash = load_auction(path)

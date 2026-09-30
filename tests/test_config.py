@@ -3,10 +3,10 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from fba.adapters.codec import checked_json
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import LeagueRules
 from fba.core.config import validate_config
+from fba.data.codec import checked_json
 
 
 def test_valid_config_and_immutable(parsed):

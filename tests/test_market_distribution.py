@@ -6,11 +6,11 @@ import numpy as np
 import pytest
 from test_auction import config, inputs_for, player, state
 
+from fba.auction.auction import market_context
 from fba.contracts.auction import TeamBudget
 from fba.contracts.base import ConfigError
 from fba.contracts.config import MarketParameters, ModelDocument, SampledMarketParameters
-from fba.core.auction import market_context
-from fba.core.market import distribution_price, normalization_shift
+from fba.formulas.market import distribution_price, normalization_shift
 
 
 @pytest.mark.parametrize("volatility", [0.0, 0.25, 1.0])

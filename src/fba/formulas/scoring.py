@@ -6,7 +6,8 @@ from numpy.typing import NDArray
 
 from fba.contracts.backtest import CategoryOutcome, Pairing, ReplayTeam, Standing, WeekOutcome
 from fba.contracts.base import DataError
-from fba.contracts.config import LeagueRules, Linear
+from fba.contracts.config import LeagueRules
+from fba.formulas.categories import category_values
 
 type FloatArray = NDArray[np.float64]
 
@@ -16,37 +17,7 @@ class MatchupScorer(Protocol):
 
 
 def categories(box: FloatArray, league: LeagueRules, stat_ids: tuple[str, ...]) -> FloatArray:
-    positive = np.maximum(box, 0)
-    columns: list[FloatArray] = []
-    for category in league.categories:
-        formula = category.formula
-        terms = formula.terms if isinstance(formula, Linear) else formula.numerator
-        numerator = sum(
-            (positive[..., stat_ids.index(t.stat_id)] * t.coefficient for t in terms),
-            start=np.zeros(positive.shape[:-1]),
-        )
-        if isinstance(formula, Linear):
-            value = numerator
-        else:
-            denominator = sum(
-                (
-                    positive[..., stat_ids.index(t.stat_id)] * t.coefficient
-                    for t in formula.denominator
-                ),
-                start=np.zeros(positive.shape[:-1]),
-            )
-            if formula.zero_denominator == "error" and np.any(denominator <= 0):
-                raise DataError(f"fit.category.{category.id}: zero denominator")
-            value = np.divide(
-                numerator,
-                denominator,
-                out=numerator.copy()
-                if formula.zero_denominator == "numerator"
-                else np.zeros_like(numerator),
-                where=denominator > 0,
-            )
-        columns.append(value if category.direction == "higher" else -value)
-    return np.stack(columns, axis=-1)
+    return category_values(box, league.categories, stat_ids)
 
 
 def matchup(

@@ -8,7 +8,6 @@ import pytest
 from pydantic import ValidationError
 
 from fba.adapters.calculation import calculate_file, load_calculation_input
-from fba.adapters.codec import canonical, digest
 from fba.adapters.config import load_config
 from fba.adapters.migration import migrate_projection
 from fba.adapters.snapshots import artifact, publish
@@ -17,6 +16,7 @@ from fba.contracts.config import PreparationModel
 from fba.contracts.data import CalibrationPair, ManualAdjustments, Snapshot
 from fba.contracts.projection import CalibratedInput
 from fba.core.data import fit_availability
+from fba.data.codec import canonical, digest
 
 
 @pytest.fixture
@@ -346,8 +346,8 @@ def test_migration_rejects_source_changed_after_verification(
 
 
 def test_calibration_is_sourced_and_preserves_raw_replacement_eligibility(projection_bundle):
-    from fba.core.calculation import calculate
-    from fba.core.valuation import fit_ruler
+    from fba.formulas.valuation import fit_ruler
+    from fba.projection.calculation import calculate
 
     inputs, sha = load_calculation_input(projection_bundle, CalibratedInput)
     result = calculate(inputs, sha)
@@ -433,7 +433,7 @@ def test_format_two_migration_retains_original_input(projection_bundle, tmp_path
 
 
 def test_calibrated_games_cannot_exceed_return_schedule_or_manual_cap(projection_bundle):
-    from fba.core.calculation import calculate
+    from fba.projection.calculation import calculate
 
     inputs, sha = load_calculation_input(projection_bundle, CalibratedInput)
     inflated = inputs.calibration.model_copy(update={"intercept": 1.0, "slope": 1.0})

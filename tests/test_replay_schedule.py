@@ -7,6 +7,8 @@ from test_backtest import replay_fixture
 from test_managed import small_arrays
 
 from fba.adapters.native import NativeKernel
+from fba.auction.managed import ManagedSeason
+from fba.auction.season import health_tape, replay
 from fba.contracts.backtest import (
     ActualBox,
     ScheduledGame,
@@ -15,9 +17,7 @@ from fba.contracts.backtest import (
 )
 from fba.contracts.base import DataError
 from fba.contracts.season import ManagementPolicy
-from fba.core.managed import ManagedSeason
 from fba.core.replay_schedule import schedule_tape
-from fba.core.season import health_tape, replay
 
 
 @pytest.fixture(scope="module")

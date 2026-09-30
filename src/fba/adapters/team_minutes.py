@@ -3,12 +3,12 @@ from math import fsum
 from pathlib import Path
 
 from fba.adapters.acquisition import Acquired
-from fba.adapters.codec import read_bytes
 from fba.adapters.sources import SourceData, parse_sources
 from fba.contracts.base import DataError
 from fba.contracts.config import PreparationModel, ValidatedConfig
 from fba.contracts.data import Forecast, PlayerGame, Snapshot
 from fba.contracts.projection import MinuteEstimate, TeamMember
+from fba.data.codec import read_bytes
 
 
 def minute_estimates(

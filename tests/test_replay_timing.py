@@ -4,9 +4,9 @@ from test_backtest import replay_fixture
 from test_managed import reference_manager
 from test_season import management_parameters
 
+from fba.auction.managed import ManagedSeason
+from fba.auction.season import replay
 from fba.contracts.season import ManagementInput, ManagementPolicy
-from fba.core.managed import ManagedSeason
-from fba.core.season import replay
 
 
 def timing_manager(kernel, effective, schedule, utilities):

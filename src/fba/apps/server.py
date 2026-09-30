@@ -1,19 +1,12 @@
-import hmac
-import json
-import secrets
-import signal
-from collections.abc import Generator
-from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import os
+from http.server import BaseHTTPRequestHandler
 from itertools import combinations
 from pathlib import Path
 from threading import Event
-from types import FrameType
 from typing import override
 
 from fba.adapters.auction import load_auction
-from fba.adapters.codec import canonical, decode
-from fba.adapters.desk import check_storage, draft_lock
+from fba.adapters.desk import check_storage
 from fba.apps.auction import AuctionSession
 from fba.apps.desk import AuctionDesk, session_calculator, session_streaming
 from fba.contracts.auction import AuctionInput, SolverError
@@ -28,17 +21,31 @@ from fba.contracts.desk import (
     StateRequest,
     StreamingRequest,
 )
+from fba.data.codec import canonical, decode
+from fba.runtime.assets import formula_script
+from fba.runtime.local import (
+    Instance,
+    InstanceLock,
+    LocalServer,
+    launch_browser,
+    open_existing,
+    permitted,
+    shutdown_signals,
+)
+from fba.runtime.processes import owned_processes
 
 
-class DeskServer(ThreadingHTTPServer):
+class DeskServer(LocalServer):
     def __init__(self, desk: AuctionDesk | None, port: int) -> None:
         self._desk = desk
-        self.token = secrets.token_urlsafe(32)
-        try:
-            super().__init__(("127.0.0.1", port), DeskHandler)
-        except OSError as exc:
-            raise DataError(f"serve: cannot bind 127.0.0.1:{port}: {exc}") from exc
-        self.origin = f"http://127.0.0.1:{self.server_port}"
+        super().__init__(port, DeskHandler)
+        self.instance = Instance(
+            app="desk",
+            pid=os.getpid(),
+            port=self.server_port,
+            token=self.token,
+            started_at=self.started_at,
+        )
 
     @property
     def desk(self) -> AuctionDesk:
@@ -83,14 +90,16 @@ class DeskHandler(BaseHTTPRequestHandler):
         self.send_body(status, canonical(record), "application/json; charset=utf-8")
 
     def permitted(self, *, api: bool) -> bool:
-        origin = self.headers.get("Origin")
-        valid = self.headers.get("Host") == self.desk_server.origin.removeprefix("http://")
-        valid = valid and (origin is None or origin == self.desk_server.origin)
-        if api:
-            valid = valid and hmac.compare_digest(
-                self.headers.get("Authorization", "").encode(),
-                f"Bearer {self.desk_server.token}".encode(),
-            )
+        headers = {
+            k: self.headers[k] for k in ("Host", "Origin", "Authorization") if k in self.headers
+        }
+        valid = permitted(
+            headers,
+            self.desk_server.server_port,
+            self.desk_server.token,
+            authenticated=api,
+            mutation=self.command == "POST",
+        )
         if not valid:
             self.respond(
                 DeskError(error="local service: origin, host or session token rejected"), 403
@@ -98,9 +107,13 @@ class DeskHandler(BaseHTTPRequestHandler):
         return valid
 
     def do_GET(self) -> None:
-        if not self.permitted(api=self.path.startswith("/api/")):
+        if not self.permitted(api=self.path.startswith("/api/") or self.path == "/health"):
             return
-        if self.path == "/api/health":
+        if self.path == "/health":
+            self.respond(self.desk_server.instance)
+        elif self.path == "/formulas.js":
+            self.send_body(200, formula_script(), "text/javascript; charset=utf-8")
+        elif self.path == "/api/health":
             self.respond(DeskHealth(status="ok"))
         elif self.path == "/api/bootstrap":
             self.respond(self.desk_server.desk.bootstrap())
@@ -191,32 +204,32 @@ def serve(input_path: Path, draft: Path, log: Path, workers: int, port: int) -> 
     input_path, draft, log = paths
     inputs, sha = load_auction(input_path)
     # Every service alias shares this stable lock, held across all reads and replacements.
-    with draft_lock(draft):
-        run_server(inputs, sha, draft, log, workers, port)
-
-
-@contextmanager
-def shutdown_signals() -> Generator[Event]:
-    stopping = Event()
-
-    def stop(_signum: int, _frame: FrameType | None) -> None:
-        stopping.set()
-
-    watched = (signal.SIGTERM, signal.SIGHUP, signal.SIGINT)
-    previous = {s: signal.signal(s, stop) for s in watched}
+    lock = InstanceLock(draft.with_suffix(draft.suffix + ".lock"))
+    if not lock.acquire():
+        open_existing(lock, "desk")
+        return
     try:
-        yield stopping
+        run_server(inputs, sha, draft, log, workers, port, lock)
     finally:
-        for name, handler in previous.items():
-            signal.signal(name, handler)
+        lock.release()
 
 
 def run_server(
-    inputs: AuctionInput, sha: str, draft: Path, log: Path, workers: int, port: int
+    inputs: AuctionInput,
+    sha: str,
+    draft: Path,
+    log: Path,
+    workers: int,
+    port: int,
+    instance_lock: InstanceLock | None = None,
 ) -> None:
     check_storage(draft)
     with shutdown_signals() as stopping, DeskServer(None, port) as server:
-        run_desk(inputs, sha, draft, log, workers, server, stopping)
+        if instance_lock is not None:
+            instance_lock.publish(server.instance)
+        launch_browser(server, open_browser=instance_lock is not None)
+        with owned_processes():
+            run_desk(inputs, sha, draft, log, workers, server, stopping)
 
 
 def run_desk(
@@ -239,17 +252,6 @@ def run_desk(
             session_calculator(inputs, sha, session, "equal"),
             session_calculator(inputs, sha, session, "fit"),
             streaming_runner=session_streaming(inputs, session),
-        )
-        print(
-            json.dumps(
-                {
-                    "url": f"{server.origin}/#{server.token}",
-                    "draft": str(draft),
-                    "log": str(log),
-                    "worker_limit": workers,
-                }
-            ),
-            flush=True,
         )
         server.start(desk, stopping)
     finally:

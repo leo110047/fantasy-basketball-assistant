@@ -3,11 +3,12 @@ from time import perf_counter_ns
 
 from fba.adapters.auction_metadata import auction_teams, freeze_team_sources, label_sources
 from fba.adapters.calculation import load_calculation_input, publish_result
-from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_parameters
 from fba.adapters.forecast_scenarios import freeze_scenarios, valued_projection, verify_scenarios
 from fba.adapters.preparation import prepare_snapshot
 from fba.adapters.snapshots import artifact, load_snapshot, publish_bundle
+from fba.auction.auction import CapRunner, calculate_auction, market_context, run_caps
+from fba.auction.fit import FeatureRunner
 from fba.contracts.auction import (
     AnnotatedAuctionDetail,
     AuctionDetail,
@@ -28,13 +29,12 @@ from fba.contracts.config import (
 from fba.contracts.data import Digest, Snapshot, StatValue
 from fba.contracts.projection import CalculationResult, ProductionInput, RoleProjected
 from fba.contracts.season import ManagedPlayer, ManagementInput, RoleManagedPlayer, SeasonKernel
-from fba.core.auction import CapRunner, calculate_auction, market_context, run_caps
 from fba.core.config import validate_config
-from fba.core.fit import FeatureRunner
-from fba.core.health import healthy_games
-from fba.core.market import require_distribution
-from fba.core.preparation import history_samples
-from fba.core.projection import prior
+from fba.data.codec import canonical, decode, digest, read_bytes
+from fba.formulas.health import healthy_games
+from fba.formulas.market import require_distribution
+from fba.formulas.projection import prior
+from fba.projection.preparation import history_samples
 
 
 class AuctionExecution(Record):
@@ -144,6 +144,7 @@ def auction_details(
                     )
                 ),
                 categories=values[pid].categories,
+                traces=values[pid].traces,
             )
         )
         if annotated:

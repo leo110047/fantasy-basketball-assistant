@@ -7,8 +7,8 @@ import pytest
 from fba.contracts.base import DataError
 from fba.contracts.config import ModelDocument, PriorWeight, SeasonConfig
 from fba.contracts.projection import Prior, ProjectionPlayer
-from fba.core.distribution import moments
-from fba.core.projection import prior
+from fba.formulas.distribution import moments
+from fba.formulas.projection import prior
 
 
 @pytest.fixture
@@ -120,7 +120,7 @@ def test_priors_preserve_minutes_and_single_source(model):
 def test_gp_calibration_clips_availability_and_preserves_per_game_moments():
     from fba.contracts.data import Calibration
     from fba.contracts.projection import Projected
-    from fba.core.projection import calibrate_availability
+    from fba.formulas.projection import calibrate_availability
 
     fit = Calibration(
         training_season_id="previous",

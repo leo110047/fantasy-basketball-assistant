@@ -5,10 +5,19 @@ from threading import Condition, Event, Lock, Thread
 from time import perf_counter_ns
 from typing import Literal
 
-from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.desk import log_execution, save_draft
 from fba.apps.auction import AuctionSession, CancellableKernel
 from fba.apps.workers import check_current
+from fba.auction.auction import (
+    ComparisonRunner,
+    calculate_auction,
+    compare,
+    comparison_plans,
+    market_context,
+    portfolio_for,
+)
+from fba.auction.sensitivity import cap_sensitivity
+from fba.auction.streaming import analyze_streaming
 from fba.contracts.auction import (
     AuctionInput,
     AuctionResult,
@@ -35,17 +44,9 @@ from fba.contracts.desk import (
     StreamingResult,
 )
 from fba.contracts.streaming import StreamingSummary
-from fba.core.auction import (
-    ComparisonRunner,
-    calculate_auction,
-    compare,
-    comparison_plans,
-    market_context,
-    portfolio_for,
-)
 from fba.core.roster import effective_players, validate_labels
-from fba.core.sensitivity import cap_sensitivity
-from fba.core.streaming import analyze_streaming
+from fba.data.codec import canonical, decode, digest, read_bytes
+from fba.formulas.registry import definitions
 
 Calculator = Callable[[DraftState, str, Event], AuctionResult]
 StreamingRunner = Callable[[DraftState, AuctionResult, Event], StreamingSummary]
@@ -255,6 +256,7 @@ class AuctionDesk:
     def bootstrap(self) -> DeskBootstrap:
         with self.lock:
             return DeskBootstrap(
+                formulas=definitions(),
                 format_version=1,
                 season_id=self.inputs.config.season.season_id,
                 snapshot_sha256=self.inputs.snapshot_sha256,

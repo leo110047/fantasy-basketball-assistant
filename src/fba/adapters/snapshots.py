@@ -5,10 +5,10 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 
 from fba.adapters.acquisition import Acquired
-from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.contracts.base import DataError, Record, VersionError
 from fba.contracts.config import ValidatedConfig
 from fba.contracts.data import Artifact, Snapshot
+from fba.data.codec import canonical, decode, digest, read_bytes
 
 
 def artifact(path: str, data: bytes, source: Acquired | None = None) -> Artifact:

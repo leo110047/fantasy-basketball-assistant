@@ -9,7 +9,6 @@ from fba.adapters.annual import archive_source
 from fba.adapters.auction import auction_file, draft_template, prepare_auction
 from fba.adapters.backtest import backtest_file
 from fba.adapters.calculation import calculate_file, evaluate_file
-from fba.adapters.codec import canonical, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.migration import migrate_projection
 from fba.adapters.paths import paths_file
@@ -23,6 +22,7 @@ from fba.apps.workers import worker_limit
 from fba.contracts.auction import SolverError
 from fba.contracts.base import ConfigError, DataError, IdentityError
 from fba.contracts.config import ValidatedConfig
+from fba.data.codec import canonical, decode, digest, read_bytes
 
 
 def build(league: Path, season: Path, model: Path, output: Path, version: int) -> Path:

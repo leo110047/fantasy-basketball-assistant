@@ -4,7 +4,7 @@ from test_backtest import kernel as kernel
 
 from fba.contracts.backtest import Pairing
 from fba.contracts.base import DataError
-from fba.core.scoring import matchup
+from fba.formulas.scoring import matchup
 
 
 def test_week_tie_and_category_rounding(kernel):
@@ -42,7 +42,7 @@ def test_signed_category_formula_preserves_display_value_and_winner(kernel):
 
 @pytest.mark.parametrize("rule", ["tie", "half_win", "loss"])
 def test_regular_tie_record_and_seeding_rules(kernel, rule):
-    from fba.core.scoring import standings
+    from fba.formulas.scoring import standings
 
     source, auction = replay_fixture(kernel)
     league = source.config.league.model_copy(
@@ -71,7 +71,7 @@ def test_regular_tie_record_and_seeding_rules(kernel, rule):
 
 
 def test_regular_bye_does_not_change_record_points_or_seeding(kernel):
-    from fba.core.scoring import playoff_round, standings
+    from fba.formulas.scoring import playoff_round, standings
 
     source, auction = replay_fixture(kernel)
     league, axes = source.config.league, auction.management.stat_ids
@@ -98,7 +98,7 @@ def test_regular_bye_does_not_change_record_points_or_seeding(kernel):
 
 
 def test_playoff_bracket_reseeding_ties_and_invalid_bracket(kernel):
-    from fba.core.scoring import playoff_round, score_season, standings
+    from fba.formulas.scoring import playoff_round, score_season, standings
 
     source, auction = expanded_fixture(kernel, 12, False, 0)
     league = source.config.league

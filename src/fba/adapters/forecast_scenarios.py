@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from fba.adapters.calculation import decode_projection, load_projection
-from fba.adapters.codec import decode, digest, read_bytes
 from fba.adapters.config import load_parameters
 from fba.adapters.snapshots import checked_path
 from fba.contracts.auction import AuctionInput, AuctionPlayer, ForecastScenario, ScenarioPrice
@@ -9,6 +8,7 @@ from fba.contracts.base import DataError
 from fba.contracts.config import ConfigBundle, ValidatedConfig
 from fba.contracts.projection import CalculationResult, ProductionInput
 from fba.core.config import validate_config
+from fba.data.codec import decode, digest, read_bytes
 
 
 def valued_projection(root: Path) -> tuple[ProductionInput, str, CalculationResult, bytes]:

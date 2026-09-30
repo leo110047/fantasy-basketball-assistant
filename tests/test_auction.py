@@ -4,8 +4,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from fba.adapters.codec import canonical
 from fba.adapters.config import load_config
+from fba.auction.auction import calculate_auction, compare, market_context, portfolio_for
+from fba.auction.portfolio import Portfolio
 from fba.contracts.auction import (
     AuctionInput,
     AuctionPlayer,
@@ -17,10 +18,9 @@ from fba.contracts.auction import (
     TeamBudget,
 )
 from fba.contracts.base import DataError
-from fba.core.auction import calculate_auction, compare, market_context, portfolio_for
-from fba.core.market import bidders_by_position, opening_anchors
-from fba.core.portfolio import Portfolio
 from fba.core.roster import assign, completable
+from fba.data.codec import canonical
+from fba.formulas.market import bidders_by_position, opening_anchors
 
 
 def config():
@@ -301,8 +301,8 @@ def test_configured_league_variants_keep_legal_plans(teams):
 def test_solver_failure_and_timeout_never_publish_an_approximate_solution(monkeypatch):
     from types import SimpleNamespace
 
+    from fba.auction import portfolio
     from fba.contracts.auction import CalculationTimeout, SolverError
-    from fba.core import portfolio
 
     c = config()
     league = c.league.model_copy(

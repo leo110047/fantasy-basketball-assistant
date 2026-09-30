@@ -9,12 +9,12 @@ import pytest
 from pydantic import ValidationError
 
 from fba.adapters.acquisition import acquire
-from fba.adapters.codec import digest
 from fba.adapters.config import load_config
 from fba.adapters.espn import schedule
 from fba.adapters.snapshots import checked_path
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import LeagueRules, ModelConfig, SeasonConfig, Source
+from fba.data.codec import digest
 
 
 def paths(value, prefix=()):

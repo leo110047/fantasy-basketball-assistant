@@ -14,6 +14,7 @@ from fba.contracts.base import (
 )
 from fba.contracts.config import ConfigBundle, ValidatedConfig
 from fba.contracts.data import Artifact, Calibration, Digest
+from fba.contracts.formula import FormulaTrace
 
 
 class Prior(Record):
@@ -224,6 +225,8 @@ class ValuationRuler(Record):
 
 
 class PlayerValue(Record):
+    # Archives written before the in-season formula extraction have no traces.
+    traces: tuple[FormulaTrace, ...] = ()
     id: Text
     fair: Nonnegative | None
     utility: Finite | None
@@ -259,6 +262,7 @@ class EvaluationInput(FrozenCalculationInput):
 
 
 class EvaluationMetrics(Record):
+    traces: tuple[FormulaTrace, ...] = ()
     id: Text
     predicted_players: PositiveInt
     common_players: PositiveInt

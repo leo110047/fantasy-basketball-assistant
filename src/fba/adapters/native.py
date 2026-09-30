@@ -1,8 +1,10 @@
+import _ctypes
 import ctypes
 import hashlib
 import platform
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Protocol, cast
@@ -26,10 +28,15 @@ class NativeArtifact(Record):
     binary_sha256: Digest
 
 
-def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
-    compiler = shutil.which("c++")
+def compiler_path() -> str:
+    compiler = shutil.which("c++") or shutil.which("g++")
     if compiler is None:
         raise SolverError("management: requires a local C++17 compiler")
+    return compiler
+
+
+def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
+    compiler = compiler_path()
     build = tempfile.TemporaryDirectory(prefix="fba-season-")
     path = Path(build.name) / "season.so"
     source = Path(__file__).parents[1] / "native/season.cpp"
@@ -40,6 +47,11 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
         "-ffp-contract=off",
         "-fPIC",
         "-shared",
+        *(
+            ("-Wl,--no-insert-timestamp", "-static-libgcc", "-static-libstdc++")
+            if sys.platform == "win32"
+            else ()
+        ),
         str(source),
         "-o",
         path.name,
@@ -124,6 +136,9 @@ class NativeKernel:
         self.function = cast(NativeCall, function)
 
     def close(self) -> None:
+        if sys.platform == "win32" and hasattr(self, "library"):
+            _ctypes.FreeLibrary(self.library._handle)
+            del self.library
         if self.build is not None:
             self.build.cleanup()
 

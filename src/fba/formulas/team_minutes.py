@@ -12,7 +12,8 @@ from fba.contracts.projection import (
     TeamMember,
     TeamMinuteAllocation,
 )
-from fba.core.projection import calibrated_games, prior, prior_weights
+from fba.formulas.projection import calibrated_games, prior, prior_weights
+from fba.formulas.registry import evaluate
 
 
 def member_minutes(
@@ -119,7 +120,11 @@ def allocate_team(
         usage = fsum(gp * minutes / full for _, gp, minutes in group)
         if enforce and pinned and usage > remaining:
             raise DataError(f"team_minutes.{team_id}: manual expected games exceed team budget")
-        factor = min(1.0, remaining / usage) if enforce and usage and not pinned else 1.0
+        factor = (
+            evaluate("budget_fraction", budget=remaining, demand=usage).result
+            if enforce and not pinned
+            else 1.0
+        )
         for member, gp, minutes in group:
             allocated.append(
                 PlayerMinuteAllocation(

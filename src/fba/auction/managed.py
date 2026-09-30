@@ -16,6 +16,7 @@ from fba.contracts.season import (
     TacticalArrays,
 )
 from fba.core.roster import capacity, match_slots
+from fba.formulas.arrays import evaluate_array
 
 type FloatArray = NDArray[np.float64]
 
@@ -118,10 +119,10 @@ class ManagedSeason:
         gp = np.array([p.expected_games for p in self.players])
         health_gp = np.array([p.healthy_games for p in self.players])
         share = np.divide(gp, health_gp, out=np.ones(self.n), where=health_gp > 0)
-        self.raw = original * share[:, None]
-        self.cov = covariance * share[:, None, None] + np.einsum(
-            "ni,nj,n->nij", original, original, share * (1 - share)
-        )
+        self.raw = evaluate_array("bernoulli_mean", means=original, probability=share).result
+        self.cov = evaluate_array(
+            "bernoulli_covariance", means=original, covariance=covariance, probability=share
+        ).result
         self.availability = np.array(
             [p.healthy_games / max(1, p.season_games) for p in self.players]
         )
@@ -131,7 +132,12 @@ class ManagedSeason:
                     1.0, health_gp[i] / max(1, int(self.games[self.returns[i] :, i].sum()))
                 )
         self.priority = np.array([catalog[i].utility or 0.0 for i in self.ids])
-        self.value = self.priority / np.maximum(self.availability, parameters.availability_floor)
+        self.value = evaluate_array(
+            "availability_value",
+            priority=self.priority,
+            availability=self.availability,
+            floor=parameters.availability_floor,
+        ).result
         if known_health is not None and (
             parameters.health_samples != 1 or known_health.shape != (1, self.d, self.n)
         ):
@@ -143,7 +149,7 @@ class ManagedSeason:
         decay = np.broadcast_to(1 - back - hurt, (self.d + 1, self.n)).copy()
         decay[0] = 1.0
         # Integer game-clock powers use ordered products, avoiding platform libm pow rounding.
-        self.decay = np.cumprod(decay, axis=0)
+        self.decay = np.cumprod(decay, axis=0, dtype=np.float64)
         self.health = self.health_paths() if known_health is None else known_health.copy()
         if len(league.positions) > np.iinfo(np.uint64).bits:
             raise DataError("league.positions: exceeds native position mask width")
@@ -184,19 +190,20 @@ class ManagedSeason:
                 raise DataError(f"management.{p.id}: duplicate game dates")
 
     def rates(self) -> tuple[FloatArray, FloatArray]:
-        back = np.minimum(
-            1 / self.parameters.mean_missed_games,
-            self.availability / np.maximum(1 - self.availability, 1e-12),
-        )
-        hurt = (1 - self.availability) / np.maximum(self.availability, 1e-12) * back
-        return back, hurt
+        result = evaluate_array(
+            "health_transitions",
+            availability=self.availability,
+            mean_missed=self.parameters.mean_missed_games,
+            floor=1e-12,
+        ).result
+        return result[0], result[1]
 
     def health_paths(self) -> NDArray[np.bool_]:
         samples = self.parameters.health_samples
         rng = np.random.default_rng(self.parameters.health_seed)
-        u = (
-            np.arange(samples)[:, None, None] + rng.random((samples, self.d + 1, self.n))
-        ) / samples
+        u = evaluate_array(
+            "stratified_uniform", jitter=rng.random((samples, self.d + 1, self.n))
+        ).result.copy()
         for d in range(self.d + 1):
             for p in range(self.n):
                 rng.shuffle(u[:, d, p])
@@ -224,11 +231,12 @@ class ManagedSeason:
         end = min(self.d, day + (self.parameters.forecast_days if horizon is None else horizon))
         scheduled = self.schedule_on(day)[day:end]
         counts = np.cumsum(scheduled, axis=0) - scheduled
-        probabilities = (
-            self.availability
-            + (float(status) - self.availability) * self.decay[counts, np.arange(self.n)]
-        )
-        probabilities = np.clip(probabilities, 0, 1)
+        probabilities = evaluate_array(
+            "conditional_health",
+            availability=self.availability,
+            status=float(status),
+            decay=self.decay[counts, np.arange(self.n)],
+        ).result.copy()
         pending = (self.returns > day) & (not status)
         if self.observed_available is not None:
             # Only the public prefix through this decision can retire a preseason estimate.
@@ -338,12 +346,13 @@ class ManagedSeason:
         for (w, p), days in dates.items():
             ticks = clock[days, p]
             lags = np.abs(ticks[:, None] - ticks[None, :])
-            variance = self.availability[p] * (1 - self.availability[p]) * self.decay[lags, p].sum()
-            correction[w] += variance * np.outer(self.raw[p], self.raw[p])
-        delta = realised - realised.mean(axis=0)
-        correction -= np.einsum("swi,swj->wij", delta, delta) / max(
-            1, self.parameters.health_samples - 1
-        )
+            correction[w] += evaluate_array(
+                "health_count_covariance",
+                availability=float(self.availability[p]),
+                decay=self.decay[lags, p],
+                stats=self.raw[p],
+            ).result
+        correction -= evaluate_array("sample_covariance", values=realised).result
         result = (realised - expected, correction)
         self.controls[roster] = result
         return result
@@ -459,7 +468,12 @@ class ManagedSeason:
         if rosters not in self.box_cache:
             counts = self.run_counts(rosters, primary_only=True)
             realised, expected = self.control_mean(rosters[0])
-            self.box_cache[rosters] = counts[:, 0] @ self.raw - (realised - expected)
+            self.box_cache[rosters] = evaluate_array(
+                "control_variate",
+                physical=evaluate_array("matrix_product", left=counts[:, 0], right=self.raw).result,
+                realized=realised,
+                expected=expected,
+            ).result
         return self.box_cache[rosters]
 
     def run_counts(
@@ -482,18 +496,17 @@ class ManagedSeason:
         return counts
 
     def summarize(self, rosters: tuple[tuple[int, ...], ...], counts: FloatArray) -> ManagedMoments:
-        physical = counts @ self.raw
+        physical = evaluate_array("matrix_product", left=counts, right=self.raw).result
         controls = [self.control(r) for r in rosters]
         boxes = physical - np.stack([c[0] for c in controls], axis=1)
         mean = boxes.mean(axis=0)
-        within = np.einsum("twn,nij->twij", counts.mean(axis=0), self.cov)
-        delta = physical - physical.mean(axis=0)
-        covariance = (
-            within
-            + np.einsum("stwi,stwj->twij", delta, delta)
-            / max(1, self.parameters.health_samples - 1)
-            + np.stack([c[1] for c in controls])
-        )
+        covariance = evaluate_array(
+            "managed_covariance",
+            counts=counts,
+            covariance=self.cov,
+            physical=physical,
+            correction=np.stack([c[1] for c in controls]),
+        ).result
         return ManagedMoments(mean, covariance, boxes)
 
     def set_pool(self, pool: tuple[int, ...]) -> None:

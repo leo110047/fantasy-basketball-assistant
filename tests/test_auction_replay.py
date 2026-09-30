@@ -6,10 +6,10 @@ from time import perf_counter
 import pytest
 from test_auction import inputs_for, state
 
-from fba.adapters.codec import canonical, digest
 from fba.apps.auction import AuctionSession
+from fba.auction.auction import calculate_auction, run_caps
 from fba.contracts.auction import AuctionPlayer, Plan, Sale
-from fba.core.auction import calculate_auction, run_caps
+from fba.data.codec import canonical, digest
 
 
 def relative_performance(fast, reference, allowance):

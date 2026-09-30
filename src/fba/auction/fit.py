@@ -2,12 +2,12 @@ from math import log2
 from typing import Protocol
 
 import numpy as np
-from scipy.special import expit
 from scipy.stats import norm, qmc
 
+from fba.auction.managed import FloatArray, ManagedMoments, ManagedSeason
+from fba.auction.portfolio import Portfolio
 from fba.contracts.auction import (
     AuctionPlayer,
-    FitCategory,
     FitDiagnostics,
     FitStep,
     FitSummary,
@@ -22,10 +22,16 @@ from fba.contracts.auction import (
 from fba.contracts.base import DataError
 from fba.contracts.config import FitParameters, ManagementParameters, PricingParameters
 from fba.contracts.season import ManagementInput, MarginalFeature, MarginalTask, SeasonKernel
-from fba.core.managed import FloatArray, ManagedMoments, ManagedSeason
-from fba.core.portfolio import Portfolio
 from fba.core.roster import capacity, completable
-from fba.core.scoring import categories
+from fba.formulas.arrays import evaluate_array
+from fba.formulas.auction_fit import (
+    category_diagnostics,
+    diagnostic_traces,
+    margin_score,
+    matrix_root,
+)
+from fba.formulas.registry import evaluate
+from fba.formulas.scoring import categories
 
 type CompletionCache = dict[tuple[tuple[str, ...], ...], bool]
 
@@ -71,45 +77,6 @@ def paired_project(
     if not opponents:
         return manager.project(roster)
     return manager.project_primary((roster, *opponents))
-
-
-def matrix_root(covariance: FloatArray) -> FloatArray:
-    values, vectors = np.linalg.eigh((covariance + covariance.T) / 2)
-    return (vectors * np.sqrt(np.maximum(values, 0))) @ vectors.T
-
-
-def margin_score(difference: FloatArray, bandwidth: float) -> FloatArray:
-    pivot = (difference.shape[-1] - 1) // 2
-    return expit(np.partition(difference, pivot, axis=-1)[..., pivot] / bandwidth)
-
-
-def category_diagnostics(
-    difference: FloatArray, ids: tuple[str, ...], parameters: FitParameters
-) -> tuple[FitCategory, ...]:
-    step = parameters.gradient_fraction
-    slopes: list[float] = []
-    for index in range(len(ids)):
-        plus, minus = difference.copy(), difference.copy()
-        plus[:, index] += step
-        minus[:, index] -= step
-        slopes.append(
-            float(
-                (
-                    margin_score(plus, parameters.bandwidth).mean()
-                    - margin_score(minus, parameters.bandwidth).mean()
-                )
-                / (2 * step)
-            )
-        )
-    total = sum(slopes)
-    return tuple(
-        FitCategory(
-            id=cid,
-            lead_share=float((difference[:, index] > 0).mean()),
-            marginal_weight=slope / total * len(ids) if total > 0 else 0.0,
-        )
-        for index, (cid, slope) in enumerate(zip(ids, slopes, strict=True))
-    )
 
 
 def opponent_rosters(
@@ -259,7 +226,11 @@ class FittedUtility:
         noise = np.empty_like(self.draws)
         for j, covariance in enumerate(covariances):
             selected = index == j
-            noise[selected] = self.opponent_draws[selected] @ matrix_root(covariance).T
+            noise[selected] = evaluate_array(
+                "matrix_product",
+                left=self.opponent_draws[selected],
+                right=matrix_root(covariance).T,
+            ).result
         self.opponent = categories(means[index] + noise, self.league, self.manager.stat_ids)
         blocks = np.array(
             [
@@ -271,9 +242,12 @@ class FittedUtility:
             blocks[:, index] + noise[None], self.league, self.manager.stat_ids
         )
         floors = {p.id: p.value for p in self.parameters.category_floors}
-        self.scale = np.maximum(
-            self.opponent.std(axis=0), [floors[c.id] for c in self.league.categories]
-        )
+        self.scale = evaluate_array(
+            "standard_deviation_floor",
+            values=self.opponent,
+            fraction=1.0,
+            floor=np.array([floors[c.id] for c in self.league.categories]),
+        ).result
 
     def rivals(self, roster: tuple[int, ...]) -> tuple[tuple[int, ...], ...]:
         roster = tuple(sorted(roster))
@@ -298,16 +272,29 @@ class FittedUtility:
     def context(self, roster: tuple[int, ...]) -> tuple[FloatArray, FloatArray]:
         result = self.project(roster)
         mean = result.mean.mean(axis=0)
-        covariance = result.covariance.mean(axis=0) + np.cov(result.mean, rowvar=False, bias=True)
-        return mean, self.draws @ matrix_root(covariance).T
+        covariance = evaluate_array(
+            "sampling_covariance", means=result.mean, covariances=result.covariance
+        ).result
+        return mean, evaluate_array(
+            "matrix_product", left=self.draws, right=matrix_root(covariance).T
+        ).result
 
     def difference(self, mean: FloatArray, noise: FloatArray) -> FloatArray:
-        return (
-            categories(mean + noise, self.league, self.manager.stat_ids) - self.opponent
-        ) / self.scale
+        return evaluate_array(
+            "standardized_margins",
+            values=categories(mean + noise, self.league, self.manager.stat_ids),
+            opponent=self.opponent,
+            scale=self.scale,
+        ).result
 
     def score(self, mean: FloatArray, noise: FloatArray) -> float:
-        return float(margin_score(self.difference(mean, noise), self.parameters.bandwidth).mean())
+        return evaluate(
+            "mean",
+            values=tuple(
+                float(v)
+                for v in margin_score(self.difference(mean, noise), self.parameters.bandwidth)
+            ),
+        ).result
 
     def block_scores(self, roster: tuple[int, ...], noise: FloatArray) -> FloatArray:
         boxes = self.project(roster).boxes
@@ -317,24 +304,31 @@ class FittedUtility:
                 for part in np.array_split(boxes, self.parameters.health_blocks)
             ]
         )
-        difference = (
-            categories(means[:, None] + noise[None], self.league, self.manager.stat_ids)
-            - self.opponent_blocks
-        ) / self.scale
+        difference = evaluate_array(
+            "standardized_margins",
+            values=categories(means[:, None] + noise[None], self.league, self.manager.stat_ids),
+            opponent=self.opponent_blocks,
+            scale=self.scale,
+        ).result
         return margin_score(difference, self.parameters.bandwidth).mean(axis=1)
 
     def gradient(self, mean: FloatArray, noise: FloatArray) -> FloatArray:
-        step = np.maximum(
-            np.std(mean + noise, axis=0) * self.parameters.gradient_fraction,
-            self.parameters.gradient_floor,
-        )
+        step = evaluate_array(
+            "standard_deviation_floor",
+            values=mean + noise,
+            fraction=self.parameters.gradient_fraction,
+            floor=self.parameters.gradient_floor,
+        ).result
         gradient = np.zeros(self.manager.k)
         for k, h in enumerate(step):
             delta = np.zeros(self.manager.k)
             delta[k] = h
-            gradient[k] = (self.score(mean + delta, noise) - self.score(mean - delta, noise)) / (
-                2 * h
-            )
+            gradient[k] = evaluate_array(
+                "central_difference",
+                plus=self.score(mean + delta, noise),
+                minus=self.score(mean - delta, noise),
+                step=h,
+            ).result
         return gradient
 
     def marginals(
@@ -344,7 +338,16 @@ class FittedUtility:
         for pid in base.purchases:
             p = self.manager.index[pid]
             rest = self.project(tuple(i for i in self.anchor if i != p))
-            losses.append((p, float((mean - rest.mean.mean(axis=0)) @ gradient)))
+            losses.append(
+                (
+                    p,
+                    float(
+                        evaluate_array(
+                            "matrix_product", left=mean - rest.mean.mean(axis=0), right=gradient
+                        ).result
+                    ),
+                )
+            )
         preferred = tuple(p for p, _ in sorted(losses, key=lambda pair: (pair[1], pair[0])))
         feature = np.zeros((len(self.portfolio.players), self.manager.k))
         tasks: list[MarginalTask] = []
@@ -400,9 +403,17 @@ class FittedUtility:
             return ()
         if self.block_features is None:
             raise DataError("fit: paired health-group marginal features are unavailable")
-        vectors = (1 - alpha) * self.portfolio.values + alpha * (
-            self.block_features @ gradient / scale * np.std(self.portfolio.values)
-        )
+        managed = evaluate_array(
+            "utility_rescale",
+            values=evaluate_array(
+                "matrix_product", left=self.block_features, right=gradient
+            ).result,
+            reference=self.portfolio.values,
+            scale=scale,
+        ).result
+        vectors = evaluate_array(
+            "utility_blend", baseline=self.portfolio.values, managed=managed, step=alpha
+        ).result
         vectors = np.round(vectors, self.portfolio.parameters.result_decimals)
         return tuple(
             tuple(
@@ -420,14 +431,17 @@ class FittedUtility:
         score = self.score(mean, noise)
         baseline_score = score
         selected_difference = self.difference(mean, noise)
+        baseline_traces = diagnostic_traces(selected_difference, self.parameters)
         selected_opponents = self.opponent_rosters
         block_scores = self.block_scores(self.anchor, noise)
         feature = self.marginals(base, gradient, mean, runner)
-        utility = feature @ gradient
+        utility = evaluate_array("matrix_product", left=feature, right=gradient).result
         scale = float(np.std(utility))
         if scale < 1e-12:
             raise DataError("fit: managed marginal utility has no variation")
-        managed = utility / scale * np.std(self.portfolio.values)
+        managed = evaluate_array(
+            "utility_rescale", values=utility, reference=self.portfolio.values, scale=scale
+        ).result
         calls = self.portfolio.calls
         best = base
         selected = self.portfolio
@@ -436,7 +450,9 @@ class FittedUtility:
             FitStep(step=0.0, score=score, accepted=True, block_minimum=0.0, block_maximum=0.0)
         ]
         for step in self.parameters.steps:
-            vector = (1 - step) * self.portfolio.values + step * managed
+            vector = evaluate_array(
+                "utility_blend", baseline=self.portfolio.values, managed=managed, step=step
+            ).result
             if self.pricing is not None:
                 vector = np.round(vector, self.portfolio.parameters.result_decimals)
             players = tuple(
@@ -504,6 +520,7 @@ class FittedUtility:
                     tuple(c.id for c in self.league.categories),
                     self.parameters,
                 ),
+                traces=(*baseline_traces, *diagnostic_traces(selected_difference, self.parameters)),
                 baseline_score=baseline_score,
                 selected_score=score,
                 compared_roster=best.players,

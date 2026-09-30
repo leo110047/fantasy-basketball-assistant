@@ -8,12 +8,14 @@ from scipy.optimize import Bounds, LinearConstraint, milp
 from fba.contracts.auction import (
     AuctionPlayer,
     CalculationTimeout,
+    CapCalculation,
     Infeasible,
     Plan,
     SolverError,
 )
 from fba.contracts.config import LeagueRules, SolverParameters
 from fba.core.roster import assign, capacity, hall_constraints
+from fba.formulas.registry import evaluate
 
 
 class Portfolio:
@@ -202,20 +204,25 @@ class Portfolio:
             utility=fsum(float(self.values[i]) for i in chosen),
         )
 
-    def cap(self, player: int, base: Plan) -> tuple[int, float | None, bool]:
+    def cap(self, player: int, base: Plan) -> CapCalculation:
         without = self.solve(exclude=player) if self.players[player].id in base.purchases else base
         forced = isinstance(without, Infeasible)
         target = None if isinstance(without, Infeasible) else without.utility
         loss = None if isinstance(without, Infeasible) else max(0.0, base.utility - without.utility)
         if target is not None and self.prune and self.cannot_afford_value(player, target):
-            return 0, loss, forced
+            return CapCalculation(0, loss, forced, ())
         result = self.solve(force=player, target=target, objective="cost")
         if isinstance(result, Infeasible):
-            return 0, loss, forced
-        maximum = min(
-            self.budget - (self.slots - 1) * self.league.minimum_bid, self.budget - result.cost
+            return CapCalculation(0, loss, forced, ())
+        maximum = evaluate(
+            "affordable_cap",
+            budget=float(self.budget),
+            slots=float(self.slots),
+            minimum=float(self.league.minimum_bid),
+            completion_cost=float(result.cost),
+            increment=float(self.league.bid_increment),
         )
-        return maximum // self.league.bid_increment * self.league.bid_increment, loss, forced
+        return CapCalculation(int(maximum.result), loss, forced, (maximum,))
 
     def cannot_afford_value(self, player: int, target: float) -> bool:
         slots = self.slots - 1

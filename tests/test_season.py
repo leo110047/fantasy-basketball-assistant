@@ -331,7 +331,7 @@ def test_invariants_detect_old_fault_classes_in_native_kernel(tmp_path, monkeypa
     library = tmp_path / "mutant.so"
     subprocess.run(
         [
-            "c++",
+            native.compiler_path(),
             "-std=c++17",
             "-O2",
             "-ffp-contract=off",

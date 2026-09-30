@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 from test_auction import config, player
 
+from fba.auction.managed import ManagedSeason
 from fba.contracts.base import DataError
 from fba.contracts.config import HealthParameters
 from fba.contracts.season import ManagedPlayer, ManagementInput
-from fba.core.health import healthy_games
-from fba.core.managed import ManagedSeason
+from fba.formulas.health import healthy_games
 
 
 def parameters(share):

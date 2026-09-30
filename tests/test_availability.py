@@ -11,10 +11,10 @@ from test_team_offense import offense_case as offense_case
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import AvailabilityTail, ModelDocument
 from fba.contracts.data import Calibration
-from fba.core.calculation import calculate
 from fba.core.config import validate_team_minutes
-from fba.core.projection import calibrated_games
-from fba.core.team_minutes import minute_allocations
+from fba.formulas.projection import calibrated_games
+from fba.formulas.team_minutes import minute_allocations
+from fba.projection.calculation import calculate
 
 
 def calibration():

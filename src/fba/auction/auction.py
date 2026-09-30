@@ -1,10 +1,13 @@
 from typing import Literal, Protocol
 
+from fba.auction.fit import FeatureRunner, FittedUtility
+from fba.auction.portfolio import Portfolio
 from fba.contracts.auction import (
     AuctionInput,
     AuctionPlayer,
     AuctionResult,
     Cap,
+    CapCalculation,
     Comparison,
     DraftState,
     Infeasible,
@@ -15,16 +18,14 @@ from fba.contracts.auction import (
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import AuctionModel, ManagedPricingModel
 from fba.contracts.season import SeasonKernel
-from fba.core.fit import FeatureRunner, FittedUtility
-from fba.core.market import price_market
-from fba.core.portfolio import Portfolio
 from fba.core.roster import completable, effective_players, validate_draft
+from fba.formulas.market import price_market
 
 
 class CapRunner(Protocol):
     def __call__(
         self, portfolio: Portfolio, base: Plan, candidates: tuple[int, ...]
-    ) -> tuple[tuple[tuple[int, float | None, bool], ...], int]: ...
+    ) -> tuple[tuple[CapCalculation, ...], int]: ...
 
 
 def result_number(value: float, decimals: int) -> float:
@@ -42,7 +43,7 @@ def result_plan(plan: Plan | Infeasible, decimals: int) -> Plan | Infeasible:
 
 def run_caps(
     portfolio: Portfolio, base: Plan, candidates: tuple[int, ...]
-) -> tuple[tuple[tuple[int, float | None, bool], ...], int]:
+) -> tuple[tuple[CapCalculation, ...], int]:
     calls = portfolio.calls
     result = tuple(portfolio.cap(i, base) for i in candidates)
     return result, portfolio.calls - calls
@@ -107,7 +108,7 @@ def caps_for(
         and isinstance(base, Plan)
         and completable(portfolio.league, (*held, p))
     )
-    computed: dict[int, tuple[int, float | None, bool]] = {}
+    computed: dict[int, CapCalculation] = {}
     if isinstance(base, Plan):
         before = portfolio.calls
         values, calls = runner(portfolio, base, candidates)
@@ -119,6 +120,7 @@ def caps_for(
         reason: str | None = None
         loss: float | None = None
         forced = False
+        traces = ()
         if player.id in sold:
             reason = "sold"
         elif player.utility is None or not player.active:
@@ -130,7 +132,7 @@ def caps_for(
         elif not completable(portfolio.league, (*held, player)):
             amount, reason = 0, "position cannot complete roster"
         else:
-            amount, loss, forced = computed[i]
+            amount, loss, forced, traces = computed[i]
         caps.append(
             Cap(
                 player_id=player.id,
@@ -139,6 +141,7 @@ def caps_for(
                 conditional=not player.positions_confirmed or prices[player.id].anchor is None,
                 forced=forced,
                 loss=loss,
+                traces=traces,
             )
         )
     return tuple(caps)

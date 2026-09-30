@@ -9,10 +9,10 @@ from test_preparation import annual_case as annual_case
 from test_preparation import projection_bundle as projection_bundle
 
 from fba.adapters.auction import auction_file, draft_template, load_auction, prepare_auction
-from fba.adapters.codec import canonical, digest
 from fba.adapters.preparation import project
 from fba.contracts.auction import AuctionInput, DraftState, MarketUpdate
 from fba.contracts.base import ConfigError, DataError
+from fba.data.codec import canonical, digest
 
 
 @pytest.fixture
@@ -145,9 +145,9 @@ def test_distribution_market_rebuilds_from_an_unchanged_legacy_projection(annual
 
 
 def test_player_details_are_derived_from_frozen_sources_and_cannot_be_changed(frozen_auction):
-    from fba.adapters.codec import decode
     from fba.contracts.data import Snapshot
     from fba.contracts.projection import CalculationResult
+    from fba.data.codec import decode
 
     path, _, _ = frozen_auction
     original = path.read_bytes()
@@ -194,9 +194,9 @@ def test_legacy_input_does_not_silently_claim_source_metadata(frozen_auction):
 
 def test_detail_source_gap_and_manual_notes_are_separate_facts(frozen_auction):
     from fba.adapters.auction import auction_details
-    from fba.adapters.codec import decode
     from fba.contracts.data import Adjustment, ManualAdjustments, Multiply, Provenance, Snapshot
     from fba.contracts.projection import CalculationResult
+    from fba.data.codec import decode
 
     path, _, _ = frozen_auction
     inputs, _ = load_auction(path)
@@ -247,7 +247,7 @@ def test_detail_source_gap_and_manual_notes_are_separate_facts(frozen_auction):
 
 def test_bootstrap_exposes_verified_player_details(frozen_auction, tmp_path):
     from fba.apps.desk import AuctionDesk
-    from fba.core.auction import calculate_auction
+    from fba.auction.auction import calculate_auction
 
     path, _, _ = frozen_auction
     inputs, input_hash = load_auction(path)
@@ -284,7 +284,7 @@ def test_unusable_current_forecast_keeps_source_and_preparation_warning(
 ):
     from fba.adapters.snapshots import publish
     from fba.apps.desk import AuctionDesk
-    from fba.core.auction import calculate_auction
+    from fba.auction.auction import calculate_auction
 
     root, model, _, snapshot = annual_case
     forecast = next(f for f in snapshot.forecasts if f.player_id == "1")

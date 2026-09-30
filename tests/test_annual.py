@@ -7,7 +7,6 @@ from test_preparation import annual_case as annual_case
 
 from fba.adapters.acquisition import Acquired
 from fba.adapters.annual import previous_evaluation, provider_predictions, validate_archive
-from fba.adapters.codec import canonical, decode, digest
 from fba.adapters.config import load_config
 from fba.adapters.preparation import project
 from fba.adapters.snapshots import artifact, load_snapshot, publish
@@ -15,6 +14,7 @@ from fba.apps.annual import finish_annual
 from fba.contracts.archive import ForecastArchive
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.data import Identity, Provenance
+from fba.data.codec import canonical, decode, digest
 
 
 def previous_year(value):
@@ -253,7 +253,7 @@ def test_annual_missing_archive_source_and_tampered_archive_fail(annual_case, ev
 
 def test_observed_game_coverage_and_derived_thresholds(evaluated_snapshot):
     from fba.adapters.espn import decode_players, game_logs, season_totals
-    from fba.core.actual import observed_players
+    from fba.formulas.actual import observed_players
 
     root, _, config, archive = evaluated_snapshot
     source = next(s for s in config.season.sources if s.role == "game_logs")

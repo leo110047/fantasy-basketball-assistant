@@ -1,3 +1,4 @@
+import {formula} from "/formulas.js";
 import {el, money, node, action, option, catalogue, forecastWarning, renderProjectionDetail, renderRoom, renderBuyers, renderTable, tableRows, renderPlan, renderComparison} from "/view.js";
 import {beginTiming, rendered, measure} from "/timing.js";
 import {matches, priceCSV, floorBackup} from "/presentation.js";
@@ -92,7 +93,7 @@ function render() {
   el("sourceNotice").textContent = boot.details == null ? "這份資料沒有來源明細，無法確認哪些球員缺當季預測；請重新建置競標資料。" : "這份舊版資料未含球隊名稱與樣本註記；重新建置競標資料可補齊。";
   renderRoom(desk, players, editors.sale);
   renderTable(desk, players, current, watched, browse, nominate, watch, unavailable(), saving || stale, boot.league.minimum_bid);
-  renderPlan(current, players, desk.market.market, nominate, unavailable());
+  renderPlan(current, players, desk.market.market, nominate, unavailable(), boot.formulas);
   renderNominee(); controls(); renderStreaming();
   if (el("playerDialog").open) renderDetails(inspected);
   const refs = desk.state.config;
@@ -123,6 +124,7 @@ function renderDetails(id) {
   if (p.projected_price == null) d.append(node("p", "Yahoo 報價缺失；未當成底價備案。", "warning"));
   const override = desk.state.overrides.find(o => o.player_id === id);
   if (override) d.append(node("p", `本次覆寫：市場 ${override.market == null ? "沿用來源" : money(override.market)} · 位置 ${override.positions?.join(" / ") ?? "沿用來源"} · ${override.reason}`, "warning"));
+  for (const trace of [...(p.detail?.traces ?? []), ...(q?.traces ?? []), ...(c?.traces ?? [])]) d.append(formula(trace, boot.formulas));
   renderSensitivity(d,id);
   renderProjectionDetail(d, p);
   d.append(action("修改市場價／位置", () => editors.override(id)));

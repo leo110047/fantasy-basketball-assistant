@@ -14,6 +14,7 @@ from fba.contracts.auction import (
 from fba.contracts.base import FormatVersion, Natural, PositiveInt, Record, Text
 from fba.contracts.config import LeagueRules
 from fba.contracts.data import Digest, TeamLabel
+from fba.contracts.formula import FormulaDefinition
 from fba.contracts.streaming import StreamingSummary
 
 
@@ -71,6 +72,7 @@ class DeskResults(Record):
 
 
 class DeskBootstrap(Record):
+    formulas: tuple[FormulaDefinition, ...]
     format_version: FormatVersion
     season_id: Text
     snapshot_sha256: Digest

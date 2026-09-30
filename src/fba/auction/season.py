@@ -4,6 +4,7 @@ from math import fsum
 import numpy as np
 from numpy.typing import NDArray
 
+from fba.auction.managed import ManagedSeason
 from fba.contracts.auction import AuctionInput
 from fba.contracts.backtest import (
     HealthObservation,
@@ -14,10 +15,9 @@ from fba.contracts.backtest import (
 from fba.contracts.base import DataError
 from fba.contracts.config import SeasonModel
 from fba.contracts.season import ManagementInput, ManagementPolicy, SeasonKernel
-from fba.core.managed import ManagedSeason
 from fba.core.replay_schedule import schedule_tape
 from fba.core.roster import capacity
-from fba.core.scoring import score_season
+from fba.formulas.scoring import score_season
 
 
 def validate_replay(

@@ -15,8 +15,9 @@ from fba.contracts.projection import (
     TeamOffenseAllocation,
     TeamOffenseBaseline,
 )
-from fba.core.distribution import moments
-from fba.core.projection import prior
+from fba.formulas.distribution import moments
+from fba.formulas.projection import prior
+from fba.formulas.registry import evaluate
 
 
 def used(stats: tuple[float, ...], model: TeamOffenseModel) -> float:
@@ -111,7 +112,7 @@ def allocate_usage(
     result: list[PlayerOffenseAllocation] = []
     axes = model.projection.stat_ids
     demand = fsum(r.expected_games * used(r.before, model) / full for r in rows)
-    factor = min(1.0, budget / demand) if demand else 1.0
+    factor = evaluate("budget_fraction", budget=budget, demand=demand).result
     # Source coverage measures evidence, not a player's right to the remaining possessions.
     for row in rows:
         stats = [
@@ -127,7 +128,7 @@ def allocate_usage(
     )
     assists = fsum(r.expected_games * r.after[assist] for r in result)
     makes = fsum(r.expected_games * r.after[made] for r in result)
-    factor = min(1.0, makes / assists) if assists else 1.0
+    factor = evaluate("budget_fraction", budget=makes, demand=assists).result
     return tuple(
         r.model_copy(
             update={

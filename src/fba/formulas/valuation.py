@@ -2,6 +2,7 @@ from math import fsum, sqrt
 
 from fba.contracts.base import DataError
 from fba.contracts.config import Category, LeagueRules, Linear, Term, ValuationParameters
+from fba.contracts.formula import FormulaTrace
 from fba.contracts.projection import (
     CategoryNormalization,
     CategoryScore,
@@ -10,6 +11,7 @@ from fba.contracts.projection import (
     Valuation,
     ValuationRuler,
 )
+from fba.formulas.registry import evaluate
 
 
 def validate_population(
@@ -36,7 +38,11 @@ def validate_population(
 def linear_value(
     terms: tuple[Term, ...], values: tuple[float, ...], axes: tuple[str, ...]
 ) -> float:
-    return fsum(term.coefficient * values[axes.index(term.stat_id)] for term in terms)
+    return evaluate(
+        "linear",
+        values=tuple(values[axes.index(t.stat_id)] for t in terms),
+        weights=tuple(t.coefficient for t in terms),
+    ).result
 
 
 def ratio_rate(
@@ -49,7 +55,7 @@ def ratio_rate(
     denominator = fsum(linear_value(formula.denominator, players[i].stats, axes) for i in pool)
     if denominator <= 0:
         raise DataError(f"valuation.{category.id}: population ratio denominator must be positive")
-    return numerator / denominator
+    return evaluate("ratio", numerator=numerator, denominator=denominator, zero_value=0.0).result
 
 
 def category_impacts(
@@ -62,11 +68,13 @@ def category_impacts(
     if rate is None:
         raise DataError(f"valuation.{category.id}: missing fitted ratio")
     return tuple(
-        direction
-        * (
-            linear_value(formula.numerator, p.stats, axes)
-            - rate * linear_value(formula.denominator, p.stats, axes)
-        )
+        evaluate(
+            "ratio_impact",
+            direction=float(direction),
+            made=linear_value(formula.numerator, p.stats, axes),
+            rate=rate,
+            attempted=linear_value(formula.denominator, p.stats, axes),
+        ).result
         for p in players
     )
 
@@ -76,11 +84,32 @@ def fit_category(
 ) -> CategoryNormalization:
     ratio = ratio_rate(players, pool, axes, category)
     impacts = category_impacts(players, axes, category, ratio)
-    mean = fsum(impacts[i] for i in pool) / len(pool)
-    deviation = sqrt(fsum((impacts[i] - mean) ** 2 for i in pool) / len(pool))
+    samples = tuple(impacts[i] for i in pool)
+    mean = evaluate("mean", values=samples).result
+    deviation = sqrt(evaluate("variance", values=samples, mean=mean).result)
     if deviation <= 0:
         raise DataError(f"valuation.{category.id}: degenerate category population")
     return CategoryNormalization(id=category.id, ratio=ratio, mean=mean, deviation=deviation)
+
+
+def standardized_traces(
+    players: tuple[Projected, ...],
+    axes: tuple[str, ...],
+    categories: tuple[Category, ...],
+    normalizations: tuple[CategoryNormalization, ...],
+) -> tuple[tuple[FormulaTrace, ...], ...]:
+    validate_population(players, axes, categories)
+    if tuple(c.id for c in categories) != tuple(n.id for n in normalizations):
+        raise DataError("valuation: ruler category axes disagree")
+    if any(n.deviation <= 0 for n in normalizations):
+        raise DataError("valuation: ruler deviation must be positive")
+    return tuple(
+        tuple(
+            evaluate("standardize", value=v, mean=n.mean, deviation=n.deviation)
+            for v in category_impacts(players, axes, c, n.ratio)
+        )
+        for c, n in zip(categories, normalizations, strict=True)
+    )
 
 
 def standardized_scores(
@@ -89,14 +118,9 @@ def standardized_scores(
     categories: tuple[Category, ...],
     normalizations: tuple[CategoryNormalization, ...],
 ) -> tuple[tuple[float, ...], ...]:
-    validate_population(players, axes, categories)
-    if tuple(c.id for c in categories) != tuple(n.id for n in normalizations):
-        raise DataError("valuation: ruler category axes disagree")
-    if any(n.deviation <= 0 for n in normalizations):
-        raise DataError("valuation: ruler deviation must be positive")
     return tuple(
-        tuple((v - n.mean) / n.deviation for v in category_impacts(players, axes, c, n.ratio))
-        for c, n in zip(categories, normalizations, strict=True)
+        tuple(t.result for t in column)
+        for column in standardized_traces(players, axes, categories, normalizations)
     )
 
 
@@ -129,22 +153,59 @@ def fit_ruler(
     replacement = rank(scores, healthy)[count : count + parameters.replacement_count]
     if len(replacement) != parameters.replacement_count:
         raise DataError("valuation: insufficient healthy replacement population")
-    baseline = fsum(scores[i] for i in replacement) / len(replacement)
+    baseline = evaluate("mean", values=tuple(scores[i] for i in replacement)).result
     return ValuationRuler(replacement_score=baseline, categories=scales)
 
 
-def auction_dollars(
+def price_traces(
     utilities: tuple[float, ...], ids: tuple[str, ...], league: LeagueRules
-) -> tuple[float, ...]:
+) -> tuple[tuple[FormulaTrace, FormulaTrace], ...]:
     count = league.teams * (len(league.starter_slots) + league.bench_slots)
     positive = tuple(max(u, 0) for u in utilities)
     top = sorted(range(len(ids)), key=lambda i: (-positive[i], ids[i]))[:count]
     if len(top) != count or any(positive[i] <= 0 for i in top):
         raise DataError("valuation: insufficient positive auction population")
-    scale = (league.teams * league.budget - count * league.minimum_bid) / fsum(
-        positive[i] for i in top
+    scale = evaluate(
+        "dollar_scale",
+        teams=float(league.teams),
+        budget=float(league.budget),
+        roster_count=float(count),
+        minimum=float(league.minimum_bid),
+        positive_utilities=tuple(positive[i] for i in top),
     )
-    return tuple(league.minimum_bid + p * scale if p > 0 else 0 for p in positive)
+    return tuple(
+        (
+            scale,
+            evaluate(
+                "dollar_value", utility=u, minimum=float(league.minimum_bid), scale=scale.result
+            ),
+        )
+        for u in positive
+    )
+
+
+def auction_dollars(
+    utilities: tuple[float, ...], ids: tuple[str, ...], league: LeagueRules
+) -> tuple[float, ...]:
+    return tuple(value.result for _, value in price_traces(utilities, ids, league))
+
+
+def utility_traces(
+    players: tuple[Projected, ...],
+    z: tuple[tuple[float, ...], ...],
+    ruler: ValuationRuler,
+    season_games: int,
+) -> tuple[FormulaTrace, ...]:
+    return tuple(
+        evaluate(
+            "season_utility",
+            scores=tuple(col[i] for col in z),
+            replacement=ruler.replacement_score,
+            games=p.expected_games,
+            season_games=float(season_games),
+        )
+        for i, p in enumerate(players)
+    )
 
 
 def value(
@@ -159,22 +220,21 @@ def value(
     players = tuple(sorted(projections, key=lambda p: p.id))
     if len(set(catalog_ids)) != len(catalog_ids) or season_games <= 0:
         raise DataError("valuation: duplicate catalog IDs or invalid season games")
-    z = standardized_scores(players, axes, league.categories, ruler.categories)
-    utility = tuple(
-        (fsum(col[i] for col in z) - ruler.replacement_score) * p.expected_games / season_games
-        for i, p in enumerate(players)
-    )
-    prices = auction_dollars(utility, tuple(p.id for p in players), league)
+    category_traces = standardized_traces(players, axes, league.categories, ruler.categories)
+    z = tuple(tuple(t.result for t in column) for column in category_traces)
+    utilities = utility_traces(players, z, ruler, season_games)
+    pricing = price_traces(tuple(u.result for u in utilities), tuple(p.id for p in players), league)
     by_id = {
         p.id: PlayerValue(
             id=p.id,
-            fair=round(prices[i], parameters.result_decimals),
-            utility=round(utility[i], parameters.result_decimals),
+            fair=round(pricing[i][1].result, parameters.result_decimals),
+            utility=round(utilities[i].result, parameters.result_decimals),
             categories=tuple(
                 CategoryScore(id=c.id, z=round(column[i], parameters.result_decimals))
                 for c, column in zip(league.categories, z, strict=True)
             ),
             unavailable_reason=None,
+            traces=(*(col[i] for col in category_traces), utilities[i], *pricing[i]),
         )
         for i, p in enumerate(players)
     }

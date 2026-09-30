@@ -6,13 +6,13 @@ from test_managed import reference_manager
 from test_season import management_parameters
 
 from fba.adapters.native import NativeKernel
+from fba.auction.managed import ManagedSeason
+from fba.auction.season import health_tape, replay
 from fba.contracts.auction import AuctionInput, AuctionPlayer
 from fba.contracts.backtest import ActualBox, HealthObservation, Pairing, ReplayInput, ReplayTeam
 from fba.contracts.base import DataError
 from fba.contracts.config import SeasonModel
 from fba.contracts.season import ManagementInput
-from fba.core.managed import ManagedSeason
-from fba.core.season import health_tape, replay
 
 
 @pytest.fixture(scope="module")
@@ -503,7 +503,7 @@ def test_future_unpublished_observations_are_ignored_and_empty_health_fails(kern
 
 
 def test_weekly_calendar_requires_one_authoritative_first_period(kernel):
-    from fba.core.managed import management_calendar
+    from fba.auction.managed import management_calendar
 
     source, auction = replay_fixture(kernel)
     league = source.config.league.model_copy(

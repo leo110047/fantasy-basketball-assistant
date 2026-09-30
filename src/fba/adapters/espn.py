@@ -14,7 +14,6 @@ from pydantic import (
     field_validator,
 )
 
-from fba.adapters.codec import checked_json
 from fba.contracts.base import ConfigError, DataError, Text
 from fba.contracts.config import Source
 from fba.contracts.data import (
@@ -27,6 +26,7 @@ from fba.contracts.data import (
     StatValue,
     TeamLabel,
 )
+from fba.data.codec import checked_json
 
 
 class Wire(BaseModel):

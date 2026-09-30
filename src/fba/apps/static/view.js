@@ -159,7 +159,7 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
 function text(element, value) { if (element.textContent !== value) element.textContent = value; }
 
 
-function renderFitExplanation(fit) {
+function renderFitExplanation(fit, definitions) {
   const target = el("fitExplanation"), wasOpen = target.firstElementChild?.open;
   target.replaceChildren();
   if (!fit) return;
@@ -179,13 +179,14 @@ function renderFitExplanation(fit) {
       body.append(row);
     }
     table.append(body); detail.append(table);
+    for (const trace of data.traces ?? []) detail.append(formula(trace, definitions));
     detail.append(node("p", "領先份額比較選中陣容與假設對手，平手不算領先；權重衡量小幅改善此類別的局部影響，有訊號時平均為 1。兩者都不是實戰勝率，未涵蓋全部估計誤差。", "muted"));
   } else detail.append(node("p", "這份結果未含類別明細。", "muted"));
   target.append(detail);
 }
 
-export function renderPlan(result, players, market, nominate, unavailable) {
-  renderFitExplanation(result?.fit);
+export function renderPlan(result, players, market, nominate, unavailable, definitions) {
+  renderFitExplanation(result?.fit, definitions);
   el("plan").replaceChildren(); el("nominations").replaceChildren();
   if (!result) { el("planNote").textContent = `${unavailable}；完成後顯示目前狀態的方案。`; return; }
   if (result.plan.reason) { el("planNote").textContent = `無合法方案：${result.plan.reason}`; return; }
@@ -225,3 +226,4 @@ export function renderComparison(value, players, data) {
   el("comparison").replaceChildren(node("strong", comparisonLabel(c)), node("p", c.delta == null ? "至少一個分支無合法方案" : `組隊效用差 ${c.delta.toFixed(3)}；不是勝率。`, "muted"), grid);
 }
 import {priceRows, rowTags, comparisonLabel, normalized, floorBackup, forecastRange} from "/presentation.js";
+import {formula} from "/formulas.js";

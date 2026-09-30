@@ -3,7 +3,6 @@ from pathlib import Path
 from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from fba.adapters.calculation import load_calculation_input
-from fba.adapters.codec import canonical, checked_json, digest, read_bytes
 from fba.adapters.config import load_parameters
 from fba.adapters.snapshots import artifact, checked_path, load_snapshot, publish_bundle
 from fba.contracts.base import ConfigError, DataError, VersionError
@@ -17,6 +16,7 @@ from fba.contracts.projection import (
     ResourceInput,
 )
 from fba.core.config import validate_config
+from fba.data.codec import canonical, checked_json, digest, read_bytes
 
 
 def legacy_input(path: Path) -> tuple[ResourceInput | ProjectionInput, str]:

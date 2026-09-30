@@ -147,8 +147,8 @@ def test_real_worker_exit_recovers_on_retry_without_restarting_session(monkeypat
     from test_auction import config, inputs_for, player, state
 
     import fba.apps.auction as application
+    from fba.auction.auction import calculate_auction
     from fba.contracts.auction import SolverError
-    from fba.core.auction import calculate_auction
 
     league = config().league
     league = league.model_copy(

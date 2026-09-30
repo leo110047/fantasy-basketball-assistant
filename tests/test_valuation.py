@@ -5,7 +5,7 @@ import pytest
 
 from fba.contracts.config import Category, LeagueRules, Linear, ModelDocument, Term
 from fba.contracts.projection import Projected
-from fba.core.valuation import fit_ruler, value
+from fba.formulas.valuation import fit_ruler, value
 
 
 @pytest.fixture

@@ -1,7 +1,6 @@
 from fba.adapters import espn, nba, normalized
 from fba.adapters.acquisition import Acquired
 from fba.adapters.annual import validate_archive
-from fba.adapters.codec import decode
 from fba.contracts.archive import ForecastArchive
 from fba.contracts.base import DataError, Record
 from fba.contracts.config import ValidatedConfig
@@ -13,6 +12,7 @@ from fba.contracts.data import (
     ProviderPlayer,
     ScheduleCount,
 )
+from fba.data.codec import decode
 
 
 class SourceData(Record):

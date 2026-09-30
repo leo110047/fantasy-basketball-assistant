@@ -6,11 +6,11 @@ from test_fit import fitted_case as fitted_case
 from test_managed import reference_manager
 from test_season import management_parameters
 
-from fba.adapters.codec import canonical
 from fba.adapters.native import NativeKernel
 from fba.apps.auction import AuctionSession
+from fba.auction.auction import calculate_auction
 from fba.contracts.config import ManagedPricingModel, PricingParameters
-from fba.core.auction import calculate_auction
+from fba.data.codec import canonical
 
 
 class RecordedKernel:
@@ -107,9 +107,9 @@ def managed_input(inputs):
 
 
 def test_unquoted_candidate_gets_managed_value_without_inventing_a_quote(fitted_case):
+    from fba.auction.auction import market_context, portfolio_for
+    from fba.auction.fit import FittedUtility
     from fba.contracts.auction import ManagedFitSummary, Plan
-    from fba.core.auction import market_context, portfolio_for
-    from fba.core.fit import FittedUtility
 
     inputs, draft, kernel = fitted_case
     inputs = managed_input(inputs)
@@ -189,11 +189,11 @@ def test_complete_management_flows_through_auction_and_parallel_workers(fitted_c
 def test_desk_comparison_uses_selected_managed_utilities(fitted_case, tmp_path):
     from test_desk import wait_for
 
-    from fba.adapters.codec import digest
     from fba.apps.desk import AuctionDesk
+    from fba.auction.auction import compare, portfolio_for
     from fba.contracts.auction import ManagedFitSummary, Plan
     from fba.contracts.desk import CompareRequest
-    from fba.core.auction import compare, portfolio_for
+    from fba.data.codec import digest
 
     inputs, draft, kernel = fitted_case
     inputs = managed_input(inputs)

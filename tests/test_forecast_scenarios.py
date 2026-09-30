@@ -8,13 +8,13 @@ from test_preparation import adjustment
 from test_preparation import annual_case as annual_case
 
 from fba.adapters.auction import load_auction, prepare_auction
-from fba.adapters.codec import canonical, digest
 from fba.adapters.forecast_scenarios import freeze_scenarios, scenario_paths, scenario_prices
 from fba.adapters.preparation import project
 from fba.adapters.snapshots import artifact, publish
 from fba.contracts.base import DataError
 from fba.contracts.data import ExpectedGames, ManualAdjustments
 from fba.contracts.projection import CalculationResult
+from fba.data.codec import canonical, digest
 
 
 def test_scenarios_freeze_named_values_without_changing_central_input(frozen_auction, tmp_path):

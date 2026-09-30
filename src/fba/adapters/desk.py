@@ -3,37 +3,17 @@ import errno
 import os
 import sys
 import tempfile
-from collections.abc import Generator
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Protocol, cast
 
-from fba.adapters.codec import canonical, read_bytes
 from fba.contracts.auction import DraftState
 from fba.contracts.base import DataError
 from fba.contracts.desk import DeskExecution, SaveUnconfirmed
+from fba.data.codec import canonical, read_bytes
 
 
 class NativeExchange(Protocol):
     def __call__(self, *args: object) -> int: ...
-
-
-@contextmanager
-def draft_lock(path: Path) -> Generator[None]:
-    if sys.platform not in ("darwin", "linux"):
-        raise DataError("serve: draft storage requires macOS or Linux")
-    import fcntl
-
-    try:
-        lock = path.with_suffix(path.suffix + ".lock").open("a")
-    except OSError as exc:
-        raise DataError(f"serve: cannot open draft lock: {exc}") from exc
-    with lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError as exc:
-            raise DataError(f"serve: cannot exclusively lock draft: {exc}") from exc
-        yield
 
 
 def check_storage(path: Path) -> None:
@@ -59,6 +39,10 @@ def check_storage(path: Path) -> None:
 
 
 def sync_directory(path: Path) -> None:
+    if sys.platform == "win32":
+        # Windows has no fsync(directory). Each staged file is flushed before
+        # ReplaceFileW; NTFS owns the atomic namespace operation and backup.
+        return
     descriptor = os.open(path, os.O_RDONLY)
     try:
         os.fsync(descriptor)
@@ -68,6 +52,9 @@ def sync_directory(path: Path) -> None:
 
 def atomic_exchange(source: Path, target: Path) -> None:
     """Swap names atomically, retaining the displaced inode even across external writes."""
+    if sys.platform == "win32":
+        windows_exchange(source, target)
+        return
     library = ctypes.CDLL(None, use_errno=True)
     a, b = os.fsencode(source), os.fsencode(target)
     try:
@@ -115,6 +102,11 @@ def save_draft(path: Path, state: DraftState, expected: bytes) -> bytes:
         temporary.unlink()
         sync_directory(history)
         sync_directory(path.parent)
+    except SaveUnconfirmed:
+        # Windows may retain both the candidate and a displaced backup when
+        # replacement is incomplete. Neither may be cleaned up as an abort.
+        exchanged = True
+        raise
     except OSError as exc:
         if exchanged:
             raise SaveUnconfirmed(
@@ -134,3 +126,35 @@ def log_execution(path: Path, record: DeskExecution) -> None:
             stream.flush()
     except OSError as exc:
         raise DataError(f"desk.log: cannot record calculation: {exc}") from exc
+
+
+def windows_exchange(source: Path, target: Path) -> None:
+    """Replace target while preserving its actual displaced bytes on NTFS.
+
+    A caller-held OS lock serializes cooperating writers. ReplaceFileW places
+    the old target in a sibling backup as part of replacement; a failure after
+    installation retains that backup and reports an unconfirmed save.
+    """
+    library = ctypes.WinDLL("kernel32", use_last_error=True)
+    function = library.ReplaceFileW
+    function.argtypes = [ctypes.c_wchar_p] * 3 + [ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
+    function.restype = ctypes.c_int
+    backup = source.with_suffix(source.suffix + ".displaced")
+    if backup.exists():
+        raise OSError(errno.EEXIST, "unresolved displaced draft exists", str(backup))
+    if not function(
+        str(target.resolve()), str(source.resolve()), str(backup.resolve()), 0, None, None
+    ):
+        code = ctypes.get_last_error()
+        if backup.exists():
+            raise SaveUnconfirmed(
+                f"draft replacement incomplete; inspect {target} and preserved {backup}; "
+                f"Windows error {code}"
+            )
+        raise ctypes.WinError(code)
+    try:
+        os.replace(backup, source)
+    except OSError as exc:
+        raise SaveUnconfirmed(
+            f"draft replaced; displaced version preserved at {backup}: {exc}"
+        ) from exc

@@ -6,10 +6,10 @@ from unittest.mock import patch
 import pytest
 
 from fba.adapters.acquisition import acquire
-from fba.adapters.codec import digest
 from fba.adapters.snapshots import load_snapshot, publish
 from fba.apps.cli import build, rebuild
 from fba.contracts.base import ConfigError, DataError, IdentityError
+from fba.data.codec import digest
 
 
 def write(path, value):

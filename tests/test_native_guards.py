@@ -1,12 +1,13 @@
-import shutil
 import subprocess
+import sys
 from pathlib import Path
+
+from fba.adapters.native import compiler_path
 
 
 def test_native_invariant_guards_reject_corrupt_internal_state(tmp_path):
-    compiler = shutil.which("c++")
-    assert compiler is not None
-    binary = tmp_path / "native-guards"
+    compiler = compiler_path()
+    binary = tmp_path / ("native-guards.exe" if sys.platform == "win32" else "native-guards")
     subprocess.run(
         [
             compiler,

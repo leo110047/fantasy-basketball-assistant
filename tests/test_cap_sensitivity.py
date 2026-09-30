@@ -12,16 +12,16 @@ from test_desk import request, sell_request, wait_for
 from test_fit import fitted_case as fitted_case
 from test_pricing_management import managed_input
 
-from fba.adapters.codec import canonical
 from fba.apps.desk import AuctionDesk
 from fba.apps.server import DeskServer
+from fba.auction.auction import calculate_auction
+from fba.auction.fit import marginal_batch
+from fba.auction.sensitivity import cap_sensitivity
 from fba.contracts.auction import FittedPlayer, ManagedFitSummary
 from fba.contracts.base import DataError
 from fba.contracts.desk import SensitivityRequest
 from fba.contracts.season import MarginalTask
-from fba.core.auction import calculate_auction
-from fba.core.fit import marginal_batch
-from fba.core.sensitivity import cap_sensitivity
+from fba.data.codec import canonical
 
 
 def test_marginal_groups_use_configured_partition_without_additional_simulations():

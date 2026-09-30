@@ -9,7 +9,6 @@ import pytest
 from test_backtest_io import frozen_replay as frozen_replay
 
 from fba.adapters.backtest import backtest_file, localize_replay, validate_timeline
-from fba.adapters.codec import canonical, digest
 from fba.adapters.snapshots import artifact
 from fba.contracts.backtest import (
     ActualArchive,
@@ -23,6 +22,7 @@ from fba.contracts.backtest import (
 from fba.contracts.base import DataError
 from fba.contracts.data import Provenance
 from fba.core.replay_schedule import season_days
+from fba.data.codec import canonical, digest
 
 
 @pytest.fixture

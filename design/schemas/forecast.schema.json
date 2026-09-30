@@ -614,6 +614,44 @@
       "title": "FitParameters",
       "type": "object"
     },
+    "FormulaTrace": {
+      "additionalProperties": false,
+      "properties": {
+        "formula_id": {
+          "minLength": 1,
+          "title": "Formula Id",
+          "type": "string"
+        },
+        "inputs": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "title": "Inputs",
+          "type": "object"
+        },
+        "result": {
+          "title": "Result",
+          "type": "number"
+        }
+      },
+      "required": [
+        "formula_id",
+        "inputs",
+        "result"
+      ],
+      "title": "FormulaTrace",
+      "type": "object"
+    },
     "HealthModel": {
       "additionalProperties": false,
       "properties": {
@@ -1307,6 +1345,14 @@
     "PlayerValue": {
       "additionalProperties": false,
       "properties": {
+        "traces": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FormulaTrace"
+          },
+          "title": "Traces",
+          "type": "array"
+        },
         "id": {
           "minLength": 1,
           "title": "Id",

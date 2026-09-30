@@ -3,11 +3,11 @@ from pathlib import Path
 
 from fba.adapters.annual import previous_evaluation
 from fba.adapters.auction import auction_file, draft_template, prepare_auction
-from fba.adapters.codec import decode, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.preparation import project
 from fba.contracts.auction import AuctionResult, Infeasible
 from fba.contracts.base import DataError
+from fba.data.codec import decode, read_bytes
 
 
 def finish_annual(snapshot: Path, model: Path, output: Path, previous: Path | None) -> Path:

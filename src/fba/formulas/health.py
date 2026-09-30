@@ -2,6 +2,7 @@ from datetime import date
 
 from fba.contracts.base import DataError
 from fba.contracts.config import HealthParameters
+from fba.formulas.registry import evaluate
 
 
 def healthy_games(
@@ -19,4 +20,9 @@ def healthy_games(
     )
     if not 0 <= expected <= eligible <= full:
         raise DataError("management.health: expected games exceed eligible schedule")
-    return min(eligible, max(expected, eligible - (eligible - expected) * parameters.injury_share))
+    return evaluate(
+        "healthy_capacity",
+        expected=expected,
+        eligible=eligible,
+        injury_share=parameters.injury_share,
+    ).result

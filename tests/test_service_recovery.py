@@ -1,9 +1,11 @@
+import ctypes
 import json
 import os
-import selectors
 import signal
 import subprocess
 import sys
+from queue import Queue
+from threading import Thread
 from time import monotonic, sleep
 
 import pytest
@@ -11,10 +13,10 @@ from test_desk import desk as desk
 from test_desk import sell_request, wait_for
 
 import fba.adapters.desk as ledger
-from fba.adapters.codec import canonical
-from fba.apps.server import DeskServer, run_server
+from fba.apps.server import run_server
 from fba.contracts.base import DataError
 from fba.contracts.desk import SaveDraft, SaveUnconfirmed
+from fba.data.codec import canonical
 
 
 def test_failed_save_does_not_log_an_uncommitted_market(desk, monkeypatch):
@@ -108,9 +110,18 @@ def test_bind_and_storage_fail_before_background_work_or_logging(desk, monkeypat
     monkeypatch.setattr("fba.apps.server.AuctionSession", forbidden)
     wait_for(lambda: desk.results().equal.status == desk.results().fit.status == "ready")
     original = desk.log.read_bytes()
-    with DeskServer(None, 0) as occupied:
+
+    # A busy preferred port now falls back by contract; a real bind failure
+    # must still prevent workers and log mutation.
+    def bind_failure(_server):
+        import errno
+
+        raise OSError(errno.EIO, "injected bind failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr("fba.runtime.local.LocalServer.server_bind", bind_failure)
         with pytest.raises(DataError, match="cannot bind"):
-            run_server(desk.inputs, desk.input_hash, desk.path, desk.log, 1, occupied.server_port)
+            run_server(desk.inputs, desk.input_hash, desk.path, desk.log, 1, 0)
 
     def unsupported(*args):
         raise OSError("unsupported exchange")
@@ -137,7 +148,36 @@ assert command.command == 'calculate'
     subprocess.run([sys.executable, "-c", code], check=True, capture_output=True, text=True)
 
 
+def process_exists(pid):
+    if sys.platform != "win32":
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        return True
+    library = ctypes.WinDLL("kernel32", use_last_error=True)
+    open_process = library.OpenProcess
+    open_process.argtypes = [ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong]
+    open_process.restype = ctypes.c_void_p
+    wait = library.WaitForSingleObject
+    wait.argtypes, wait.restype = [ctypes.c_void_p, ctypes.c_ulong], ctypes.c_ulong
+    close = library.CloseHandle
+    close.argtypes, close.restype = [ctypes.c_void_p], ctypes.c_int
+    handle = open_process(0x00100000, False, pid)  # SYNCHRONIZE only
+    if not handle:
+        assert ctypes.get_last_error() == 87  # No such process.
+        return False
+    try:
+        state = wait(handle, 0)
+        assert state in (0, 258)
+        return state == 258
+    finally:
+        assert close(handle)
+
+
 def group_exists(pid):
+    if sys.platform == "win32":
+        return process_exists(pid)
     try:
         os.killpg(pid, 0)
     except ProcessLookupError:
@@ -145,7 +185,31 @@ def group_exists(pid):
     return True
 
 
-@pytest.mark.parametrize("termination", [signal.SIGTERM, signal.SIGHUP, signal.SIGINT])
+def native_child(process):
+    lines = Queue()
+
+    def read():
+        for line in iter(process.stdout.readline, b""):
+            lines.put(line)
+        lines.put(None)
+
+    Thread(target=read, daemon=True).start()
+    deadline = monotonic() + 15
+    while True:
+        remaining = deadline - monotonic()
+        assert remaining > 0, "native child start deadline exceeded"
+        line = lines.get(timeout=remaining)
+        assert line, "service exited before starting native compilation"
+        if b'"native_child"' in line:
+            return json.loads(line)["native_child"]
+
+
+@pytest.mark.parametrize(
+    "termination",
+    [signal.CTRL_BREAK_EVENT]
+    if sys.platform == "win32"
+    else [signal.SIGTERM, signal.SIGHUP, signal.SIGINT],
+)
 def test_signal_during_real_native_compilation_cleans_all_owned_processes(
     desk, tmp_path, termination
 ):
@@ -157,7 +221,7 @@ def test_signal_during_real_native_compilation_cleans_all_owned_processes(
     script.write_text("""
 import json, subprocess, sys
 from pathlib import Path
-from fba.adapters.codec import decode
+from fba.data.codec import decode
 from fba.contracts.auction import AuctionInput
 from fba.apps.server import run_server
 if __name__ == '__main__':
@@ -175,25 +239,23 @@ if __name__ == '__main__':
         [sys.executable, "-u", str(script), str(tmp_path)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        start_new_session=True,
+        start_new_session=sys.platform != "win32",
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0,
     )
     try:
-        assert process.stdout is not None
-        with selectors.DefaultSelector() as selector:
-            selector.register(process.stdout, selectors.EVENT_READ)
-            deadline = monotonic() + 15
-            while True:
-                assert selector.select(max(0, deadline - monotonic())), "native child not started"
-                if b'"native_child"' in process.stdout.readline():
-                    break
+        child = native_child(process)
         os.kill(process.pid, termination)
         _, error = process.communicate(timeout=15)
         assert process.returncode == 0, error.decode()
         deadline = monotonic() + 3
-        while group_exists(process.pid) and monotonic() < deadline:
+        while (group_exists(process.pid) or process_exists(child)) and monotonic() < deadline:
             sleep(0.02)
-        assert not group_exists(process.pid), "service left an owned child behind"
+        assert not group_exists(process.pid), "service process group remains"
+        assert not process_exists(child), "service left an owned child behind"
     finally:
         if group_exists(process.pid):
-            os.killpg(process.pid, signal.SIGKILL)
+            if sys.platform == "win32":
+                process.kill()
+            else:
+                os.killpg(process.pid, signal.SIGKILL)
         process.communicate(timeout=5)

@@ -21,6 +21,7 @@ from fba.contracts.projection import (
     Prior,
     ProjectionTeam,
 )
+from fba.formulas.registry import evaluate
 
 
 def position_pool(player: Player, parameters: PreparationParameters) -> str:
@@ -79,14 +80,19 @@ def history_pools(
         rows = samples.get(player.roster.id, ())
         if player.history_status != "available" or len(rows) < parameters.donor_minimum_history:
             continue
-        minutes = fsum(r[-1] for r in rows) / len(rows)
+        minutes = evaluate("mean", values=tuple(r[-1] for r in rows)).result
         forecast = forecasts.get(player.roster.id)
         if forecast is not None and forecast.expected_games > 0:
             projected_minutes = next(
                 (s.value for s in forecast.totals if s.id == parameters.minutes_stat), None
             )
             if projected_minutes is not None:
-                minutes = projected_minutes / forecast.expected_games
+                minutes = evaluate(
+                    "ratio",
+                    numerator=projected_minutes,
+                    denominator=forecast.expected_games,
+                    zero_value=0.0,
+                ).result
         if parameters.donor_minutes_lower <= minutes <= parameters.donor_minutes_upper:
             pools[position_pool(player, parameters)].extend(r[:-1] for r in rows)
     return tuple(HistoryPool(id=pid, history=tuple(rows)) for pid, rows in sorted(pools.items()))
@@ -118,7 +124,9 @@ def complete_forecast(
             for t in p.scoring_terms
             if t != term and values[t.stat_id] is not None
         )
-        inferred = (scoring - known) / term.coefficient
+        inferred = evaluate(
+            "ratio", numerator=scoring - known, denominator=term.coefficient, zero_value=0.0
+        ).result
         if inferred < -p.feasibility_tolerance:
             raise DataError(
                 f"preparation.{forecast.player_id}.{term.stat_id}: negative derived count"
@@ -142,7 +150,9 @@ def complete_forecast(
                 f"preparation.{forecast.player_id}.{share.stat_id}: "
                 "historical share denominator is zero"
             )
-        values[share.stat_id] = parent * numerator / denominator
+        values[share.stat_id] = evaluate(
+            "historical_share", parent=parent, numerator=numerator, denominator=denominator
+        ).result
         notes.append(
             PreparationNote(
                 player_id=forecast.player_id,
@@ -167,8 +177,11 @@ def complete_forecast(
     return Prior(
         id=settings.forecast_prior_id,
         expected_games=gp,
-        minutes=totals[-1] / gp,
-        stats=tuple(v / gp for v in totals[:-1]),
+        minutes=evaluate("ratio", numerator=totals[-1], denominator=gp, zero_value=0.0).result,
+        stats=tuple(
+            evaluate("ratio", numerator=v, denominator=gp, zero_value=0.0).result
+            for v in totals[:-1]
+        ),
     ), tuple(notes)
 
 
@@ -261,7 +274,10 @@ def prepare_player(
             parameters.historical_games_upper,
             max(parameters.historical_games_lower, len(samples)),
         )
-        means = tuple(fsum(r[i] for r in samples) / len(samples) for i in range(len(samples[0])))
+        means = tuple(
+            evaluate("mean", values=tuple(r[i] for r in samples)).result
+            for i in range(len(samples[0]))
+        )
         priors.append(
             Prior(
                 id=parameters.historical_prior_id,

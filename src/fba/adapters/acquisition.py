@@ -6,10 +6,10 @@ from urllib.request import Request, urlopen
 
 from pydantic import JsonValue, TypeAdapter, ValidationError
 
-from fba.adapters.codec import digest, read_bytes
 from fba.contracts.base import DataError, Record
 from fba.contracts.config import Source
 from fba.contracts.data import Provenance
+from fba.data.codec import digest, read_bytes
 
 
 class Acquired(Record):

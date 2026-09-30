@@ -1,12 +1,10 @@
-from math import exp, floor, fsum, isfinite, log, pi
+from math import exp, fsum
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.integrate import quad
-from scipy.special import log_ndtr, ndtr
 
 from fba.contracts.auction import AuctionPlayer, DraftState, MarketPrice, MarketResult, TeamBudget
-from fba.contracts.base import ConfigError
+from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import (
     LeagueRules,
     MarketAssumptions,
@@ -14,6 +12,8 @@ from fba.contracts.config import (
     SampledMarketParameters,
 )
 from fba.core.roster import capacity, completable
+from fba.formulas.arrays import evaluate_array
+from fba.formulas.registry import evaluate
 
 type FloatArray = NDArray[np.float64]
 
@@ -32,14 +32,16 @@ def bidders_by_position(
         if not team.slots:
             continue
         held = tuple(by_id[i] for i in team.owned)
-        wealth = float(
-            np.clip(
-                (team.budget / team.slots - league.minimum_bid) / average_surplus,
-                parameters.wealth_lower,
-                parameters.wealth_upper,
-            )
-            ** parameters.wealth_exponent
-        )
+        wealth = evaluate(
+            "bidder_wealth",
+            budget=float(team.budget),
+            slots=float(team.slots),
+            minimum=float(league.minimum_bid),
+            average_surplus=average_surplus,
+            lower=parameters.wealth_lower,
+            upper=parameters.wealth_upper,
+            exponent=parameters.wealth_exponent,
+        ).result
         for positions, player in representatives.items():
             # Matching cardinality depends on positions, never player identity or price.
             if completable(league, (*held, player)):
@@ -83,35 +85,22 @@ def opening_anchors(
     return {
         p.id: None
         if p.projected_price is None
-        else min(maximum, max(minimum, p.projected_price * scale))
-        if p.projected_price >= cutoff
-        else float(minimum)
+        else evaluate(
+            "anchor",
+            quote=p.projected_price,
+            scale=scale,
+            minimum=float(minimum),
+            maximum=float(maximum),
+            cutoff=cutoff,
+        ).result
         for p in players
     }
 
 
 def normalization_shift(teams: int, volatility: float) -> float:
-    """Log E[exp(sigma * Z_(n-1))] for the second highest of n normal bids."""
-    if volatility == 0:
-        return 0.0
-
-    def integrand(z: float) -> float:
-        return exp(
-            volatility * z
-            + log(teams * (teams - 1))
-            + (teams - 2) * float(log_ndtr(z))
-            + float(log_ndtr(-z))
-            - z * z / 2
-            - log(2 * pi) / 2
-        )
-
     try:
-        report = quad(integrand, -np.inf, np.inf, full_output=1, epsabs=1e-10, epsrel=1e-10)
-        value, error, _diagnostics, *message = report
-        if message or not isfinite(value) or value <= 0 or error > 1e-8 * max(1.0, value):
-            raise ArithmeticError("normalization did not converge")
-        return log(value)
-    except (ArithmeticError, ValueError) as error:
+        return evaluate("market_normalization", teams=float(teams), volatility=volatility).result
+    except DataError as error:
         raise ConfigError("model.market.volatility: cannot resolve bid normalization") from error
 
 
@@ -124,37 +113,20 @@ def bid_cdf(
     minimum: int,
     increment: int,
 ) -> FloatArray:
-    """P(discrete, capped bid <= level), with a floor at the minimum bid."""
-    threshold = np.maximum(0.0, levels + increment - minimum)
-    ratio = np.divide(
-        threshold[None, :],
-        premium[:, None],
-        out=np.full((len(premium), len(levels)), np.inf),
-        where=premium[:, None] > 0,
-    )
-    if volatility == 0:
-        probability = (
-            minimum + premium[:, None] * exp(-shift) < levels[None, :] + increment
-        ).astype(float)
-    else:
-        logarithm = np.full(ratio.shape, -np.inf)
-        np.log(ratio, out=logarithm, where=ratio > 0)
-        probability = ndtr((logarithm + shift) / volatility)
-    return np.where(
-        levels[None, :] < minimum,
-        0.0,
-        np.where(levels[None, :] >= maximum[:, None], 1.0, probability),
-    )
+    return evaluate_array(
+        "bid_distribution",
+        levels=levels,
+        maximum=maximum,
+        premium=premium,
+        volatility=volatility,
+        shift=shift,
+        minimum=float(minimum),
+        increment=float(increment),
+    ).result
 
 
 def sale_survival(cdf: FloatArray, previous: FloatArray) -> FloatArray:
-    # At level b, the sale price exceeds b unless everybody bids <= b, or
-    # exactly one bids > b while all the others bid < b (one increment below).
-    edge = np.ones((1, cdf.shape[1]))
-    prefix = np.concatenate((edge, np.cumprod(previous, axis=0)), axis=0)
-    suffix = np.concatenate((np.cumprod(previous[::-1], axis=0)[::-1], edge), axis=0)
-    single = np.sum((1 - cdf) * prefix[:-1] * suffix[1:], axis=0)
-    return np.clip(1 - np.prod(cdf, axis=0) - single, 0, 1)
+    return evaluate_array("second_bid_survival", cdf=cdf, previous=previous).result
 
 
 def distribution_price(
@@ -180,23 +152,38 @@ def distribution_price(
     previous = bid_cdf(
         levels - increment, maximum, premium, parameters.volatility, shift, minimum, increment
     )
-    expected = minimum + increment * fsum(sale_survival(cdf, previous))
+    expected = evaluate(
+        "sale_cost",
+        minimum=float(minimum),
+        increment=float(increment),
+        survival=tuple(float(x) for x in sale_survival(cdf, previous)),
+    )
     foes = np.array([room[j].id != mine for j, _ in participants])
     high_survival = 1 - np.prod(cdf[foes], axis=0)
     # Floor ties assume our nomination; every higher foe bid must be beaten.
-    acquisition = minimum + increment * (
-        fsum(high_survival) + (float(high_survival[0]) if len(levels) else 0)
+    acquisition = evaluate(
+        "winning_cost",
+        minimum=float(minimum),
+        increment=float(increment),
+        survival=tuple(float(x) for x in high_survival),
+    )
+    planning = evaluate(
+        "planning_cost",
+        minimum=float(minimum),
+        increment=float(increment),
+        acquisition=acquisition.result,
     )
     median = np.floor(np.minimum(maximum, minimum + premium * exp(-shift)) / increment) * increment
     bidders = int(np.count_nonzero(foes & (median >= parameters.competition_bid)))
     return MarketPrice(
         player_id=player_id,
         anchor=anchor,
-        expected=expected,
-        acquisition=acquisition,
+        expected=expected.result,
+        acquisition=acquisition.result,
         # The integer point estimate nearest to E[cost] avoids a full-increment
         # upward bias for an arbitrarily small upper-tail probability.
-        planning_cost=max(minimum, floor(acquisition / increment + 0.5) * increment),
+        planning_cost=int(planning.result),
+        traces=(expected, acquisition, planning),
         bidders=bidders,
     )
 
@@ -235,7 +222,7 @@ def market_factors(
     denominator = fsum(max(league.minimum_bid, anchors[p.id] or 0) for p in remaining[:slots])
     denominator += max(0, slots - len(remaining)) * league.minimum_bid
     cash = sum(t.budget for t in room if t.slots)
-    inflation = cash / denominator if denominator > 0 else 1.0
+    inflation = evaluate("inflation", cash=float(cash), anchor_total=denominator).result
     average_surplus = max(surplus / max(slots, 1), np.finfo(float).eps)
     return anchors, remaining, inflation, average_surplus
 

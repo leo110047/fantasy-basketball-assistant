@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, NamedTuple, Self
 
 from pydantic import Field, model_validator
 
@@ -20,6 +20,7 @@ from fba.contracts.config import (
     PricingParameters,
 )
 from fba.contracts.data import Adjustment, Digest, Provenance, StatValue, TeamLabel
+from fba.contracts.formula import ArrayFormulaTrace, FormulaTrace
 from fba.contracts.projection import CategoryScore, FrozenCalculationInput
 from fba.contracts.season import ManagementInput, MarginalTask
 
@@ -87,6 +88,7 @@ class DraftState(Record):
 
 
 class AuctionDetail(Record):
+    traces: tuple[FormulaTrace, ...] = ()  # Legacy immutable forecast compatibility.
     player_id: Text
     team_id: Text | None
     expected_games: Nonnegative | None
@@ -156,6 +158,7 @@ class TeamBudget(Record):
 
 
 class MarketPrice(Record):
+    traces: tuple[FormulaTrace, ...] = ()
     player_id: Text
     anchor: Nonnegative | None
     expected: Nonnegative | None
@@ -196,6 +199,7 @@ class Infeasible(Record):
 
 
 class Cap(Record):
+    traces: tuple[FormulaTrace, ...] = ()
     player_id: Text
     amount: Natural | None
     reason: Text | None
@@ -230,6 +234,7 @@ class FitDiagnostics(Record):
     selected_score: Finite
     compared_roster: tuple[Text, ...]
     opponents: tuple[tuple[Text, ...], ...]
+    traces: tuple[FormulaTrace | ArrayFormulaTrace, ...] = ()
 
 
 class FitSummary(Record):
@@ -284,3 +289,10 @@ class Comparison(Record):
     skip: Plan | Infeasible
     delta: Finite | None
     solver_calls: Natural
+
+
+class CapCalculation(NamedTuple):
+    amount: int
+    loss: float | None
+    forced: bool
+    traces: tuple[FormulaTrace, ...]

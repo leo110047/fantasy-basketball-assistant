@@ -8,12 +8,13 @@ from threading import Event, Lock
 
 from fba.adapters.native import NativeArtifact, NativeKernel
 from fba.apps.workers import WorkBatch, check_cancelled, check_current, parallelism
-from fba.contracts.auction import MarginalRequest, Plan, SolverError
+from fba.auction.auction import run_caps
+from fba.auction.fit import marginal_batch
+from fba.auction.managed import FloatArray, ManagedSeason, management_calendar
+from fba.auction.portfolio import Portfolio
+from fba.contracts.auction import CapCalculation, MarginalRequest, Plan, SolverError
 from fba.contracts.season import MarginalFeature, SeasonArrays, SeasonRun, TacticalArrays
-from fba.core.auction import run_caps
-from fba.core.fit import marginal_batch
-from fba.core.managed import FloatArray, ManagedSeason, management_calendar
-from fba.core.portfolio import Portfolio
+from fba.runtime.processes import watch_parent
 
 
 def managed_batch(
@@ -44,8 +45,8 @@ def managed_batch(
 
 def cap_batch(
     portfolio: Portfolio, base: Plan, candidates: tuple[int, ...], signal: Connection
-) -> tuple[tuple[tuple[int, float | None, bool], ...], int]:
-    values: list[tuple[int, float | None, bool]] = []
+) -> tuple[tuple[CapCalculation, ...], int]:
+    values: list[CapCalculation] = []
     calls = 0
     for candidate in candidates:
         check_cancelled(signal)
@@ -90,7 +91,9 @@ class AuctionSession:
         if workers < 1:
             raise ValueError("workers: must be positive")
         self.workers = workers
-        self.pool = ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn"))
+        self.pool = ProcessPoolExecutor(
+            max_workers=workers, mp_context=get_context("spawn"), initializer=watch_parent
+        )
         self.pool_lock = Lock()
         self.closed = False
         self.kernel: NativeKernel | None = None
@@ -117,7 +120,9 @@ class AuctionSession:
                 # Both modes can observe the same dead pool; replace that generation only once.
                 if not self.closed and self.pool is pool:
                     self.pool = ProcessPoolExecutor(
-                        max_workers=self.workers, mp_context=get_context("spawn")
+                        max_workers=self.workers,
+                        mp_context=get_context("spawn"),
+                        initializer=watch_parent,
                     )
                     retired = True
             if retired:
@@ -170,14 +175,14 @@ class AuctionSession:
         candidates: tuple[int, ...],
         *,
         cancelled: Event | None = None,
-    ) -> tuple[tuple[tuple[int, float | None, bool], ...], int]:
+    ) -> tuple[tuple[CapCalculation, ...], int]:
         if not candidates:
             return (), 0
         # Assumption: avoid starting parallel batches for fewer than 32 candidate caps.
         workers = parallelism(self.workers, len(candidates), len(candidates), 32)
         width = (len(candidates) + workers - 1) // workers
         chunks = tuple(candidates[i : i + width] for i in range(0, len(candidates), width))
-        results: dict[int, tuple[int, float | None, bool]] = {}
+        results: dict[int, CapCalculation] = {}
         calls = 0
         with self.working_pool() as pool, WorkBatch(cancelled) as batch:
             futures = tuple(

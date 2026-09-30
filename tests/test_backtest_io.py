@@ -11,7 +11,6 @@ from test_backtest import replay_fixture
 
 from fba.adapters.auction import auction_players
 from fba.adapters.backtest import backtest_file, validate_observation_sources, validate_timeline
-from fba.adapters.codec import canonical, digest
 from fba.adapters.config import load_config
 from fba.adapters.native import NativeKernel
 from fba.adapters.snapshots import artifact
@@ -27,6 +26,7 @@ from fba.contracts.data import (
     Snapshot,
 )
 from fba.contracts.projection import CalculationResult, PlayerValue, Projected, Valuation
+from fba.data.codec import canonical, digest
 
 
 def historical(value):

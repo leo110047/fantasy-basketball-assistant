@@ -8,11 +8,11 @@ from test_preparation import annual_case as annual_case
 from fba.adapters.auction import auction_details, load_auction
 from fba.adapters.auction_metadata import auction_teams, freeze_team_sources, label_sources
 from fba.adapters.calculation import load_projection
-from fba.adapters.codec import canonical, digest
 from fba.adapters.espn import team_labels
 from fba.contracts.auction import AnnotatedAuctionDetail, AuctionDetail
 from fba.contracts.base import DataError
 from fba.contracts.projection import CalculationResult
+from fba.data.codec import canonical, digest
 
 
 def test_labels_and_annotations_are_source_bound(frozen_auction):

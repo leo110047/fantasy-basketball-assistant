@@ -1,8 +1,8 @@
 from test_auction import inputs_for, player, state
 from test_market import small_league
 
+from fba.auction.auction import calculate_auction
 from fba.contracts.auction import Plan, Sale
-from fba.core.auction import calculate_auction
 
 
 def room():

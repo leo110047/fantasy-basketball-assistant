@@ -6,15 +6,15 @@ import pytest
 from test_auction import config
 from test_fit import fitted_case as fitted_case
 
-from fba.adapters.codec import canonical
+from fba.auction.auction import calculate_auction, portfolio_for
+from fba.auction.fit import FittedUtility
+from fba.auction.streaming import analyze_streaming, flex_candidates, select_streaming
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import ModelDocument, StreamingComparisonModel
 from fba.contracts.season import ManagementPolicy
-from fba.core.auction import calculate_auction, portfolio_for
 from fba.core.config import validate_team_minutes
-from fba.core.fit import FittedUtility
 from fba.core.roster import effective_players
-from fba.core.streaming import analyze_streaming, flex_candidates, select_streaming
+from fba.data.codec import canonical
 
 
 def research_input(inputs, slots=(0, 1, 2), limit=None):

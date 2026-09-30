@@ -8,7 +8,26 @@ from scipy.stats import spearmanr
 from fba.adapters.config import load_config
 from fba.contracts.base import DataError
 from fba.contracts.projection import EvaluationInput, PredictionVariant
-from fba.core.evaluation import correlation, evaluate
+from fba.formulas.evaluation import correlation, evaluate
+from fba.formulas.registry import evaluate as formula
+
+
+def assert_reference_metrics_and_traces(actual, expected, decimals):
+    # Approved numerical reference answers remain unchanged; additive evidence
+    # must independently replay to each corresponding published metric.
+    metrics = actual.model_dump()
+    traces = metrics.pop("traces")
+    assert metrics == expected
+    fields = {
+        "rank_correlation": "rank_correlation",
+        "mae": "games_mae",
+        "median": "median_dollar_error",
+    }
+    assert {t["formula_id"] for t in traces} == set(fields)
+    for trace in traces:
+        result = formula(trace["formula_id"], **trace["inputs"])
+        assert result.result == trace["result"]
+        assert round(result.result, decimals) == expected[fields[result.formula_id]]
 
 
 @pytest.fixture
@@ -94,12 +113,16 @@ def test_selected_source_weights_improve_the_same_reference_population(frozen_ev
     assert after.rank_correlation >= before.rank_correlation
     assert after.top_draft_hits >= before.top_draft_hits
     assert after.median_dollar_error <= before.median_dollar_error
-    assert after.model_dump() == next(p for p in data["expected"] if p["id"] == after.id)
+    assert_reference_metrics_and_traces(
+        after,
+        next(p for p in data["expected"] if p["id"] == after.id),
+        inputs.config.model.valuation.result_decimals,
+    )
 
 
 def test_previous_season_gp_fit_reproduces_approved_tradeoff(frozen_evaluation):
     from fba.contracts.data import Calibration
-    from fba.core.projection import calibrate_availability
+    from fba.formulas.projection import calibrate_availability
 
     inputs, _ = frozen_evaluation
     data = json.loads((Path(__file__).parent / "fixtures/evaluation-gp.json").read_text())
@@ -111,7 +134,9 @@ def test_previous_season_gp_fit_reproduces_approved_tradeoff(frozen_evaluation):
     )
     result = evaluate(inputs.model_copy(update={"predictions": (raw, calibrated)}), "0" * 64)
     before, after = result.variants
-    assert after.model_dump() == data["expected"]
+    assert_reference_metrics_and_traces(
+        after, data["expected"], inputs.config.model.valuation.result_decimals
+    )
     assert after.rank_correlation > before.rank_correlation
     assert after.median_dollar_error < before.median_dollar_error
     assert after.games_mae < before.games_mae

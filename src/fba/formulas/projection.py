@@ -4,6 +4,7 @@ from fba.contracts.base import DataError
 from fba.contracts.config import AvailabilityTail, ProjectionParameters
 from fba.contracts.data import Calibration
 from fba.contracts.projection import Projected, ProjectionPlayer, ProjectionTeam
+from fba.formulas.registry import evaluate
 
 
 def prior(
@@ -21,18 +22,23 @@ def prior(
         if estimate.minutes == 0 and any(estimate.stats):
             raise DataError(f"projection.{player.id}.{estimate.id}: production with zero minutes")
     weights = prior_weights(tuple(p.id for p in player.priors), parameters)
-    games = fsum(p.expected_games * w for p, w in zip(player.priors, weights, strict=True))
+    games = evaluate(
+        "linear", values=tuple(p.expected_games for p in player.priors), weights=weights
+    ).result
     if player.games_cap is not None:
         games = min(games, player.games_cap)
-    minutes = fsum(p.minutes * w for p, w in zip(player.priors, weights, strict=True))
+    minutes = evaluate(
+        "linear", values=tuple(p.minutes for p in player.priors), weights=weights
+    ).result
     stats = [
-        fsum(p.stats[i] * w for p, w in zip(player.priors, weights, strict=True))
+        evaluate("linear", values=tuple(p.stats[i] for p in player.priors), weights=weights).result
         for i in range(len(parameters.stat_ids))
     ]
-    stats[parameters.stat_ids.index(parameters.scoring_stat)] = fsum(
-        term.coefficient * stats[parameters.stat_ids.index(term.stat_id)]
-        for term in parameters.scoring_terms
-    )
+    stats[parameters.stat_ids.index(parameters.scoring_stat)] = evaluate(
+        "linear",
+        values=tuple(stats[parameters.stat_ids.index(t.stat_id)] for t in parameters.scoring_terms),
+        weights=tuple(t.coefficient for t in parameters.scoring_terms),
+    ).result
     return games, minutes, tuple(stats)
 
 
@@ -93,9 +99,13 @@ def calibrated_games(
         if games < anchor:
             return round(games * at_anchor / anchor, decimals)
     return round(
-        min(
-            season_games,
-            max(0, calibration.intercept + calibration.slope * games),
-        ),
+        evaluate(
+            "clipped_affine",
+            value=games,
+            intercept=calibration.intercept,
+            slope=calibration.slope,
+            lower=0.0,
+            upper=float(season_games),
+        ).result,
         decimals,
     )

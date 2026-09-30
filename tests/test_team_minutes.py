@@ -14,8 +14,8 @@ from fba.contracts.projection import (
     PreparedPlayer,
     TeamMember,
 )
-from fba.core.calculation import calculate
-from fba.core.team_minutes import minute_allocations, validate_minutes
+from fba.formulas.team_minutes import minute_allocations, validate_minutes
+from fba.projection.calculation import calculate
 
 
 @pytest.fixture

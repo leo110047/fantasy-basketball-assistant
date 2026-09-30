@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 
 from pydantic import TypeAdapter, ValidationError
 
-from fba.adapters.codec import canonical, checked_json, decode, digest, read_bytes
 from fba.adapters.config import load_config
 from fba.adapters.snapshots import checked_path, load_snapshot
 from fba.contracts.base import DataError, Record
@@ -19,8 +18,9 @@ from fba.contracts.projection import (
     OffenseInput,
     ProductionInput,
 )
-from fba.core.calculation import calculate
-from fba.core.evaluation import evaluate
+from fba.data.codec import canonical, checked_json, decode, digest, read_bytes
+from fba.formulas.evaluation import evaluate
+from fba.projection.calculation import calculate
 
 
 def load_calculation_input[T: FrozenCalculationInput](path: Path, model: type[T]) -> tuple[T, str]:

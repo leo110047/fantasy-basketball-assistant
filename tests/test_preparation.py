@@ -5,7 +5,6 @@ import pytest
 from test_calculation import projection_bundle as projection_bundle
 
 from fba.adapters.calculation import calculate_file, load_calculation_input
-from fba.adapters.codec import canonical, digest
 from fba.adapters.config import load_config
 from fba.adapters.preparation import project
 from fba.adapters.snapshots import artifact, load_snapshot, publish
@@ -26,7 +25,8 @@ from fba.contracts.data import (
     StatValue,
 )
 from fba.contracts.projection import CalibratedInput, PreparedInput
-from fba.core.preparation import prepare
+from fba.data.codec import canonical, digest
+from fba.projection.preparation import prepare
 
 
 @pytest.fixture
