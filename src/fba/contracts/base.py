@@ -11,7 +11,9 @@ Finite = Annotated[float, Field(allow_inf_nan=False)]
 
 
 class Record(BaseModel):
-    model_config = ConfigDict(strict=True, frozen=True, extra="forbid", allow_inf_nan=False)
+    model_config = ConfigDict(
+        strict=True, frozen=True, extra="forbid", allow_inf_nan=False, hide_input_in_errors=True
+    )
 
 
 class ConfigError(ValueError):

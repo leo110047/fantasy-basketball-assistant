@@ -1,0 +1,375 @@
+{
+  "$defs": {
+    "AdjustmentField": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "override",
+            "multiply",
+            "status"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "targets": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Targets",
+          "type": "array"
+        },
+        "minimum": {
+          "title": "Minimum",
+          "type": "number"
+        },
+        "maximum": {
+          "title": "Maximum",
+          "type": "number"
+        },
+        "statuses": {
+          "additionalProperties": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Statuses",
+          "type": "object"
+        },
+        "only_back_to_back": {
+          "title": "Only Back To Back",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind",
+        "targets",
+        "minimum",
+        "maximum",
+        "statuses",
+        "only_back_to_back"
+      ],
+      "title": "AdjustmentField",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "Assumption",
+            "source",
+            "backtest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "reference": {
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "reference",
+        "as_of",
+        "reason"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "IntegerParameter": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "value",
+        "evidence"
+      ],
+      "title": "IntegerParameter",
+      "type": "object"
+    },
+    "NumberParameter": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "value",
+        "evidence"
+      ],
+      "title": "NumberParameter",
+      "type": "object"
+    },
+    "PriorGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Positions",
+          "type": "array"
+        },
+        "minimum_minutes": {
+          "minimum": 0,
+          "title": "Minimum Minutes",
+          "type": "number"
+        },
+        "maximum_minutes": {
+          "minimum": 0,
+          "title": "Maximum Minutes",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "positions",
+        "minimum_minutes",
+        "maximum_minutes"
+      ],
+      "title": "PriorGroup",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "const": 1,
+      "title": "Format Version",
+      "type": "integer"
+    },
+    "version": {
+      "minLength": 1,
+      "title": "Version",
+      "type": "string"
+    },
+    "rate_k": {
+      "additionalProperties": {
+        "$ref": "#/$defs/NumberParameter"
+      },
+      "title": "Rate K",
+      "type": "object"
+    },
+    "shot_k": {
+      "additionalProperties": {
+        "$ref": "#/$defs/NumberParameter"
+      },
+      "title": "Shot K",
+      "type": "object"
+    },
+    "minute_k": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "minute_half_life": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "availability": {
+      "additionalProperties": {
+        "$ref": "#/$defs/NumberParameter"
+      },
+      "title": "Availability",
+      "type": "object"
+    },
+    "role_window": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "role_threshold": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "override_window": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "override_threshold": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "production_sigma": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "simulations": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "season_simulations": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "seed": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "calibration": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "safe_probability": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "abandon_probability": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "shortlist": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "beam_width": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "max_trade_players": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "beta_rank": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "beta_need": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "acceptance_threshold": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "acceptance_noise": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "fit_minimum": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "rank_exponent": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "rank_scale": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "calibration_bins": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "calibration_alert": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "tolerance": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "retry_count": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "retry_seconds": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "request_timeout": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "maximum_requests": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "budgets": {
+      "additionalProperties": {
+        "$ref": "#/$defs/NumberParameter"
+      },
+      "title": "Budgets",
+      "type": "object"
+    },
+    "prior_groups": {
+      "items": {
+        "$ref": "#/$defs/PriorGroup"
+      },
+      "title": "Prior Groups",
+      "type": "array"
+    },
+    "group_evidence": {
+      "$ref": "#/$defs/Evidence"
+    },
+    "fields": {
+      "items": {
+        "$ref": "#/$defs/AdjustmentField"
+      },
+      "title": "Fields",
+      "type": "array"
+    },
+    "fields_evidence": {
+      "$ref": "#/$defs/Evidence"
+    }
+  },
+  "required": [
+    "format_version",
+    "version",
+    "rate_k",
+    "shot_k",
+    "minute_k",
+    "minute_half_life",
+    "availability",
+    "role_window",
+    "role_threshold",
+    "override_window",
+    "override_threshold",
+    "production_sigma",
+    "simulations",
+    "season_simulations",
+    "seed",
+    "calibration",
+    "safe_probability",
+    "abandon_probability",
+    "shortlist",
+    "beam_width",
+    "max_trade_players",
+    "beta_rank",
+    "beta_need",
+    "acceptance_threshold",
+    "acceptance_noise",
+    "fit_minimum",
+    "rank_exponent",
+    "rank_scale",
+    "calibration_bins",
+    "calibration_alert",
+    "tolerance",
+    "retry_count",
+    "retry_seconds",
+    "request_timeout",
+    "maximum_requests",
+    "budgets",
+    "prior_groups",
+    "group_evidence",
+    "fields",
+    "fields_evidence"
+  ],
+  "title": "InseasonParameters",
+  "type": "object"
+}

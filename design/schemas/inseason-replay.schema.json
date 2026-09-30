@@ -1,0 +1,1561 @@
+{
+  "$defs": {
+    "ActualScore": {
+      "additionalProperties": false,
+      "properties": {
+        "week_id": {
+          "minLength": 1,
+          "title": "Week Id",
+          "type": "string"
+        },
+        "team_id": {
+          "minLength": 1,
+          "title": "Team Id",
+          "type": "string"
+        },
+        "through": {
+          "format": "date-time",
+          "title": "Through",
+          "type": "string"
+        },
+        "totals": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Totals",
+          "type": "object"
+        },
+        "final": {
+          "title": "Final",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "week_id",
+        "team_id",
+        "through",
+        "totals",
+        "final"
+      ],
+      "title": "ActualScore",
+      "type": "object"
+    },
+    "AdjustmentEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "group_id": {
+          "minLength": 1,
+          "title": "Group Id",
+          "type": "string"
+        },
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "team_id": {
+          "minLength": 1,
+          "title": "Team Id",
+          "type": "string"
+        },
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "minLength": 1,
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        },
+        "starts_on": {
+          "format": "date",
+          "title": "Starts On",
+          "type": "string"
+        },
+        "ends_on": {
+          "format": "date",
+          "title": "Ends On",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "replaces": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Replaces"
+        },
+        "revokes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Revokes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "group_id",
+        "player_id",
+        "team_id",
+        "field",
+        "value",
+        "starts_on",
+        "ends_on",
+        "reason",
+        "created_at",
+        "replaces",
+        "revokes"
+      ],
+      "title": "AdjustmentEntry",
+      "type": "object"
+    },
+    "AdjustmentLedger": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/AdjustmentEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "entries"
+      ],
+      "title": "AdjustmentLedger",
+      "type": "object"
+    },
+    "BoxScore": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "game_id": {
+          "minLength": 1,
+          "title": "Game Id",
+          "type": "string"
+        },
+        "team_id": {
+          "minLength": 1,
+          "title": "Team Id",
+          "type": "string"
+        },
+        "played_at": {
+          "format": "date-time",
+          "title": "Played At",
+          "type": "string"
+        },
+        "known_at": {
+          "format": "date-time",
+          "title": "Known At",
+          "type": "string"
+        },
+        "minutes": {
+          "minimum": 0,
+          "title": "Minutes",
+          "type": "number"
+        },
+        "stats": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Stats",
+          "type": "object"
+        }
+      },
+      "required": [
+        "player_id",
+        "game_id",
+        "team_id",
+        "played_at",
+        "known_at",
+        "minutes",
+        "stats"
+      ],
+      "title": "BoxScore",
+      "type": "object"
+    },
+    "Category": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "formula": {
+          "discriminator": {
+            "mapping": {
+              "linear": "#/$defs/Linear",
+              "ratio": "#/$defs/Ratio"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Linear"
+            },
+            {
+              "$ref": "#/$defs/Ratio"
+            }
+          ],
+          "title": "Formula"
+        },
+        "direction": {
+          "enum": [
+            "higher",
+            "lower"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "comparison_decimals": {
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Comparison Decimals",
+          "type": "integer"
+        },
+        "tie_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Tie Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "formula",
+        "direction",
+        "comparison_decimals",
+        "tie_value"
+      ],
+      "title": "Category",
+      "type": "object"
+    },
+    "DerivedStat": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "linear",
+            "threshold"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Terms",
+          "type": "array"
+        },
+        "threshold": {
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "minimum_hits": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Hits",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "terms",
+        "threshold",
+        "minimum_hits"
+      ],
+      "title": "DerivedStat",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "Assumption",
+            "source",
+            "backtest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "reference": {
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "reference",
+        "as_of",
+        "reason"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "FantasyTeam": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "injury_players": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Injury Players",
+          "type": "object"
+        },
+        "selected_slots": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Selected Slots",
+          "type": "object"
+        },
+        "adds_used": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Adds Used"
+        },
+        "wins": {
+          "minimum": 0,
+          "title": "Wins",
+          "type": "number"
+        },
+        "losses": {
+          "minimum": 0,
+          "title": "Losses",
+          "type": "number"
+        },
+        "ties": {
+          "minimum": 0,
+          "title": "Ties",
+          "type": "number"
+        },
+        "seed": {
+          "exclusiveMinimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "players",
+        "injury_players",
+        "selected_slots",
+        "adds_used",
+        "wins",
+        "losses",
+        "ties",
+        "seed"
+      ],
+      "title": "FantasyTeam",
+      "type": "object"
+    },
+    "FreeAgent": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "free",
+            "waiver"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "clears_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Clears At"
+        }
+      },
+      "required": [
+        "player_id",
+        "status",
+        "clears_at"
+      ],
+      "title": "FreeAgent",
+      "type": "object"
+    },
+    "FrozenPriors": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "season_id": {
+          "minLength": 1,
+          "title": "Season Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "source_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "known_at": {
+          "format": "date-time",
+          "title": "Known At",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerPrior"
+          },
+          "title": "Players",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "season_id",
+        "version",
+        "source_sha256",
+        "known_at",
+        "players"
+      ],
+      "title": "FrozenPriors",
+      "type": "object"
+    },
+    "InjurySlot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "count": {
+          "exclusiveMinimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "eligible_statuses": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Eligible Statuses",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "count",
+        "eligible_statuses"
+      ],
+      "title": "InjurySlot",
+      "type": "object"
+    },
+    "InseasonLeague": {
+      "additionalProperties": false,
+      "properties": {
+        "categories": {
+          "items": {
+            "$ref": "#/$defs/Category"
+          },
+          "minItems": 1,
+          "title": "Categories",
+          "type": "array"
+        },
+        "season_id": {
+          "minLength": 1,
+          "title": "Season Id",
+          "type": "string"
+        },
+        "timezone": {
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "starts_on": {
+          "format": "date",
+          "title": "Starts On",
+          "type": "string"
+        },
+        "ends_on": {
+          "format": "date",
+          "title": "Ends On",
+          "type": "string"
+        },
+        "base_stats": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Base Stats",
+          "type": "array"
+        },
+        "shots": {
+          "items": {
+            "$ref": "#/$defs/Shot"
+          },
+          "title": "Shots",
+          "type": "array"
+        },
+        "derived": {
+          "items": {
+            "$ref": "#/$defs/DerivedStat"
+          },
+          "title": "Derived",
+          "type": "array"
+        },
+        "players_on_court": {
+          "exclusiveMinimum": 0,
+          "title": "Players On Court",
+          "type": "integer"
+        },
+        "regulation_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Regulation Minutes",
+          "type": "integer"
+        },
+        "format_version": {
+          "const": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "league_id": {
+          "minLength": 1,
+          "title": "League Id",
+          "type": "string"
+        },
+        "game_key": {
+          "minLength": 1,
+          "title": "Game Key",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "teams": {
+          "minimum": 2,
+          "title": "Teams",
+          "type": "integer"
+        },
+        "positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Positions",
+          "type": "array"
+        },
+        "starter_slots": {
+          "items": {
+            "$ref": "#/$defs/StarterSlot"
+          },
+          "minItems": 1,
+          "title": "Starter Slots",
+          "type": "array"
+        },
+        "bench_slots": {
+          "minimum": 0,
+          "title": "Bench Slots",
+          "type": "integer"
+        },
+        "injury_slots": {
+          "items": {
+            "$ref": "#/$defs/InjurySlot"
+          },
+          "title": "Injury Slots",
+          "type": "array"
+        },
+        "scoring": {
+          "enum": [
+            "h2h_one_win",
+            "h2h_each_category"
+          ],
+          "title": "Scoring",
+          "type": "string"
+        },
+        "category_ties": {
+          "enum": [
+            "exclude",
+            "use_tie_value"
+          ],
+          "title": "Category Ties",
+          "type": "string"
+        },
+        "week_tie_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Week Tie Value",
+          "type": "number"
+        },
+        "adds_per_week": {
+          "minimum": 0,
+          "title": "Adds Per Week",
+          "type": "integer"
+        },
+        "effective": {
+          "enum": [
+            "same_day",
+            "next_day"
+          ],
+          "title": "Effective",
+          "type": "string"
+        },
+        "cutoff_local_time": {
+          "format": "time",
+          "title": "Cutoff Local Time",
+          "type": "string"
+        },
+        "waiver_days": {
+          "minimum": 0,
+          "title": "Waiver Days",
+          "type": "integer"
+        },
+        "lineup_lock": {
+          "enum": [
+            "daily",
+            "player_game"
+          ],
+          "title": "Lineup Lock",
+          "type": "string"
+        },
+        "lineup_lock_time": {
+          "format": "time",
+          "title": "Lineup Lock Time",
+          "type": "string"
+        },
+        "matchups": {
+          "items": {
+            "$ref": "#/$defs/Matchup"
+          },
+          "minItems": 1,
+          "title": "Matchups",
+          "type": "array"
+        },
+        "playoff_teams": {
+          "exclusiveMinimum": 0,
+          "title": "Playoff Teams",
+          "type": "integer"
+        },
+        "playoff_weeks": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Playoff Weeks",
+          "type": "array"
+        },
+        "trade_deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Trade Deadline"
+        },
+        "yahoo_settings_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Yahoo Settings Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "categories",
+        "season_id",
+        "timezone",
+        "starts_on",
+        "ends_on",
+        "base_stats",
+        "shots",
+        "derived",
+        "players_on_court",
+        "regulation_minutes",
+        "format_version",
+        "league_id",
+        "game_key",
+        "name",
+        "teams",
+        "positions",
+        "starter_slots",
+        "bench_slots",
+        "injury_slots",
+        "scoring",
+        "category_ties",
+        "week_tie_value",
+        "adds_per_week",
+        "effective",
+        "cutoff_local_time",
+        "waiver_days",
+        "lineup_lock",
+        "lineup_lock_time",
+        "matchups",
+        "playoff_teams",
+        "playoff_weeks",
+        "trade_deadline",
+        "yahoo_settings_sha256"
+      ],
+      "title": "InseasonLeague",
+      "type": "object"
+    },
+    "InseasonPreferences": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "preferred_port": {
+          "maximum": 65535,
+          "minimum": 0,
+          "title": "Preferred Port",
+          "type": "integer"
+        },
+        "port_attempts": {
+          "exclusiveMinimum": 0,
+          "title": "Port Attempts",
+          "type": "integer"
+        },
+        "shutdown_seconds": {
+          "minimum": 0,
+          "title": "Shutdown Seconds",
+          "type": "number"
+        },
+        "sync_interval_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Sync Interval Seconds",
+          "type": "integer"
+        },
+        "stale_warning_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Stale Warning Seconds",
+          "type": "integer"
+        },
+        "stale_limit_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Stale Limit Seconds",
+          "type": "integer"
+        },
+        "timezone": {
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "reserve_adds": {
+          "minimum": 0,
+          "title": "Reserve Adds",
+          "type": "integer"
+        },
+        "future_weight": {
+          "minimum": 0,
+          "title": "Future Weight",
+          "type": "number"
+        },
+        "untouchable": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Untouchable",
+          "type": "array"
+        },
+        "ignored_opponents": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Ignored Opponents",
+          "type": "array"
+        },
+        "selected_league": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Selected League"
+        }
+      },
+      "required": [
+        "format_version",
+        "preferred_port",
+        "port_attempts",
+        "shutdown_seconds",
+        "sync_interval_seconds",
+        "stale_warning_seconds",
+        "stale_limit_seconds",
+        "timezone",
+        "reserve_adds",
+        "future_weight",
+        "untouchable",
+        "ignored_opponents",
+        "selected_league"
+      ],
+      "title": "InseasonPreferences",
+      "type": "object"
+    },
+    "LeagueSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "league_id": {
+          "minLength": 1,
+          "title": "League Id",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "settings_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Settings Sha256",
+          "type": "string"
+        },
+        "mine": {
+          "minLength": 1,
+          "title": "Mine",
+          "type": "string"
+        },
+        "teams": {
+          "items": {
+            "$ref": "#/$defs/FantasyTeam"
+          },
+          "title": "Teams",
+          "type": "array"
+        },
+        "pairings": {
+          "items": {
+            "$ref": "#/$defs/SeasonPairing"
+          },
+          "title": "Pairings",
+          "type": "array"
+        },
+        "actual": {
+          "items": {
+            "$ref": "#/$defs/ActualScore"
+          },
+          "title": "Actual",
+          "type": "array"
+        },
+        "free_agents": {
+          "items": {
+            "$ref": "#/$defs/FreeAgent"
+          },
+          "title": "Free Agents",
+          "type": "array"
+        },
+        "unresolved_rostered": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Unresolved Rostered",
+          "type": "array"
+        },
+        "unresolved_free": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Unresolved Free",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "league_id",
+        "as_of",
+        "settings_sha256",
+        "mine",
+        "teams",
+        "pairings",
+        "actual",
+        "free_agents",
+        "unresolved_rostered",
+        "unresolved_free"
+      ],
+      "title": "LeagueSnapshot",
+      "type": "object"
+    },
+    "Linear": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "linear",
+          "title": "Kind",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Terms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "terms"
+      ],
+      "title": "Linear",
+      "type": "object"
+    },
+    "Matchup": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "start": {
+          "format": "date",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date",
+          "title": "End",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "regular",
+            "playoff",
+            "postseason"
+          ],
+          "title": "Phase",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "start",
+        "end",
+        "phase"
+      ],
+      "title": "Matchup",
+      "type": "object"
+    },
+    "PlayerPrior": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "minutes": {
+          "minimum": 0,
+          "title": "Minutes",
+          "type": "number"
+        },
+        "rates": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Rates",
+          "type": "object"
+        },
+        "probabilities": {
+          "additionalProperties": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Probabilities",
+          "type": "object"
+        }
+      },
+      "required": [
+        "player_id",
+        "minutes",
+        "rates",
+        "probabilities"
+      ],
+      "title": "PlayerPrior",
+      "type": "object"
+    },
+    "PlayerSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "season_id": {
+          "minLength": 1,
+          "title": "Season Id",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/SeasonPlayer"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "games": {
+          "items": {
+            "$ref": "#/$defs/SeasonGame"
+          },
+          "title": "Games",
+          "type": "array"
+        },
+        "boxes": {
+          "items": {
+            "$ref": "#/$defs/BoxScore"
+          },
+          "title": "Boxes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "season_id",
+        "source",
+        "as_of",
+        "players",
+        "games",
+        "boxes"
+      ],
+      "title": "PlayerSnapshot",
+      "type": "object"
+    },
+    "Ratio": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "ratio",
+          "title": "Kind",
+          "type": "string"
+        },
+        "numerator": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Numerator",
+          "type": "array"
+        },
+        "denominator": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Denominator",
+          "type": "array"
+        },
+        "zero_denominator": {
+          "enum": [
+            "error",
+            "zero",
+            "numerator"
+          ],
+          "title": "Zero Denominator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "numerator",
+        "denominator",
+        "zero_denominator"
+      ],
+      "title": "Ratio",
+      "type": "object"
+    },
+    "ReplayCase": {
+      "additionalProperties": false,
+      "properties": {
+        "league": {
+          "$ref": "#/$defs/InseasonLeague"
+        },
+        "players": {
+          "$ref": "#/$defs/PlayerSnapshot"
+        },
+        "priors": {
+          "$ref": "#/$defs/FrozenPriors"
+        },
+        "ledger": {
+          "$ref": "#/$defs/AdjustmentLedger"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/LeagueSnapshot"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "week_id": {
+          "minLength": 1,
+          "title": "Week Id",
+          "type": "string"
+        },
+        "final_players": {
+          "$ref": "#/$defs/PlayerSnapshot"
+        },
+        "final_snapshot": {
+          "$ref": "#/$defs/LeagueSnapshot"
+        }
+      },
+      "required": [
+        "league",
+        "players",
+        "priors",
+        "ledger",
+        "snapshot",
+        "as_of",
+        "week_id",
+        "final_players",
+        "final_snapshot"
+      ],
+      "title": "ReplayCase",
+      "type": "object"
+    },
+    "SeasonGame": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "home": {
+          "minLength": 1,
+          "title": "Home",
+          "type": "string"
+        },
+        "away": {
+          "minLength": 1,
+          "title": "Away",
+          "type": "string"
+        },
+        "tipoff": {
+          "format": "date-time",
+          "title": "Tipoff",
+          "type": "string"
+        },
+        "known_at": {
+          "format": "date-time",
+          "title": "Known At",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "scheduled",
+            "completed",
+            "postponed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "home",
+        "away",
+        "tipoff",
+        "known_at",
+        "status"
+      ],
+      "title": "SeasonGame",
+      "type": "object"
+    },
+    "SeasonPairing": {
+      "additionalProperties": false,
+      "properties": {
+        "week_id": {
+          "minLength": 1,
+          "title": "Week Id",
+          "type": "string"
+        },
+        "home": {
+          "minLength": 1,
+          "title": "Home",
+          "type": "string"
+        },
+        "away": {
+          "minLength": 1,
+          "title": "Away",
+          "type": "string"
+        }
+      },
+      "required": [
+        "week_id",
+        "home",
+        "away"
+      ],
+      "title": "SeasonPairing",
+      "type": "object"
+    },
+    "SeasonPlayer": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "team_id": {
+          "minLength": 1,
+          "title": "Team Id",
+          "type": "string"
+        },
+        "positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Positions",
+          "type": "array"
+        },
+        "status": {
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        },
+        "known_at": {
+          "format": "date-time",
+          "title": "Known At",
+          "type": "string"
+        },
+        "public_rank": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Public Rank"
+        },
+        "ownership": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ownership"
+        },
+        "ownership_change": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ownership Change"
+        },
+        "return_on": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Return On"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "team_id",
+        "positions",
+        "status",
+        "known_at",
+        "public_rank",
+        "ownership",
+        "ownership_change"
+      ],
+      "title": "SeasonPlayer",
+      "type": "object"
+    },
+    "Shot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "made": {
+          "minLength": 1,
+          "title": "Made",
+          "type": "string"
+        },
+        "attempted": {
+          "minLength": 1,
+          "title": "Attempted",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "made",
+        "attempted"
+      ],
+      "title": "Shot",
+      "type": "object"
+    },
+    "StarterSlot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "eligible_positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Eligible Positions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "eligible_positions"
+      ],
+      "title": "StarterSlot",
+      "type": "object"
+    },
+    "Term": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_id": {
+          "minLength": 1,
+          "title": "Stat Id",
+          "type": "string"
+        },
+        "coefficient": {
+          "title": "Coefficient",
+          "type": "number"
+        }
+      },
+      "required": [
+        "stat_id",
+        "coefficient"
+      ],
+      "title": "Term",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/ReplayCase"
+      },
+      "minItems": 1,
+      "title": "Cases",
+      "type": "array"
+    },
+    "preferences": {
+      "$ref": "#/$defs/InseasonPreferences"
+    },
+    "recall_target": {
+      "maximum": 1,
+      "minimum": 0.95,
+      "title": "Recall Target",
+      "type": "number"
+    },
+    "minimum_cases": {
+      "exclusiveMinimum": 0,
+      "title": "Minimum Cases",
+      "type": "integer"
+    },
+    "oracle_max_plans": {
+      "exclusiveMinimum": 0,
+      "title": "Oracle Max Plans",
+      "type": "integer"
+    },
+    "evidence": {
+      "$ref": "#/$defs/Evidence"
+    }
+  },
+  "required": [
+    "cases",
+    "preferences",
+    "recall_target",
+    "minimum_cases",
+    "oracle_max_plans",
+    "evidence"
+  ],
+  "title": "PolicyReplayStudy",
+  "type": "object"
+}
