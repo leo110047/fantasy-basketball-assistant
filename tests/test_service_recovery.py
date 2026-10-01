@@ -28,7 +28,10 @@ def test_failed_save_does_not_log_an_uncommitted_market(desk, monkeypatch):
     monkeypatch.setattr(ledger, "atomic_exchange", fail)
     with pytest.raises(DataError, match="disk full"):
         desk.save(sell_request(desk))
-    entries = [json.loads(line) for line in desk.log.read_bytes().splitlines()]
+    # Background calculations may be appending a large record. Take the same
+    # writer lock to inspect a complete snapshot without excluding any record.
+    with desk.log_lock:
+        entries = [json.loads(line) for line in desk.log.read_bytes().splitlines()]
     assert all(e["state_sha256"] == before.market.state_sha256 for e in entries)
 
 
