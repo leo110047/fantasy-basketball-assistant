@@ -25,6 +25,7 @@ def prediction(sim):
         parameter_sha256=digest(canonical(sim.params)),
         input_hashes=("a" * 64,),
         ledger_sha256=digest(canonical(sim.ledger)),
+        league_sha256=digest(canonical(sim.league)),
         with_adjustments=forecast,
         without_adjustments=forecast,
         recommendations=(),

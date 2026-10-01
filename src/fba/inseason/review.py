@@ -13,6 +13,7 @@ from fba.contracts.inseason_results import (
     PredictionRecord,
     WeeklyReview,
 )
+from fba.data.codec import canonical, digest
 from fba.formulas.categories import category_values, score_samples
 from fba.formulas.fitting import fit_shrinkage
 from fba.formulas.registry import evaluate
@@ -90,6 +91,25 @@ def evaluation_cohort(predictions: tuple[PredictionRecord, ...]) -> tuple[Predic
     return tuple(origins[k] for k in sorted(origins))
 
 
+def validate_review_rules(
+    league: InseasonLeague, predictions: tuple[PredictionRecord, ...], week_id: str
+) -> None:
+    """Check every archived decision before applying today's scoring rules."""
+    rule_hash = digest(canonical(league))
+    category_ids = tuple(c.id for c in league.categories)
+    for prediction in predictions:
+        if (
+            tuple(c.id for c in prediction.with_adjustments.categories) != category_ids
+            or tuple(c.id for c in prediction.without_adjustments.categories) != category_ids
+        ):
+            raise DataError(f"review.{week_id}: archived category axes differ from current rules")
+        if prediction.league_sha256 is not None and prediction.league_sha256 != rule_hash:
+            raise DataError(
+                f"review.{week_id}: archived league rules differ from current rules; "
+                "restore the recorded rules before evaluating this history"
+            )
+
+
 def weekly_review(
     league: InseasonLeague,
     params: InseasonParameters,
@@ -102,6 +122,7 @@ def weekly_review(
     records = evaluation_cohort(all_records)
     if not records:
         raise DataError(f"review.{week_id}: no contemporaneously recorded forecasts")
+    validate_review_rules(league, all_records, week_id)
     week_score_kind = (
         "win_probability"
         if any(p.week_score_kind == "win_probability" for p in records)
@@ -126,12 +147,6 @@ def weekly_review(
         category_origins.setdefault((f.home, f.away), record.id)
     for prediction in records:
         forecast = prediction.with_adjustments
-        category_ids = tuple(c.id for c in league.categories)
-        if (
-            tuple(c.id for c in forecast.categories) != category_ids
-            or tuple(c.id for c in prediction.without_adjustments.categories) != category_ids
-        ):
-            raise DataError(f"review.{week_id}: archived category axes differ from current rules")
         if forecast.home not in scores or forecast.away not in scores:
             raise DataError(f"review.{week_id}: final Yahoo scores are unavailable")
         needed = {

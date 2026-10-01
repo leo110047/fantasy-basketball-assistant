@@ -440,7 +440,7 @@ def recorded_plan(
         plan = next((p for p in record.recommendations if p.id == plan_id), None)
         if plan is not None:
             if not plan_context_matches(session, record):
-                raise DataError("today.plan_id: 資料、手調或參數已更新，請重新計算 F3 計畫")
+                raise DataError("today.plan_id: 資料、規則、手調或參數已更新，請重新計算 F3 計畫")
             return plan
     raise DataError("today.plan_id: unknown recorded F3 plan")
 
@@ -472,6 +472,8 @@ def plan_context_matches(session: InseasonSession, record: PredictionRecord) -> 
     )
     return (
         record.input_hashes == current_inputs
+        and state.league is not None
+        and record.league_sha256 == digest(canonical(state.league))
         and record.ledger_sha256 == digest(canonical(session.ledger()))
         and record.parameter_sha256 == digest(canonical(session.params))
         and (

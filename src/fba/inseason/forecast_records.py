@@ -66,6 +66,7 @@ def record_forecast(
         "week": week_id,
         "inputs": [state.normalized_sha256, state.players_sha256, state.priors_sha256],
         "parameters": digest(canonical(session.params)),
+        "league": digest(canonical(sim.league)),
         "ledger": digest(canonical(session.ledger())),
         "forecast": result.model_dump(mode="json"),
         "plans": [p.model_dump(mode="json") for p in plans],
@@ -87,6 +88,7 @@ def record_forecast(
             if s is not None
         ),
         ledger_sha256=digest(canonical(session.ledger())),
+        league_sha256=digest(canonical(sim.league)),
         recommendation_policy_sha256=recommendation_policy(session.preferences) if plans else None,
         with_adjustments=result,
         without_adjustments=baseline,

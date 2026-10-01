@@ -136,6 +136,7 @@ class PredictionRecord(Record):
     parameter_sha256: Digest
     input_hashes: tuple[Digest, ...]
     ledger_sha256: Digest
+    league_sha256: Digest | None = None
     recommendation_policy_sha256: Digest | None = None
     with_adjustments: WeekForecast
     without_adjustments: WeekForecast
