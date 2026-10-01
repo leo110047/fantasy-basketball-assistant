@@ -8,6 +8,7 @@ permissions:
 jobs:
   portable:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -30,6 +31,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: cmd
         run: call start-inseason.cmd --help
+      - name: Diagnose Windows native imports and interpreter ownership
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: uv run --locked python scripts/windows_diagnostics.py
       - name: Complete offline verification on every platform
         run: uv run --locked python scripts/verify.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
