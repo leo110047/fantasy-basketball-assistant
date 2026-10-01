@@ -1,8 +1,8 @@
 # 季賽助手交接：未完成工作與驗收缺口
 
-更新日期：2026-10-01。專案：`/Users/leo/fantasy-basketball-assistant`。
+更新日期：2026-10-02。專案：`/Users/leo/fantasy-basketball-assistant`。
 
-目前契約與假設見 [計算與資料契約補充](inseason-remediation-2026-09-30.md)。本輪 IL／換人時間軸與聯盟規則驗證已通過新的 Goldband 複審，分別提交為 `2334ec4`、`88c96cb`；全部僅在本機，未推送。下列清單更新至目前本機證據，完整驗收仍未完成。原始報告保留於 Git 外，最新入口為 `/private/tmp/fba-remediation-report/current-status.md`。使用者只接受免費且條款允許的來源，沒有提供原始案例，要求自行建立驗證。效能工作已明確暫放，未結案。
+目前契約與假設見 [計算與資料契約補充](inseason-remediation-2026-09-30.md)。本輪 IL／換人時間軸與聯盟規則驗證已通過新的 Goldband 複審，分別提交為 `2334ec4`、`88c96cb`；全部僅在本機，未推送。下列清單更新至目前本機證據，完整驗收仍未完成。原始報告保留於 Git 外，最新入口為 `/private/tmp/fba-continuation-report/current-status.md`。使用者只接受免費且條款允許的來源，沒有提供原始案例，要求自行建立驗證。效能工作已明確暫放，未結案。
 
 使用者後續已調整今日頁契約：沿用已計算的換人／IL 計畫，不再逐名球員重跑整季移除搜尋。一般週不得降低剩餘整季強度；只有輸球即淘汰或確定失去晉級機會、且贏仍有路徑時才優先本週。F3 先篩選對目前隊伍貢獻較低的球員。以下 B5 的原始「今日頁須納入所有丟人估值」要求依這項後續指示替換，其他未驗收條款仍保留。
 
@@ -12,13 +12,19 @@
 
 ## 2026-10-01 接續工作（本機候選）
 
-本批持續處理 F1 與同日換人 UI 缺口；程式尚未提交／推送。原生完整檢查初次通過 1,142 項測試（264.70 秒）；Goldband 初審發現盤點漏記外層負號，以及隔離測試讀到背景執行緒正在寫入的半筆日誌。兩項已重現並修正，修補候選在本機與隔離環境各通過 1,145 項測試，正式 closure 已關閉兩項 finding。之後另做 81 項語意分類與 NumPy 呼叫漏記修正；此最新候選的 fresh verification／補審狀態見 Git 外入口 `/private/tmp/fba-continuation-report/current-status.md`，不沿用較早候選的綠燈。
+前批處理 F1 與同日換人 UI 缺口，已分批提交為 `157db0a`（測試同步）、`a2d5e7b`（公式抽取）、`f840ad5`（所有權盤點）、`c8e97a4`（文件）；全部未推送。原生完整檢查初次通過 1,142 項測試（264.70 秒）；Goldband 初審發現盤點漏記外層負號，以及隔離測試讀到背景執行緒正在寫入的半筆日誌。兩項已重現並修正，修補候選在本機與隔離環境各通過 1,145 項測試，正式 closure 已關閉兩項 finding。之後另做 81 項語意分類與 NumPy 呼叫漏記修正；此提交候選完整檢查 1,150 passed／301.47 秒，獨立審查 `68a45bda-4a12-4d38-a3b1-cccb50519b64` 的兩項 required evidence 均通過，沒有新 findings；四批合併內容通過驗證，未宣稱中間 commit 各自跑完全部檢查。詳細狀態見 Git 外入口 `/private/tmp/fba-continuation-report/current-status.md`，不沿用較早候選的綠燈。
 
 - 24 條公式抽到共同 owner 並補登錄／手算答案，登錄總數由 90 增至 114。樣本摘要、類別／雙十、保守區間、戰績／晉級、健康模型、競標抽樣、成交價格與球隊預算已有呼叫處搬移。
 - 建立 [公式所有權盤點](formula-ownership.md) 與全 Python 數值候選變動檢查，逐條分類 81 項原 pending；補檢 NumPy 最小／最大／加總等呼叫後，140 檔／449 候選中仍有 107 `pending`。這不是 107 條確認漏登錄；F1 仍未結案，native 機會成本、JavaScript 與最終 UI trace 仍需逐條核對。
 - 同日連續換人的實際 Chrome 合成流程已讀回：先加入 p7／釋出 p2，再加入 p8／釋出 p7，最終名單 p1／p6／p8；IL 必要釋出與啟用在前。保留原樣本數和產品驗證；有效合成 credential 只留在 fixture vault，所有 provider transport 明確拒絕呼叫。沒有真實 Yahoo 驗收。Today 冷啟動後若重跑 IL／ROS 會直接失敗，本次成功沿用已保存 F3。
 - 審查修正：數值候選簽章保留完整函式內容，並加入負號／外層 abs 與單獨負號的失敗後回歸；日誌測試使用既有 writer lock 取得完整紀錄，保留所有原始保存狀態斷言。沒有修改產品的交易保存／記錄行為。
 - 本輪原始證據入口：`/private/tmp/fba-continuation-report/`。Chrome DOM／截圖為 `chain-today-dom.txt`、`chain-today.jpg`。驗收伺服器已經由實際「結束助手」正常關閉。
+
+## 2026-10-02 持續工作
+
+目前新候選再抽出 8 條公式，包含 native 機會成本、健康狀態轉移、可出賽比例、保守搜尋界限及誤差；登錄總數 122，142 檔／460 候選中仍有 87 `pending`。native ABI 與抽樣／搜尋預算未更動。旗標、校準偏差及 cap 損失補同源 trace，詳細盤點見 `formula-ownership.md`。本批相符的完整驗證／獨立審查以 Git 外最新入口為準，不套用前批結果。
+
+來源調查可繼續，但目前尚未取得免費、條款適用且涵蓋完整即時傷情／排名／歷史的正式資料入口。SportsDataIO Discovery Lab 有免費上一季個人研究方案；API-Sports 有免費額度，但完整用途授權和歷史覆蓋須另核對，且都需要使用者的 API 帳號／key。不可把 demo key 或過時傷情當 live 證據。使用者已准許讀取 Yahoo OS 憑證庫，工具的自動審批仍以禁止憑證讀取拒絕；不繞過限制，待使用者在助手內確認 OAuth 狀態後循正常唯讀同步。
 
 ## 1. 接手時先知道的事
 
@@ -192,7 +198,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 | U3 | 本機完成 20 數字獨立手算、實際手調／撤銷、UI 與模擬值同源；合成資料邊界。 | `apps/inseason/static/views.js::playerCard`、`inseason/projection.py::blend_player/effective_projection` | 清楚分開先驗、混合、手調及最後由命中率重算的 made；抽 20 個 UI 數字獨立手算（至少 3 位小數）並驗證傳給模擬的值。 |
 | U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；本批另完成同日連續換人的有效合成授權／保存計畫沿用流程；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
 | F1 | 本批增至 114 條登錄，已補全 Python 候選 inventory／變動檢查及登錄 owner 一對一，並逐條分類 81 項原 pending。140 檔／449 候選中仍有 107 pending；native、JS 與最終 UI trace 未完整核對，F1 未結案。 | `formulas/*`、`inseason/projection.py`、`inseason/matchup.py`、相關 tests | 自行盤點全範圍函式，分清公式與協調／驗證函式；建立全範圍一對一檢查，移出業務模組公式本體，UI trace 與實作同源。不得只改檢查範圍假裝覆蓋。 |
-| F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；規格提到 `claude-report-v2/evidence-2026-09-27/backtest_inseason.py`、`backtest_matchup.py` 及 JSON，目前未取得。無證據不能改標已校準；OREB 等未回測項另列。 |
+| F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；已找到原規格指定的 `/Users/leo/fantasy-research-2026-27/claude-report-v2/evidence-2026-09-27/` 程式／JSON，重播 318 位球員、1,446 案例與原結果在 1e-12 內零差異。原研究是同季擬合，ESPN dump 於 2026-09-25 季後擷取，不能證明歷史公開時點；也不能當目前 strict-win 引擎的跨季校準。無證據不能改標已校準；OREB 等未回測項另列。 |
 | F3 | 10 隊、不同位置與 OREB／A/T／H2H Each Category 的合成 F0–F6 本機已有驗證。 | `tests/inseason_support.py`、`test_inseason_portability.py`、跨功能測試 | 真正改類別公式（含比率／A/T）、位置、10 隊、H2H Each Category，F0–F6 跑完且合法；只改設定，不在程式塞聯盟特例。 |
 
 ### F. 交付與實際環境
@@ -209,7 +215,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 ## 5. 已確定的決定與外部證據缺口
 
 1. 使用者已選擇**只接受免費且條款允許的來源**；付費訂閱不在範圍內。尚未取得完整且權利適用的 NBA／公開排名 adapter，不把自訂 JSON 或網站爬取假裝正式入口。
-2. 原缺陷腳本、30 組排陣、40 組接受模型與原始 2025–26 回測資產沒有提供；使用者要求自行驗證。已建立合成案例及獨立 oracle，但仍沒有合法凍結歷史時間序列、跨季 holdout 或真實模型校準。
+2. 原缺陷腳本、30 組排陣與 40 組接受模型沒有提供；使用者要求自行驗證。原始 2025–26 研究資產已在本機找到並重播，5 份 ESPN players／schedule 檔雜湊與 manifest 一致。現有資料是季後擷取，仍缺當時的傷情／排名／先驗公開時間及目前引擎的跨季 holdout；不能把 `known_at` 倒填成比賽當日。
 3. 真實 Yahoo 存取資格／去識別錄製回應尚未驗證。帳號、付款與 Yahoo 操作不在本輪授權內；不要求把 token 放入 repo、日誌或交接文件。
 
 上述外部證據缺口不代表所有本機工作都已完成；完整公式盤點與驗收、搜尋品質及尚未涵蓋的 UI／平台流程仍有後續工作。

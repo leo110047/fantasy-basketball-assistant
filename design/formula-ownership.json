@@ -146,6 +146,12 @@
       "reason": "Read-only frozen scenario input and output paths.",
       "signature": "23d5442e618c84ea9ccb775e788165767ceda1eb334972d3a1482c7f36fe9a2f"
     },
+    "fba.adapters.inseason_priors.read_priors": {
+      "role": "composition",
+      "owner": "fba.adapters.inseason_priors.read_priors",
+      "reason": "Registered ratio converts archived totals to minute rates and shooting probabilities; set subtraction validates coverage.",
+      "signature": "1fc0b567b2948b76cb8d906b57576cda8d241f5572e8ae0350c5bc6f29356093"
+    },
     "fba.adapters.migration.frozen_calibration": {
       "role": "structure",
       "owner": "fba.adapters.migration.frozen_calibration",
@@ -162,7 +168,7 @@
       "role": "structure",
       "owner": "fba.adapters.native.NativeKernel.__init__",
       "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
-      "signature": "998fdac875a0df6bcecf09532bc41283c82069b8ef8377349ffa335dc8f663e1"
+      "signature": "46bf69ba11ca7848679597a425b4f4a4fbb07a2cdc8a40b252782efc2cc58358"
     },
     "fba.adapters.native.NativeKernel.run": {
       "role": "structure",
@@ -174,13 +180,19 @@
       "role": "structure",
       "owner": "fba.adapters.native.compile_kernel",
       "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
-      "signature": "1acd3cf923b3260b14410ff3d26de7c638eeebd04bf5b1e36bb5b964282e919f"
+      "signature": "819c2ac824d3b75795f76cf3c8b390fd2513a677d42c23963267eddcbfb52a20"
     },
     "fba.adapters.native.decode_events": {
       "role": "structure",
       "owner": "fba.adapters.native.decode_events",
       "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
       "signature": "b8894e239a17df1f6278f9659c12f546d26a0cf0f0e6feafc03d261573ee7db2"
+    },
+    "fba.adapters.native.native_source_digest": {
+      "role": "structure",
+      "owner": "fba.adapters.native.native_source_digest",
+      "reason": "Source provenance digest combines native template and generated registered equation bytes.",
+      "signature": "ace200695608430e457b4b6fc5b69c41e786006944721a36c8e0472ac5452c11"
     },
     "fba.adapters.native.validate_arrays": {
       "role": "structure",
@@ -212,6 +224,18 @@
       "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
       "signature": "b8ce41bb02e1039765f4ddfea5b4c90d9362927ccc4fb22f0dd592723ddfcb6d"
     },
+    "fba.adapters.native_formula.management_formula": {
+      "role": "structure",
+      "owner": "fba.adapters.native_formula.management_formula",
+      "reason": "Concatenates whitelisted C++ declarations generated from registered management_gain and product; no duplicate numeric body.",
+      "signature": "0469a8cba98a1d3fd05d1b8bf840630bd884597fb84db40ae9cfbbb4c034ef73"
+    },
+    "fba.adapters.native_formula.native_expression": {
+      "role": "structure",
+      "owner": "fba.adapters.native_formula.native_expression",
+      "reason": "Whitelisted AST-to-C++ syntax translation; string concatenation, not a second numerical equation.",
+      "signature": "0a42474fba0a4ac19a6d5b87e532858525e1201e4657b1fea93aab8298c8080e"
+    },
     "fba.adapters.nba.release_counts": {
       "role": "structure",
       "owner": "fba.adapters.nba.release_counts",
@@ -231,10 +255,10 @@
       "signature": "edfe6c24d77e81a8bc48eda8ca581908775545884f32a452c15dfd8f352ac859"
     },
     "fba.adapters.preparation.difference_report": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.adapters.preparation.difference_report",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "8025ec5fdb1cd2fb7225bc61318d5093e5c231a5dd9bb8853d509aa55c451d97"
+      "reason": "Registered difference computes price delta; abs and negation only order displayed changes by magnitude.",
+      "signature": "63552be80ac033dafaf97c84452eddddfa2fec23ea1763416827cb3d639e1235"
     },
     "fba.adapters.preparation.project": {
       "role": "structure",
@@ -591,10 +615,10 @@
       "signature": "6ba5c2bb8656311d33b9362854808f92b4e010b8b074517672edf4ea6e012427"
     },
     "fba.auction.managed.ManagedSeason.__init__": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.auction.managed.ManagedSeason.__init__",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "6fe81eee2cbc724cd550defaea2b7a5b198637decf8024f7c861bf74fde5c235"
+      "reason": "Registered category_ratio, Bernoulli moments, availability_probability, health_decay and ranked_health_value; remaining arithmetic counts schedule games, masks and sort indices.",
+      "signature": "df7807f7ae375b3839fa2301f7e86b049a9d32d06955877086e6cf72fa0d3061"
     },
     "fba.auction.managed.ManagedSeason.control": {
       "role": "pending",
@@ -615,10 +639,10 @@
       "signature": "25fa2c8d07e0e2942ca47db93fca5329d91e30659989279d7ba33a7c02f367f0"
     },
     "fba.auction.managed.ManagedSeason.health_paths": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.auction.managed.ManagedSeason.health_paths",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "755cbb36283828d135c016fd881fc1e008311fa02243179d57530736f345ca65"
+      "reason": "Registered stratified_uniform and health_step; RNG shuffling, date offsets and uniform-probability comparisons construct the stochastic state timeline.",
+      "signature": "2bbbeee86f098fa942b21c82557a384cc371f0d5d0c251e626eef686b699276f"
     },
     "fba.auction.managed.ManagedSeason.known_week_games": {
       "role": "structure",
@@ -715,12 +739,6 @@
       "owner": "fba.auction.portfolio.Portfolio.canonical_choice",
       "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
       "signature": "cf262bbc200aa00266a8ccfb06ff3be0bf92ed25336d9999a2e010e7bbbfe706"
-    },
-    "fba.auction.portfolio.Portfolio.cap": {
-      "role": "pending",
-      "owner": "fba.auction.portfolio.Portfolio.cap",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "54dc12fb54d148340f69b73f719c0ccbbdae4119b88081c54a85de900c07a254"
     },
     "fba.auction.portfolio.Portfolio.optimize": {
       "role": "structure",
@@ -956,12 +974,6 @@
       "reason": "String encoding/decoding and hash serialization.",
       "signature": "472046cf9f9e334c12d9ee514f0ed93cef892c8580b72d27f4b1dcab30855d7e"
     },
-    "fba.data.inseason_sources.read_priors": {
-      "role": "pending",
-      "owner": "fba.data.inseason_sources.read_priors",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "b161d228502600d29a650c1c0e448f840e27cc3249d1cf41a52f63544c45ce91"
-    },
     "fba.data.storage.Store.append_snapshot": {
       "role": "structure",
       "owner": "fba.data.storage.Store.append_snapshot",
@@ -1107,10 +1119,16 @@
       "signature": "f39deb011571cb4ada6879c87550dc334e2cfb475a516b46ac94721a0b2bdd90"
     },
     "fba.formulas.array_catalog.<module>": {
-      "signature": "4a10e53ec8e1967d6830832785bbdb8e857c40d672d9b176cfc58481f35513e2",
       "role": "structure",
       "owner": "fba.formulas.array_catalog.<module>",
-      "reason": "Formula registration metadata and signed example inputs; no executable model equation body."
+      "reason": "Formula registration metadata and signed example inputs; no executable model equation body.",
+      "signature": "4a10e53ec8e1967d6830832785bbdb8e857c40d672d9b176cfc58481f35513e2"
+    },
+    "fba.formulas.auction_catalog.<module>": {
+      "role": "structure",
+      "owner": "fba.formulas.auction_catalog.<module>",
+      "reason": "Signed constant example metadata for registered management equation; no evaluation body.",
+      "signature": "4b3e9c33e93adfd37420f2ddb7c52ad210f46eda0758013f83e63d78c7641fea"
     },
     "fba.formulas.categories.category_values": {
       "role": "composition",
@@ -1226,148 +1244,166 @@
       "reason": "Combines scalar/vector metadata catalogs; no model calculation.",
       "signature": "d3b07e3c371a150e797b4f8e7307318a5a54b0c3daf90f9a8b4f8e512abfb107"
     },
+    "fba.formulas.scalar.absolute_error": {
+      "role": "registered",
+      "owner": "absolute_error",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "747be01de4a1dc69bf2611acac1eaf8b6e8ee9b7a52b5a2b71208b6ee2d617c3"
+    },
     "fba.formulas.scalar.acceptance": {
       "role": "registered",
       "owner": "acceptance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "cac73b642e85e0643b1d798d17f5e319509ff6a407b27c00a3545ac4ae8805ea"
     },
     "fba.formulas.scalar.add_score": {
       "role": "registered",
       "owner": "add_score",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ff7587568f8a863dcae11233b230410079f8bb4ec1feefcf30bf87e69805c2bb"
     },
     "fba.formulas.scalar.affordable_cap": {
       "role": "registered",
       "owner": "affordable_cap",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "c2e7b640bc4914ff2a1039f98fceb7a6f5694cc2643c09a22d52e5057acf5774"
     },
     "fba.formulas.scalar.anchor_scale": {
       "role": "registered",
       "owner": "anchor_scale",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "e59d375a74f3a178a5781d7a5646ff9cf59ae1fe477152eb10fe7d1b14a8a47b"
+    },
+    "fba.formulas.scalar.availability_probability": {
+      "role": "registered",
+      "owner": "availability_probability",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "d2ed99fcfb4b88bc05969bfdb8cf017a4fbc292d2271eb4f279e399c8cc8321f"
     },
     "fba.formulas.scalar.bidder_wealth": {
       "role": "registered",
       "owner": "bidder_wealth",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "be324f4e697800c6b589ac77c7145a3de47c9be14ab1b889729a998c802e387f"
     },
     "fba.formulas.scalar.blend": {
       "role": "registered",
       "owner": "blend",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "9b500cd88ebe70750e1d3720b2aa6a098ae0a919132eba5e236a9f9a12a422ef"
     },
     "fba.formulas.scalar.brier": {
       "role": "registered",
       "owner": "brier",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "b7a19effa0265a3d22094df684d6ca6bd13f8a985a049d6dd5dd1be1f74ce0eb"
     },
     "fba.formulas.scalar.budget_fraction": {
       "role": "registered",
       "owner": "budget_fraction",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "2c5ec8c5ecd86e3bce91ee5fc1a3324bcfb1c47abe549a4cd1cd66f8601d0300"
     },
     "fba.formulas.scalar.clipped_affine": {
       "role": "registered",
       "owner": "clipped_affine",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "d20d8e9c95af84a9657e6c7277ca30550d10f860ab797bfe3f9c383f5f0e1316"
     },
     "fba.formulas.scalar.clipped_anchor": {
       "role": "registered",
       "owner": "anchor",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "f76b45a0bcb50dd27e36c4610b5960f78a8845ed4cc8105b96d75ee6c149a628"
     },
     "fba.formulas.scalar.complementary_value": {
       "role": "registered",
       "owner": "complementarity",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "94286d855fd237962a37cb33c9f20f8733b95bb4f87d7fd7ebf157d9a15dd5f4"
     },
     "fba.formulas.scalar.difference": {
       "role": "registered",
       "owner": "difference",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "94cdc0bf1409ffefc4d44bc48c60d7d70c0e231cedf22676f9e072ee10096c37"
     },
     "fba.formulas.scalar.dollar_scale": {
       "role": "registered",
       "owner": "dollar_scale",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "3caeda7c83a2ac29d0de4aaaaa23416f36e949dcd6b04021de065fc01ea57ea4"
     },
     "fba.formulas.scalar.dollar_value": {
       "role": "registered",
       "owner": "dollar_value",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "70f0fe227c2f81136d2bb146d77c565939f582cccf65d97647d74bb4fa61a870"
     },
     "fba.formulas.scalar.effective_samples": {
       "role": "registered",
       "owner": "effective_samples",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "e8b367457bfcc2c4af3af9a422b3dbdc6beea27f6d734ba9719625d48657dad7"
     },
     "fba.formulas.scalar.empirical_error": {
       "role": "registered",
       "owner": "empirical_error",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ea62b104470b8d9009954c5e2b391a00b0be5084ca7fea9a9738f225d804ff8d"
     },
     "fba.formulas.scalar.expectation": {
       "role": "registered",
       "owner": "expectation",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "fce6fd0797a0177b74037da02c7d09dd1e252de55c8b5cd432d75e1cfeab27c9"
     },
     "fba.formulas.scalar.exposure_error": {
       "role": "registered",
       "owner": "exposure_error",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "a8f9eaab46e31e1ca64243270776d26f1e8963e14fcf6977de24678c5f3d951a"
     },
     "fba.formulas.scalar.exposure_rate": {
       "role": "registered",
       "owner": "exposure_rate",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "7a9f79645c2a1cc3f9679ae63ff6021e95051f3872e00b9f5d7becc7e2a34bc3"
     },
     "fba.formulas.scalar.healthy_capacity": {
       "role": "registered",
       "owner": "healthy_capacity",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "97430b39dbbd027343fc300072c26be7ab712a7e346b2b5fa49f197d10b3d62f"
     },
     "fba.formulas.scalar.historical_share": {
       "role": "registered",
       "owner": "historical_share",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "17467fd8df2326d351ba04b27ae14f97e903d9a41050133018f9009a237557bb"
     },
     "fba.formulas.scalar.log_loss": {
       "role": "registered",
       "owner": "log_loss",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "cdf871f35ffdfff518f5d5d41bca1e9659c3c49429b5823bae1ea80681b34647"
+    },
+    "fba.formulas.scalar.management_gain": {
+      "role": "registered",
+      "owner": "management_gain",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "951ffd5cddf7fa2aad6341dab363fb6828f11c315f86be57b0f74844315bd9e2"
     },
     "fba.formulas.scalar.market_inflation": {
       "role": "registered",
       "owner": "inflation",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "e958825edd607dde569dced8ce7adf032aee73c5fcc453ae613b956a03416461"
     },
     "fba.formulas.scalar.market_normalization": {
       "role": "registered",
       "owner": "market_normalization",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "c82eda0c2c84e38499c3d0cb03a0b8febd2ab9ccabbdfdcd890692a13cf0263b"
     },
     "fba.formulas.scalar.market_normalization<locals>.integrand": {
@@ -1379,194 +1415,212 @@
     "fba.formulas.scalar.mean": {
       "role": "registered",
       "owner": "mean",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5bf3988a12af6c44ce9137df7ab30aa74a08b58a4a35421f96136c4c67c7c49f"
     },
     "fba.formulas.scalar.mean_absolute_error": {
       "role": "registered",
       "owner": "mae",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "98f433302d928eba5bb68b06e79b477df5cd6f11663e11d8a71c573817f4d73c"
     },
     "fba.formulas.scalar.median": {
       "role": "registered",
       "owner": "median",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "cede3cf73443998d3ca085278001c6cf3356a5fd8cded26b63fedee5dbf311f2"
     },
     "fba.formulas.scalar.minute_budget": {
       "role": "registered",
       "owner": "minute_budget",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5fdcef233e78176af712cfe6e505f5572becd3af2c2dc441ddb78bf83214a5a9"
     },
     "fba.formulas.scalar.minutes": {
       "role": "registered",
       "owner": "minutes",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "06ba7c0c3cbf258dfa0c8787869ac357b6f17c3b6de84bf81eb56a730ccbdefc"
     },
     "fba.formulas.scalar.monitor_margin": {
       "role": "registered",
       "owner": "monitor_margin",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "405272fc53276c17e79e02e353096a3e13ae96ca15337ab75fb323b9d576b8a1"
     },
     "fba.formulas.scalar.normal_probability": {
       "role": "registered",
       "owner": "normal",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "32217cf0948455daa38a54456b3444f294de242d33b1b915b61d137523a898ad"
     },
     "fba.formulas.scalar.path_bid": {
       "role": "registered",
       "owner": "path_bid",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "2d43a468b0111916c2fea9896c029415682c20ee62bf12432efa31d8262f6fa1"
     },
     "fba.formulas.scalar.planning_cost": {
       "role": "registered",
       "owner": "planning_cost",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ab467aaba259a681b2a00dee864db422e61dde81df2f1c011d6423a5761b9a07"
     },
     "fba.formulas.scalar.population_variance": {
       "role": "registered",
       "owner": "variance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "a01e0a134a88f8c5c3e37fc81a8e2641ebde7120c3dee3562a86b68b3678f97d"
+    },
+    "fba.formulas.scalar.positive_part": {
+      "role": "registered",
+      "owner": "positive_part",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "f52b77cbdf4f7fe88415e5583f35e5dbdacd4a475289374a7b5ab607539bb2c7"
     },
     "fba.formulas.scalar.probability": {
       "role": "registered",
       "owner": "probability",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "b6379d077d1711426390ccf051e0cd4bbc3fd3c71c8e703b7f1f4a2efc6de87b"
     },
     "fba.formulas.scalar.product": {
       "role": "registered",
       "owner": "product",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "e9cae0fe24b4f427f519ff9ff3bc137a07146bdfc86d5068e00d9407bfedfbd5"
     },
     "fba.formulas.scalar.rank_correlation": {
       "role": "registered",
       "owner": "rank_correlation",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "1a6a2fdb29f92ea5d32076621fb6edb675ef18fb2093c4594f827657a9b54b08"
     },
     "fba.formulas.scalar.rank_value": {
       "role": "registered",
       "owner": "rank_value",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "4cd15853ecd5f898350b00e603fda9ae5b6672cb78f396c80213fdaa68eac31d"
     },
     "fba.formulas.scalar.ratio_impact": {
       "role": "registered",
       "owner": "ratio_impact",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "41bbc18ff3780e727aede2233fbe49222a3b848d4a9ed366d40975268b648604"
     },
     "fba.formulas.scalar.reallocate": {
       "role": "registered",
       "owner": "reallocate",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5aa2286cddbeb15498d26b50eb28e204c01dbebdb14ca3be85efaba93d55451c"
     },
     "fba.formulas.scalar.sale_cost": {
       "role": "registered",
       "owner": "sale_cost",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "c1bb6c623b3a4ef7f4de83143d6316af0c164449f49c739128128a221f6496bf"
     },
     "fba.formulas.scalar.sample_weight": {
       "role": "registered",
       "owner": "weight",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "d40f84d9c6829d21bffb2751ad5066a612254a8b1d8719ba6da6ccf0ef1d6584"
     },
     "fba.formulas.scalar.sampling_error": {
       "role": "registered",
       "owner": "error",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "7dbb937f29ec7b32dda01732743ae83a7af5e85db60bb3086a80c7d80a229f85"
     },
     "fba.formulas.scalar.score_calibration": {
       "role": "registered",
       "owner": "score_calibration",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "4e4e371a50f03c0b119ba1f4645abaec99ef1c0d2149697d80fc6f0704e44e74"
     },
     "fba.formulas.scalar.season_rate": {
       "role": "registered",
       "owner": "season_rate",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "3713404ccb667c372d488b907771fbd3a9baab8c06bde887e36367eb549e82f5"
     },
     "fba.formulas.scalar.season_utility": {
       "role": "registered",
       "owner": "season_utility",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ec77b3aaed25f92014f01f763292cec252eda2a8654965c71f07ef20c01ed4dd"
     },
     "fba.formulas.scalar.second_price": {
       "role": "registered",
       "owner": "second_price",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "e5f4f227739af2df1e5b17407662704fd814f8cd04f64de947f59fe79738c7a5"
     },
     "fba.formulas.scalar.shrink": {
       "role": "registered",
       "owner": "calibration",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "da60047f33ba6dd4b20aaa20e024e3bdb53f1675ec61860d8422a170c2f8f69c"
     },
     "fba.formulas.scalar.standardize": {
       "role": "registered",
       "owner": "standardize",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "a44c891a59b71bb01d4c359935e50fc9c7925e11a96a10638f5d02b9a175c275"
     },
     "fba.formulas.scalar.threshold_count": {
       "role": "registered",
       "owner": "threshold",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "624bcbfc503bdf2e4a17362357fc0cd08f02e2a7188b98d860cfbe4e3ca65a9f"
     },
     "fba.formulas.scalar.total_ratio": {
       "role": "registered",
       "owner": "ratio",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "289b474c62fa03f98b4fe0d75805a608dbddccf55913507de42a0d235e5d7dc7"
     },
     "fba.formulas.scalar.trade_value_ratio": {
       "role": "registered",
       "owner": "trade_value_ratio",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "1548de046bd982c3c0973a3d55dbb721ea4acf0ec99eb532342b9fd15b3b49d0"
+    },
+    "fba.formulas.scalar.upper_total": {
+      "role": "registered",
+      "owner": "upper_total",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "dc93362a6ea880e277aa9e5acdf7918ed8c4203152062da63975b1b4f78a5347"
     },
     "fba.formulas.scalar.weighted_mean": {
       "role": "registered",
       "owner": "weighted_mean",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "606db441d808f47d3e1e579d2c9408b48af362049399726f39ed9c7d6390f342"
     },
     "fba.formulas.scalar.weighted_sum": {
       "role": "registered",
       "owner": "linear",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "a7d8cd74eeb8d5245e77ff87394b7e4dae200e4031e74d4b66257a61f7c806c3"
     },
     "fba.formulas.scalar.winning_cost": {
       "role": "registered",
       "owner": "winning_cost",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5a1a8b9958755938a69e80a2c14bdf063a748fdab2b6d44b55d045f0552bab72"
     },
     "fba.formulas.scalar.z_score": {
       "role": "registered",
       "owner": "z",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "652d3fd6c186f1d66ed024ce5042ae2e42d28a74b0c38655fcd16d843fd0e3ec"
+    },
+    "fba.formulas.scalar_catalog.<module>": {
+      "role": "structure",
+      "owner": "fba.formulas.scalar_catalog.<module>",
+      "reason": "Signed constant example metadata for registered positive-part equation; no evaluation body.",
+      "signature": "b8d0b3155ca4c7882e72902ba30936eb8bb09b64fb4de31290bf018be8930896"
     },
     "fba.formulas.scoring.bracket_order": {
       "role": "composition",
@@ -1601,91 +1655,109 @@
     "fba.formulas.simulation.category_ratio": {
       "role": "registered",
       "owner": "category_ratio",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "9c28ec939bccdabf468cb20b8705567690e5d0b6bf303ac55c833a0ff9474d94"
     },
     "fba.formulas.simulation.comparison_margin": {
       "role": "registered",
       "owner": "comparison_margin",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "886e897646b98d933702fd879c246ed161497c6bc102af55cd5c06acf7d32757"
     },
     "fba.formulas.simulation.control_covariance": {
       "role": "registered",
       "owner": "control_covariance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "98afb699be984f9f800cd1c8c62f54915e57a2a2879106a8ad1ec52b4118b943"
     },
     "fba.formulas.simulation.game_threshold": {
       "role": "registered",
       "owner": "game_threshold",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "661d8714aac04e69c4c27f5eb75eec1d732bcd5e5a82fc5d17c940e8c0f64627"
     },
     "fba.formulas.simulation.health_decay": {
       "role": "registered",
       "owner": "health_decay",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "2910ba11a9b34ac85a1d94f895c0a2ecaec76b9c76cf676cdea8aae374cd1752"
+    },
+    "fba.formulas.simulation.health_step": {
+      "role": "registered",
+      "owner": "health_step",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "6baa9380532990ef6597c5a977dbb1e5d79a812b78eacab857453b5a92c7e45d"
     },
     "fba.formulas.simulation.highest_bid_survival": {
       "role": "registered",
       "owner": "highest_bid_survival",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5aeffe4b96c916904f6d58178060f3350ae14dbcb39039b2e0fb434ba8298d70"
     },
     "fba.formulas.simulation.linear_interval": {
       "role": "registered",
       "owner": "linear_interval",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "7c9c9558902c288d61f47ad836d3a8f504c833c71ec32dc80283b94ea94120c5"
     },
     "fba.formulas.simulation.linear_totals": {
       "role": "registered",
       "owner": "linear_totals",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "1f70f375b1d01864b83367513d340545a86d74143f1b4effef7595942be3b754"
     },
     "fba.formulas.simulation.lognormal_taste": {
       "role": "registered",
       "owner": "lognormal_taste",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "40be857922348fa26d33d8f3bbb7ff3b73d828de1edb5f01832376107e2a63a9"
     },
     "fba.formulas.simulation.median_bid": {
       "role": "registered",
       "owner": "median_bid",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "35fae6a35be6bd7e574ec10779cb167051eb9b38e2084a0698fe7772b597a220"
     },
     "fba.formulas.simulation.normal_quantile": {
       "role": "registered",
       "owner": "normal_quantile",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "fd1ec006229f0d56a3d0d102843d133a2adbb4d013f263a5b8b43908e99261f0"
+    },
+    "fba.formulas.simulation.outward_bound": {
+      "role": "registered",
+      "owner": "outward_bound",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "13af3603c49d7a3a26e6d2e85dfb5ee79df6ac532b491cbbf9a68f0ddb325260"
+    },
+    "fba.formulas.simulation.outward_interval": {
+      "role": "composition",
+      "owner": "fba.formulas.simulation.outward_interval",
+      "reason": "Dispatches registered outward_bound for lower and upper directions.",
+      "signature": "d7f35e35becd20746e1ed126ab6969d6347f82a9138d48e8fee95bd5d5eaff63"
     },
     "fba.formulas.simulation.playoff_odds": {
       "role": "registered",
       "owner": "playoff_odds",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "8d79ea2beaecd41c5826ad270f5be05dfb3d8f2d130e2862fe455b671fc8cbe7"
     },
     "fba.formulas.simulation.portfolio_cost_floor": {
       "role": "registered",
       "owner": "portfolio_cost_floor",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "bafa500e87b3629ff4d82eafd11174983276cf6d82990f3e7527713945620978"
     },
     "fba.formulas.simulation.ranked_health_value": {
       "role": "registered",
       "owner": "ranked_health_value",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "a4a14e0edbb2ae613da05499e99bf620dcdc9d976ba88ce7a62bfec81a2a18c2"
     },
     "fba.formulas.simulation.ratio_interval": {
       "role": "registered",
       "owner": "ratio_interval",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "3608ce6fcfaee69236528e38fccf46094dfe05fdc244fefe0d9c0022a3fa56c7"
     },
     "fba.formulas.simulation.reduction_axes": {
@@ -1697,38 +1769,50 @@
     "fba.formulas.simulation.sample_deviation": {
       "role": "registered",
       "owner": "sample_deviation",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5a81de65fa0a8d4335ddef99499fb4464051a99fab352550d42bad70315385e2"
     },
     "fba.formulas.simulation.sample_mean": {
       "role": "registered",
       "owner": "sample_mean",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "94f53fd310bda21fafda35701bc416dec7b5cbcfc018c36f10c28e74889a1cc2"
     },
     "fba.formulas.simulation.sample_variance": {
       "role": "registered",
       "owner": "sample_variance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "b68694d5f5933a6a808995960d76b26ac27f964fdb921806c5c73ca9510f751d"
     },
     "fba.formulas.simulation.scheduled_health": {
       "role": "registered",
       "owner": "scheduled_health",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "24c3a60e4efa7a464d9ee7c38fd20b55bb4de415d1678590306870c3517e223e"
     },
     "fba.formulas.simulation.standings_credit": {
       "role": "registered",
       "owner": "standings_credit",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ea6be0e14dc23a57284daf7de7678ff819fb4dce3e61a3025d7b135a0edbc81f"
     },
+    "fba.formulas.simulation.subset_bound": {
+      "role": "registered",
+      "owner": "subset_bound",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
+      "signature": "b8a272c56866b6f34d45d7602740a5e052b7a913909d8c4c180828691bc95f9a"
+    },
+    "fba.formulas.simulation.subset_interval": {
+      "role": "composition",
+      "owner": "fba.formulas.simulation.subset_interval",
+      "reason": "Dispatches the registered subset_bound for lower and upper directions; separate allocations preserve caller memory shape.",
+      "signature": "1ed82e3454053ecc33b440fce9b2bf472e703cb94d9d9da752e1e4a5da14b265"
+    },
     "fba.formulas.simulation_catalog.<module>": {
-      "signature": "13d3908eda2df4120bd507bd19ddd968d21ca466d815caf8219adb86c9f8caf6",
       "role": "structure",
       "owner": "fba.formulas.simulation_catalog.<module>",
-      "reason": "Formula registration metadata and signed example inputs; no executable model equation body."
+      "reason": "Formula registration metadata and signed example inputs; no executable model equation body.",
+      "signature": "788ce09f051976a5ea7675a5d0683c6955e8f1682c2ec3e74c64b9d31f68b8db"
     },
     "fba.formulas.team_minutes.allocate_team": {
       "role": "composition",
@@ -1773,16 +1857,10 @@
       "signature": "7f154727e4b128b9e552c5ab5b36ed3ffdbeacb2f6e835e20ee70a085dcd76bd"
     },
     "fba.formulas.valuation.category_impacts": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.formulas.valuation.category_impacts",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "9ba9f6497977c9504207e2ce289828de67ea3080f58d40f5a613e1207b630476"
-    },
-    "fba.formulas.valuation.fit_category": {
-      "role": "pending",
-      "owner": "fba.formulas.valuation.fit_category",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "7f8ba7638b79929aa05f3597c8795408ed6ff1ae8127dede8dedd88bab94701e"
+      "reason": "Registered linear/product or ratio_impact applies category direction; direction constant selects configured orientation.",
+      "signature": "a56a9eb655630a67836dd146daae6588daf1bd26c8beb1c78c3ed048d38854f6"
     },
     "fba.formulas.valuation.fit_ruler": {
       "role": "pending",
@@ -1797,10 +1875,10 @@
       "signature": "4406649049a6b16a69ab9b751e680c617db775a32d45b86dd277bc101bc448b6"
     },
     "fba.formulas.valuation.price_traces": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.formulas.valuation.price_traces",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "61e18dbe51e5d7a7889ca01a06aa69a8b8dc17c40db0b0ffb25fef3f8a153916"
+      "reason": "Registered positive_part, dollar_scale and dollar_value; league roster count and descending ordering select the priced population.",
+      "signature": "b38058b9c7a1c2c23e178f153dc991077f7f900f4c1d2bcc329e7e064aafb539"
     },
     "fba.formulas.valuation.ratio_rate": {
       "role": "pending",
@@ -1823,169 +1901,169 @@
     "fba.formulas.vector.availability_regression": {
       "role": "registered",
       "owner": "availability_regression",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "18ec8277fa418c7e96975144e1277993b03191526ff4566eb5d65cce04ca6ee5"
     },
     "fba.formulas.vector.availability_value": {
       "role": "registered",
       "owner": "availability_value",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5f654c32b78eea5a0e89507322c1c4dd31138556cf37aa6ff3d25a1b5065547c"
     },
     "fba.formulas.vector.average_ranks": {
       "role": "registered",
       "owner": "average_ranks",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "d8066c5790f5f4aba8943c3d99e3fbc2fecb2242227da87ea68fae2951baaae1"
     },
     "fba.formulas.vector.bernoulli_covariance": {
       "role": "registered",
       "owner": "bernoulli_covariance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "768914e70fab411bf8c98018fdf98c54670bc11aaa55e51c336587088fd3a600"
     },
     "fba.formulas.vector.bernoulli_mean": {
       "role": "registered",
       "owner": "bernoulli_mean",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "e1d5efae31c4013785b8ddd1e7652de1ff3cef1281cece80c66f472f649a2ff8"
     },
     "fba.formulas.vector.bid_distribution": {
       "role": "registered",
       "owner": "bid_distribution",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "fbf1d4b121bc746a42344f8f1ba03989192df61a91f9103d48cc3a5d959313a8"
     },
     "fba.formulas.vector.bootstrap_scale": {
       "role": "registered",
       "owner": "bootstrap_scale",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "fa7928cbd8231e94425a5206fdd6f89c3c01dcc20c7f91fd5bef1322179dc9e0"
     },
     "fba.formulas.vector.bounded_mean": {
       "role": "registered",
       "owner": "bounded_mean",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "a64e3ab7fb0edf3707c020486ecf0171bf7ec68536b53bb1b80066db3ea2c046"
     },
     "fba.formulas.vector.calibrate_distribution": {
       "role": "registered",
       "owner": "calibrate_distribution",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "bb354b8a6a55755564963536897f9141ea4567e7af0219ed2b9c36b5e757a5a8"
     },
     "fba.formulas.vector.calibration_fit": {
       "role": "registered",
       "owner": "calibration_fit",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "dbb948c6f3308e7b03f63be2ab48b030be7b0af4fa6b979f8fff61e0b45c769f"
     },
     "fba.formulas.vector.category_marginals": {
       "role": "registered",
       "owner": "category_marginals",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "fb4439d6755a8377437350497ec3a53039f316150475f22e133bace137093350"
     },
     "fba.formulas.vector.category_points": {
       "role": "registered",
       "owner": "category_points",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "236818294f833f3e51ac5c6422839b1b31759286a0ecebdf9d98884d19d4ec5d"
     },
     "fba.formulas.vector.centered_covariance": {
       "role": "registered",
       "owner": "centered_covariance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ea3690be23bb763f4bc45e0fa4ee2c3fe8645f8ebaa73926a412b89089db689a"
     },
     "fba.formulas.vector.central_difference": {
       "role": "registered",
       "owner": "central_difference",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "16a2a4bb723bf8d1a96abf9507d385813f0466460a72f5e18186ebbd8d6e8f2a"
     },
     "fba.formulas.vector.conditional_health": {
       "role": "registered",
       "owner": "conditional_health",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "d675eb58e3a37b4a9aa594a6e06939dca0bf3f2292f27c18e2cb0ce10aaeffa5"
     },
     "fba.formulas.vector.control_variate": {
       "role": "registered",
       "owner": "control_variate",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "c8fc9725cccdb48f635946d7476a8f4883dffe0e55649e7caf224e12e97d0df1"
     },
     "fba.formulas.vector.covariance_root": {
       "role": "registered",
       "owner": "covariance_root",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "b8fb7d6e824c4ae82a73cece0349b797d4929f09a5dbff998052a16f88adb372"
     },
     "fba.formulas.vector.health_count_covariance": {
       "role": "registered",
       "owner": "health_count_covariance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "cf713c8ee27ba2a0cb09438cea214587b80a8ad5fb1e1e4adbceafbc271aeba1"
     },
     "fba.formulas.vector.health_transitions": {
       "role": "registered",
       "owner": "health_transitions",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "d49a8d3037835fd872b1e38337d023703e6b5c8d812e8ec8848e39cbbc8d8b1c"
     },
     "fba.formulas.vector.logistic_gradient": {
       "role": "registered",
       "owner": "logistic_gradient",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "b94877b4aedde870047a78ec5b9c28782f4722b9106e24a302ae3ed5ce35fd9b"
     },
     "fba.formulas.vector.logistic_hessian": {
       "role": "registered",
       "owner": "logistic_hessian",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "e1a8d020d35ff49e69c9ae7d69890f1d379c6459f4b8644c2e8e7b97b154f139"
     },
     "fba.formulas.vector.logistic_objective": {
       "role": "registered",
       "owner": "logistic_objective",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "d95f47bd3b89811bf95b4c90a76333f2dc9ba1061cd884ff4e00ed4082381a2f"
     },
     "fba.formulas.vector.managed_covariance": {
       "role": "registered",
       "owner": "managed_covariance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "0c588de7e51496e6c4d708f748d2af930cdcab38b27e0f19920437a43fc7c229"
     },
     "fba.formulas.vector.matrix_product": {
       "role": "registered",
       "owner": "matrix_product",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "2cb35921f3fa38b74b095ca1533cfbcd21d43049f798c402ebb36eb13955bf4d"
     },
     "fba.formulas.vector.rounding_distribution": {
       "role": "registered",
       "owner": "rounding_distribution",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "0d1f453d6c071aceaca86c925be2120dac67f9d9d4024c2012a9a4bbd0fa5f61"
     },
     "fba.formulas.vector.row_rates": {
       "role": "registered",
       "owner": "row_rates",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5ed2e9e3cd7f7a851321a2ffc328a9eebc690b30262e873963b1d6151c2fa346"
     },
     "fba.formulas.vector.sample_covariance": {
       "role": "registered",
       "owner": "sample_covariance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "030844e3ca7bd663be8db1af1e4789380386234119d61769e090d7203e7e7d93"
     },
     "fba.formulas.vector.sampling_covariance": {
       "role": "registered",
       "owner": "sampling_covariance",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "5eb2f952ee52f6365a2936246f40835d20a87507d5d69212c1264a7727fc088d"
     },
     "fba.formulas.vector.scoring_axes": {
@@ -1997,61 +2075,61 @@
     "fba.formulas.vector.second_bid_survival": {
       "role": "registered",
       "owner": "second_bid_survival",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ecc385a35474f89398ed3706212aa2507e4c0961b91b43dd43965b64a3b9148c"
     },
     "fba.formulas.vector.soft_majority": {
       "role": "registered",
       "owner": "soft_majority",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "93ef35afdb139fcb95d0aa73d54f1c3cfcc1ca40d0457a3f5b4849aa9720d00d"
     },
     "fba.formulas.vector.standard_deviation_floor": {
       "role": "registered",
       "owner": "standard_deviation_floor",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "08ca54194415492fd93f6b0515394d999a92ee678d42d634e5896914f9287e36"
     },
     "fba.formulas.vector.standardized_margins": {
       "role": "registered",
       "owner": "standardized_margins",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "b38fb383f92d171b66621c25e279973b91575dba1e270e948eeb14216961a753"
     },
     "fba.formulas.vector.stratified_uniform": {
       "role": "registered",
       "owner": "stratified_uniform",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "21a51fb1265ad84de490b46bc93be3112845ce3a942fb983b84391b890aa305d"
     },
     "fba.formulas.vector.utility_blend": {
       "role": "registered",
       "owner": "utility_blend",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "1facf57b072a69ac70ef69b555646fdcea43fa23f444646eab309e8f2a1ef352"
     },
     "fba.formulas.vector.utility_rescale": {
       "role": "registered",
       "owner": "utility_rescale",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "d2416fefb6a2e3490d2610b3855f44c5acefcf9d935814eb1d6194480933dd01"
     },
     "fba.formulas.vector.week_points": {
       "role": "registered",
       "owner": "week_points",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "618aa5e3c96b84892855bad30f6bb1b1f7083ef19ccc5004e8a5e64d58eb0333"
     },
     "fba.formulas.vector.weighted_rows": {
       "role": "registered",
       "owner": "weighted_rows",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "f2a05daab233b8a38ad05b3fe5836bf34b37c8c28fa849af2728aa8dc206682d"
     },
     "fba.formulas.vector.weighted_second": {
       "role": "registered",
       "owner": "weighted_second",
-      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
       "signature": "ddfc2351af83a11a06988b03902c7003c261f2652bf5f3ac71e7572588bc7247"
     },
     "fba.inseason.adjustments.active_entries": {
@@ -2073,10 +2151,10 @@
       "signature": "6e83a90431028e247a92600a254cc3cc145e848a03721bce909271578a56e910"
     },
     "fba.inseason.backtest.checkpoint_errors": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.backtest.checkpoint_errors",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "39bc0614cc61211a66cf6ca322736f433bc41cd9ee1942849ba82ef70488c1ab"
+      "reason": "Ordered fsum aggregates observed exposure/counts; registered ratio, blend, absolute_error and mean compute the reported holdout errors. Dates select the observation partition.",
+      "signature": "e1fe3d694979206526e43dfda2b86c89aaee752e1f6b765ad4434cd9913b6935"
     },
     "fba.inseason.backtest.component_error": {
       "role": "pending",
@@ -2085,16 +2163,16 @@
       "signature": "326444de468b8d70075d8020130eded909f2cdd43edc7e7b833f0cb4b5396da3"
     },
     "fba.inseason.backtest.component_rows": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.backtest.component_rows",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "f81962c065bc01f489eefe4e390293d56649a58dd737034525b4d08ddbee0714"
+      "reason": "Ordered observed-count reductions feed registered ratio/blend/minutes/absolute_error/mean; no duplicate error equation.",
+      "signature": "4aa16622fe4f5f069cc49e53e4823f5d54284e4d095c1abbe23e277997e85128"
     },
     "fba.inseason.backtest.flag_report": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.backtest.flag_report",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "b1b00628a9eefe9439ac908ab1bdfbffda5d8d54d27aeee894e7f890f1fa01d5"
+      "reason": "Registered mean, ratio and absolute_error compare flagged and baseline predictions; timestamp maximum and positive exposure checks select causal future observations.",
+      "signature": "4b82a077e3c1ff07c5e9e4a85cf41872ee4194b98d1028e1158a113fe3242c5d"
     },
     "fba.inseason.backtest.run_study": {
       "role": "pending",
@@ -2150,17 +2228,11 @@
       "reason": "Caches/constructs IL scenarios using configured roster capacity; consumes existing projection probabilities.",
       "signature": "f14d270bea1ccb637cbe57328eb643babff94f0add344214a5cbb4b26fc54ae4"
     },
-    "fba.inseason.lineup_bounds.assignment_ceiling": {
-      "role": "pending",
-      "owner": "fba.inseason.lineup_bounds.assignment_ceiling",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "07aa8b152ab9d945a82895f5e020a86caeb76588948eedfb1d2287f70d1d650e"
-    },
     "fba.inseason.lineup_bounds.certified_loss": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.lineup_bounds.certified_loss",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "6fbb3535cfc4d90b750cd316c9350ce7290d0ac4f9baf70b44d225e026ca73af"
+      "reason": "Registered subset_bound/outward_bound and scoring formulas construct loss bound; 1/sample sets exhaustive loss counting tolerance, dates select remaining decisions.",
+      "signature": "2b94c06fba5978dbb9e397a4bbb507ee1f4c7ebdb63b1eb876d15e5461b55aa4"
     },
     "fba.inseason.lineup_bounds.score_ceilings": {
       "role": "pending",
@@ -2259,10 +2331,10 @@
       "signature": "4441bc22f26532b20560ae6f8275547c1b38a90d01508cdb4e2d39e9c6366be0"
     },
     "fba.inseason.parameter_fit.production_trial": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.parameter_fit.production_trial",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "a95ca6442b3c97f15e59f9156a6815c9f19d7bdd32019bae823d8f34473f3a3f"
+      "reason": "Observed-count reductions feed registered ratio and absolute_error; mean summarizes errors and hit indicators, timestamps select causal future records.",
+      "signature": "4750ab8b034b3d1dbb91ce9fe7ac2d9e042de461bc2cd2761e08b85eef8738b0"
     },
     "fba.inseason.priority.classify_matchup": {
       "role": "pending",
@@ -2307,10 +2379,10 @@
       "signature": "42c297e0f16701318f3ed75d9efddb8ec0c217ccbf6a64e4c6d88c4d9976597b"
     },
     "fba.inseason.projection.player_flags": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.projection.player_flags",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "2b49071eb18f477c370db97ee8a6593c84df963b7f93abb876dbc45cc5307e02"
+      "reason": "Registered mean/exposure_rate/exposure_error/product/absolute_error determine role/production/override evidence; sums validate positive exposure, window slices and fingerprint strings are structural.",
+      "signature": "2124d3c75916b253b8e5482c278ebb09e72f8cbe7e84657d40b4bd6da815bfbe"
     },
     "fba.inseason.recommendations.admissible_plan": {
       "role": "validation",
@@ -2379,10 +2451,10 @@
       "signature": "46d83d1f8c3bf891e7c4dfe394fa858c59b59e98689ed5b4ed29f71a6952187c"
     },
     "fba.inseason.review.calibration_bins": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.review.calibration_bins",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "8c7055787c3ddc61b2b215bce84b165bb05dcb9d5cef26b37fcc2dc2f1f2037e"
+      "reason": "Registered mean/effective_samples/monitor_margin/absolute_error provide evidence; index arithmetic defines display bins and configured threshold plus margin composes the alert policy.",
+      "signature": "54139e4ef89c0519aa1df6ef686971eede18301db346d198e1d220056c4bdc63"
     },
     "fba.inseason.review.cumulative_review": {
       "role": "composition",
@@ -2522,23 +2594,17 @@
       "reason": "Player/slot/source selection and explanation strings consuming lineup_effects traces; no arithmetic on effects.",
       "signature": "6941c2d18eba16823ed0d1a776e11b840f885c0e62fdd96bd2359a0d232ca7f2"
     },
-    "fba.inseason.trade_bounds.addition_ceilings": {
-      "role": "pending",
-      "owner": "fba.inseason.trade_bounds.addition_ceilings",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "71bc6b46b3daa089469e68f3b2e9925f9e58cded43f968ad831ff709849cd679"
-    },
     "fba.inseason.trade_bounds.completion_contexts": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.trade_bounds.completion_contexts",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "c3dfc59b43d0e724c165a1401d11eb62c53763837a12697def06df1e74bf5c51"
+      "reason": "Registered subset_bound/outward_bound assemble conservative contexts; max dates select remaining schedule.",
+      "signature": "2c4822abbf71de824f71aec44f17b7ae82fe33bad9811a206f05ff3ad696f0b4"
     },
     "fba.inseason.trade_bounds.free_agent_bounds": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.trade_bounds.free_agent_bounds",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "f7c93f7e501ad19cb9368aa119390273ffe16594de9e64811a601b2926fdd4b6"
+      "reason": "Registered upper_total aggregates conservative score bounds; non-finite checks explicitly fall back to full search, chunk offsets select candidates.",
+      "signature": "654e99a2ee3e256b93a0bc06f2cce66b77e654f5c06c93083f6e6c8ce682234f"
     },
     "fba.inseason.trade_bounds.gain_bound": {
       "role": "pending",
@@ -2547,10 +2613,10 @@
       "signature": "2ec66fca131865b8f4b72577a30fe2d04f6ba9926f88b80d18cf0d3e7187a521"
     },
     "fba.inseason.trade_bounds.roster_ceiling": {
-      "role": "pending",
+      "role": "composition",
       "owner": "fba.inseason.trade_bounds.roster_ceiling",
-      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
-      "signature": "0fb87b1488f1c2c3f9012eca80aa624cde70ad2740540a75e680a5faaf04318a"
+      "reason": "Registered upper_total assembles score ceilings; max picks the loosest legal completion bound, roster capacity and range offsets enumerate possibilities.",
+      "signature": "fe5c6dab950f3ed363d228f2a17d8af8320aea72a1b0704dbd7c34fd8f88e510"
     },
     "fba.inseason.trade_bounds.season_limits": {
       "role": "pending",
