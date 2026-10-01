@@ -49,6 +49,8 @@ def test_flag_suggestions_and_sampling_error_use_recorded_formulas():
     flags = player_flags(player, boxes, 60.0, {"FGA": 0.5}, (), params)
     role = next(f for f in flags if f.kind == "role")
     assert role.suggestions["minutes"].result == role.observed == 30.0
+    assert role.traces[-1].formula_id == "absolute_error"
+    assert role.traces[-1].result == abs(role.model - role.observed)
     for flag in flags:
         for trace in (*flag.traces, *flag.suggestions.values()):
             assert evaluate(trace.formula_id, **trace.inputs) == trace
@@ -175,6 +177,11 @@ def test_undo_of_replacement_restores_original_adjustment():
 
 def test_registered_formulas_have_hand_calculated_examples():
     expected = {
+        "management_gain": 3,
+        "availability_probability": 0.5,
+        "upper_total": float.fromhex("0x1.0000000000001p+0"),
+        "positive_part": 0,
+        "absolute_error": 3,
         "effective_samples": 1.6,  # (1 + 3)^2 / (1^2 + 3^2)
         "monitor_margin": 0.098,
         "exposure_rate": 1.0,

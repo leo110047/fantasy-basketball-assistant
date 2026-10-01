@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include "management-formula.h"
 
 struct Seat { int player; int origin; int group; };
 using Seats = std::vector<Seat>;
@@ -356,11 +357,11 @@ class Simulation {
         const auto& available = candidates(today, longer);
         for (int p : available) {
             // Opportunity cost is nonnegative, so this upper bound cannot discard a better swap.
-            if (acquired[p] - lower <= best.gain) continue;
+            if (management_gain(0, 0, acquired[p], lower, 0, 1) <= best.gain) continue;
             for (auto held : eligible) {
                 int q = held.player;
-                double gain = longer ? acquired_long[p] - long_value[q] :
-                    acquired_short[p] - short_value[q] - std::max(0., long_value[q]-acquired_long[p])*o.opportunity_cost;
+                double gain = management_gain(acquired_short[p], short_value[q],
+                    acquired_long[p], long_value[q], o.opportunity_cost, longer);
                 if (gain <= best.gain) continue;
                 if (!prepared) { prepare_legality(team); prepared = true; }
                 if (legal(team, q, p)) best = {q, p, held.origin, gain};
@@ -403,7 +404,7 @@ class Simulation {
             for (int d = day; d < x.D && x.week[d] == x.week[day]; ++d)
                 for (int p = 0; p < x.N; ++p) weekly_games[p] += x.games[d*x.N+p];
         }
-        for (int p = 0; p < x.N; ++p) weekly_priority[p] = x.priority[p] * weekly_games[p];
+        for (int p = 0; p < x.N; ++p) weekly_priority[p] = season_priority(x.priority[p], weekly_games[p]);
     }
 
     void lock_lineup(Team& team, int day, const uint8_t* today) {

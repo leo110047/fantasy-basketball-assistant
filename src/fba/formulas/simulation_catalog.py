@@ -5,6 +5,46 @@ from fba.formulas.array_catalog import ArrayFormula
 
 ARRAY_FORMULAS = (
     ArrayFormula(
+        "health_step",
+        "健康狀態的單場轉移",
+        r"H'=I(U\ge h)\;(H=1);\quad H'=I(U<b)\;(H=0)",
+        "boolean",
+        ("fit.mean_missed_games",),
+        simulation.health_step,
+        {"health": (1.0, 0.0, 1.0), "uniform": (0.8, 0.2, 0.1), "hurt": 0.25, "back": 0.4},
+        {
+            "health": "boolean",
+            "uniform": "uniform coordinate",
+            "hurt": "probability",
+            "back": "probability",
+        },
+    ),
+    ArrayFormula(
+        "subset_bound",
+        "可選樣本加總的保守界限",
+        r"B'=nextafter(B+C,\pm\infty),\quad C=X\;(fixed),\;\min(X,0)\;(lower),\;\max(X,0)\;(upper)",
+        "statistic units",
+        (),
+        simulation.subset_bound,
+        {"base": (1.0, 5.0), "draw": (2.0, -3.0), "fixed": 0.0, "direction": -1.0},
+        {
+            "base": "statistic units",
+            "draw": "statistic units",
+            "fixed": "boolean",
+            "direction": "signed bound direction",
+        },
+    ),
+    ArrayFormula(
+        "outward_bound",
+        "浮點界限向外捨入",
+        r"B'=nextafter(B,\pm\infty)",
+        "statistic units",
+        (),
+        simulation.outward_bound,
+        {"value": (1.0, -2.0), "direction": 1.0},
+        {"value": "statistic units", "direction": "signed bound direction"},
+    ),
+    ArrayFormula(
         "sample_mean",
         "模擬樣本平均",
         "\\mu=\\operatorname{mean}_{A}(x)",

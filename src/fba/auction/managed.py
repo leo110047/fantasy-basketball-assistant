@@ -17,9 +17,12 @@ from fba.contracts.season import (
 )
 from fba.core.roster import capacity, match_slots
 from fba.formulas.arrays import evaluate_array
+from fba.formulas.registry import evaluate
 from fba.formulas.simulation import (
+    category_ratio,
     control_covariance,
     health_decay,
+    health_step,
     mean_array,
     ranked_health_value,
     scheduled_health,
@@ -125,19 +128,30 @@ class ManagedSeason:
         covariance = np.array([p.covariance for p in self.players], dtype=float)
         gp = np.array([p.expected_games for p in self.players])
         health_gp = np.array([p.healthy_games for p in self.players])
-        share = np.divide(gp, health_gp, out=np.ones(self.n), where=health_gp > 0)
+        share = category_ratio(
+            {"numerator": gp, "denominator": health_gp, "zero_value": np.ones(self.n)}
+        )
         self.raw = evaluate_array("bernoulli_mean", means=original, probability=share).result
         self.cov = evaluate_array(
             "bernoulli_covariance", means=original, covariance=covariance, probability=share
         ).result
         self.availability = np.array(
-            [p.healthy_games / max(1, p.season_games) for p in self.players]
+            [
+                evaluate(
+                    "availability_probability",
+                    healthy_games=p.healthy_games,
+                    eligible_games=float(p.season_games),
+                ).result
+                for p in self.players
+            ]
         )
         for i in range(self.n):
             if self.returns[i] > 0:
-                self.availability[i] = min(
-                    1.0, health_gp[i] / max(1, int(self.games[self.returns[i] :, i].sum()))
-                )
+                self.availability[i] = evaluate(
+                    "availability_probability",
+                    healthy_games=float(health_gp[i]),
+                    eligible_games=float(self.games[self.returns[i] :, i].sum()),
+                ).result
         self.priority = np.array([catalog[i].utility or 0.0 for i in self.ids])
         self.value = evaluate_array(
             "availability_value",
@@ -223,10 +237,13 @@ class ManagedSeason:
         for d in range(self.d):
             if d:
                 change = self.games[d - 1]
-                state[:, change] = np.where(
-                    state[:, change],
-                    u[:, d][:, change] >= hurt[change],
-                    u[:, d][:, change] < back[change],
+                state[:, change] = health_step(
+                    {
+                        "health": state[:, change],
+                        "uniform": u[:, d][:, change],
+                        "hurt": hurt[change],
+                        "back": back[change],
+                    }
                 )
             state[:, d < self.returns] = False
             returning = (self.returns == d) & (self.returns > 0)

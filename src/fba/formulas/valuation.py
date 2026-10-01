@@ -1,4 +1,4 @@
-from math import fsum, sqrt
+from math import fsum
 
 from fba.contracts.base import DataError
 from fba.contracts.config import Category, LeagueRules, Linear, Term, ValuationParameters
@@ -64,7 +64,14 @@ def category_impacts(
     formula = category.formula
     direction = 1 if category.direction == "higher" else -1
     if isinstance(formula, Linear):
-        return tuple(direction * linear_value(formula.terms, p.stats, axes) for p in players)
+        return tuple(
+            evaluate(
+                "product",
+                gain=linear_value(formula.terms, p.stats, axes),
+                probability=float(direction),
+            ).result
+            for p in players
+        )
     if rate is None:
         raise DataError(f"valuation.{category.id}: missing fitted ratio")
     return tuple(
@@ -86,7 +93,9 @@ def fit_category(
     impacts = category_impacts(players, axes, category, ratio)
     samples = tuple(impacts[i] for i in pool)
     mean = evaluate("mean", values=samples).result
-    deviation = sqrt(evaluate("variance", values=samples, mean=mean).result)
+    deviation = evaluate(
+        "error", variance=evaluate("variance", values=samples, mean=mean).result, samples=1.0
+    ).result
     if deviation <= 0:
         raise DataError(f"valuation.{category.id}: degenerate category population")
     return CategoryNormalization(id=category.id, ratio=ratio, mean=mean, deviation=deviation)
@@ -161,7 +170,7 @@ def price_traces(
     utilities: tuple[float, ...], ids: tuple[str, ...], league: LeagueRules
 ) -> tuple[tuple[FormulaTrace, FormulaTrace], ...]:
     count = league.teams * (len(league.starter_slots) + league.bench_slots)
-    positive = tuple(max(u, 0) for u in utilities)
+    positive = tuple(evaluate("positive_part", value=u).result for u in utilities)
     top = sorted(range(len(ids)), key=lambda i: (-positive[i], ids[i]))[:count]
     if len(top) != count or any(positive[i] <= 0 for i in top):
         raise DataError("valuation: insufficient positive auction population")

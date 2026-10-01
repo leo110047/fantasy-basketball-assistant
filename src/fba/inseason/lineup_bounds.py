@@ -9,7 +9,14 @@ import numpy as np
 
 from fba.contracts.config import Linear, Term
 from fba.formulas.categories import category_values
-from fba.formulas.simulation import comparison_margin, linear_interval, mean_array, ratio_interval
+from fba.formulas.simulation import (
+    comparison_margin,
+    linear_interval,
+    mean_array,
+    outward_interval,
+    ratio_interval,
+    subset_interval,
+)
 from fba.formulas.vector import category_points, week_points
 
 if TYPE_CHECKING:
@@ -118,9 +125,10 @@ def certified_loss(
     while on <= week.end:
         sim.check_limits()
         for draw in sim.daily_draws(roster, on, max(through, sim.as_of)).values():
-            lower = np.nextafter(lower + np.minimum(draw, 0), -np.inf)
-            upper = np.nextafter(upper + np.maximum(draw, 0), np.inf)
-        lower, upper = np.nextafter(lower, -np.inf), np.nextafter(upper, np.inf)
+            lower, upper = subset_interval(
+                {"lower": lower, "upper": upper, "draw": draw, "fixed": np.asarray(0.0)}
+            )
+        lower, upper = outward_interval({"lower": lower, "upper": upper})
         on += timedelta(days=1)
     # Treat a tie as a full win here: a floor result then proves that no
     # sample can even tie. Both teams' standings points are therefore known.
@@ -154,12 +162,20 @@ def assignment_ceiling(
     lower, upper = np.zeros_like(rest), np.zeros_like(rest)
     for player in (*fixed, *sorted(free)):
         draw = draws[player]
-        low, high = (draw, draw) if player in fixed else (np.minimum(draw, 0), np.maximum(draw, 0))
-        lower = np.nextafter(lower + low, -np.inf)
-        upper = np.nextafter(upper + high, np.inf)
+        lower, upper = subset_interval(
+            {
+                "lower": lower,
+                "upper": upper,
+                "draw": draw,
+                "fixed": np.asarray(float(player in fixed)),
+            }
+        )
+    lower, upper = subset_interval(
+        {"lower": lower, "upper": upper, "draw": rest, "fixed": np.asarray(1.0)}
+    )
     return score_ceiling(
         sim,
-        np.nextafter(rest + lower, -np.inf),
-        np.nextafter(rest + upper, np.inf),
+        lower,
+        upper,
         opponent,
     )

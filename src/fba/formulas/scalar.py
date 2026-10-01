@@ -1,6 +1,6 @@
 """Scalar equations referenced by the shared executable registry."""
 
-from math import erf, exp, floor, fsum, inf, isfinite, log, pi, sqrt
+from math import erf, exp, floor, fsum, inf, isfinite, log, nextafter, pi, sqrt
 
 import numpy as np
 from scipy.integrate import quad
@@ -23,6 +23,33 @@ def vector(values: ScalarInputs, key: str) -> tuple[float, ...]:
     if not isinstance(value, tuple):
         raise DataError(f"formula.{key}: expected a vector")
     return value
+
+
+def management_gain(values: ScalarInputs) -> float:
+    return (
+        number(values, "acquired_long") - number(values, "held_long")
+        if number(values, "longer")
+        else number(values, "acquired_short")
+        - number(values, "held_short")
+        - max(0.0, number(values, "held_long") - number(values, "acquired_long"))
+        * number(values, "opportunity_cost")
+    )
+
+
+def availability_probability(values: ScalarInputs) -> float:
+    return min(1.0, number(values, "healthy_games") / max(1, number(values, "eligible_games")))
+
+
+def upper_total(values: ScalarInputs) -> float:
+    return nextafter(fsum(vector(values, "values")), inf)
+
+
+def positive_part(values: ScalarInputs) -> float:
+    return max(number(values, "value"), 0.0)
+
+
+def absolute_error(values: ScalarInputs) -> float:
+    return abs(number(values, "predicted") - number(values, "observed"))
 
 
 def blend(values: ScalarInputs) -> float:

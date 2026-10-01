@@ -48,6 +48,9 @@ def test_registered_scalar_implementations_are_one_to_one_and_complete():
 
 def simulation_example_answers():
     return {
+        "health_step": [1, 1, 0],
+        "subset_bound": [1, 2],
+        "outward_bound": [1, -2],
         "sample_mean": [2, 5],
         "sample_variance": [1, 4],
         "sample_deviation": [1, 2],
@@ -146,6 +149,8 @@ def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
         "mean_array",
         "variance_array",
         "deviation_array",
+        "subset_interval",
+        "outward_interval",
     }
     for row in ARRAY_FORMULAS:
         inputs = {k: np.asarray(v, dtype=float) for k, v in row.example.items()}

@@ -6,6 +6,26 @@ from fba.formulas.auction_catalog import FORMULAS as AUCTION_FORMULAS
 
 BASE_FORMULAS = (
     ScalarFormula(
+        "positive_part",
+        "正效用截取",
+        r"u^+=\max(u,0)",
+        "input units",
+        (),
+        scalar.positive_part,
+        {"value": -3.0},
+        {"value": "input units"},
+    ),
+    ScalarFormula(
+        "absolute_error",
+        "絕對預測誤差",
+        r"e=|\hat y-y|",
+        "input units",
+        (),
+        scalar.absolute_error,
+        {"predicted": 2.0, "observed": 5.0},
+        {"predicted": "input units", "observed": "input units"},
+    ),
+    ScalarFormula(
         "weighted_mean",
         "加權平均",
         r"\bar x=\sum_iw_ix_i/\sum_iw_i",

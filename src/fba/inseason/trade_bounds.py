@@ -10,6 +10,8 @@ from numpy.typing import NDArray
 from fba.contracts.config import Linear
 from fba.contracts.inseason import WeekForecast
 from fba.formulas.registry import evaluate
+from fba.formulas.scalar import upper_total
+from fba.formulas.simulation import outward_interval, subset_interval
 from fba.inseason.lineup_bounds import score_ceiling, score_ceilings
 from fba.inseason.matchup import Simulation
 from fba.inseason.season import remaining_weeks, season_opponent
@@ -48,9 +50,10 @@ def completion_contexts(
             # Relax slots and eligibility: any subset of these draws is
             # enclosed, including every legal daily/weekly assignment.
             for draw in sim.daily_draws(roster, on, after).values():
-                lower = np.nextafter(lower + np.minimum(draw, 0), -np.inf)
-                upper = np.nextafter(upper + np.maximum(draw, 0), np.inf)
-            lower, upper = np.nextafter(lower, -np.inf), np.nextafter(upper, np.inf)
+                lower, upper = subset_interval(
+                    {"lower": lower, "upper": upper, "draw": draw, "fixed": np.asarray(0.0)}
+                )
+            lower, upper = outward_interval({"lower": lower, "upper": upper})
             days.append(on)
             on += timedelta(days=1)
         result.append(WeekDrawBound(lower, upper, opponent, after, tuple(days)))
@@ -86,7 +89,7 @@ def free_agent_bounds(
             for player, ceiling in zip(batch, addition_ceilings(sim, context, batch), strict=True):
                 values[player].append(ceiling)
         for player, scores in values.items():
-            value = float(np.nextafter(fsum(scores), np.inf))
+            value = upper_total({"values": tuple(scores)})
             if not isfinite(value):
                 return None  # No certified bound: retain full comparison, never guess a score.
             result[player] = value
@@ -108,8 +111,14 @@ def addition_ceilings(
             daily = np.stack([draws[choices[i]] for i in indices])
             # Each row retains its date/addition order and outward rounding.
             # Only independent candidates share a batch.
-            lower[indices] = np.nextafter(lower[indices] + np.minimum(daily, 0), -np.inf)
-            upper[indices] = np.nextafter(upper[indices] + np.maximum(daily, 0), np.inf)
+            lower[indices], upper[indices] = subset_interval(
+                {
+                    "lower": lower[indices],
+                    "upper": upper[indices],
+                    "draw": daily,
+                    "fixed": np.asarray(0.0),
+                }
+            )
     return tuple(float(v) for v in score_ceilings(sim, lower, upper, context.opponent))
 
 
@@ -237,10 +246,8 @@ def roster_ceiling(
     for candidate in candidates:
         sim.check_limits()
         contexts = completion_contexts(sim, team, candidate, changed)
-        value = float(
-            np.nextafter(
-                fsum(score_ceiling(sim, c.lower, c.upper, c.opponent) for c in contexts), np.inf
-            )
+        value = upper_total(
+            {"values": tuple(score_ceiling(sim, c.lower, c.upper, c.opponent) for c in contexts)}
         )
         if not isfinite(value):
             return None

@@ -37,6 +37,54 @@ def sample_deviation(inputs: Inputs) -> Array:
     return np.asarray(inputs["values"].std(axis=reduction_axes(inputs)))
 
 
+def health_step(inputs: NumericInputs) -> Array:
+    return np.where(
+        inputs["health"], inputs["uniform"] >= inputs["hurt"], inputs["uniform"] < inputs["back"]
+    )
+
+
+def subset_bound(inputs: Inputs) -> Array:
+    draw, fixed, direction = inputs["draw"], inputs["fixed"], inputs["direction"]
+    if fixed.ndim or fixed not in (0, 1) or direction.ndim or direction not in (-1, 1):
+        raise DataError("formula.subset_bound: boolean fixed and signed bound direction required")
+    contribution = draw if fixed else np.minimum(draw, 0) if direction < 0 else np.maximum(draw, 0)
+    return np.nextafter(inputs["base"] + contribution, -np.inf if direction < 0 else np.inf)
+
+
+def outward_bound(inputs: Inputs) -> Array:
+    direction = inputs["direction"]
+    if direction.ndim or direction not in (-1, 1):
+        raise DataError("formula.outward_bound: signed bound direction required")
+    return np.nextafter(inputs["value"], -np.inf if direction < 0 else np.inf)
+
+
+def subset_interval(inputs: Inputs) -> tuple[Array, Array]:
+    lower = subset_bound(
+        {
+            "base": inputs["lower"],
+            "draw": inputs["draw"],
+            "fixed": inputs["fixed"],
+            "direction": np.asarray(-1.0),
+        }
+    )
+    upper = subset_bound(
+        {
+            "base": inputs["upper"],
+            "draw": inputs["draw"],
+            "fixed": inputs["fixed"],
+            "direction": np.asarray(1.0),
+        }
+    )
+    return lower, upper
+
+
+def outward_interval(inputs: Inputs) -> tuple[Array, Array]:
+    return (
+        outward_bound({"value": inputs["lower"], "direction": np.asarray(-1.0)}),
+        outward_bound({"value": inputs["upper"], "direction": np.asarray(1.0)}),
+    )
+
+
 def linear_totals(inputs: Inputs) -> Array:
     values, weights = inputs["values"], inputs["weights"]
     indices = inputs["indices"]

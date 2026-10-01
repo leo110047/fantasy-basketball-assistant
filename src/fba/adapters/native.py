@@ -12,6 +12,7 @@ from typing import Protocol, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from fba.adapters.native_formula import management_formula
 from fba.contracts.auction import SolverError
 from fba.contracts.base import DataError, Record, Text
 from fba.contracts.data import Digest
@@ -40,6 +41,7 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
     build = tempfile.TemporaryDirectory(prefix="fba-season-")
     path = Path(build.name) / "season.so"
     source = Path(__file__).parents[1] / "native/season.cpp"
+    (Path(build.name) / "management-formula.h").write_text(management_formula())
     command = (
         compiler,
         "-std=c++17",
@@ -47,6 +49,8 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
         "-ffp-contract=off",
         "-fPIC",
         "-shared",
+        "-I",
+        build.name,
         *(
             ("-Wl,--no-insert-timestamp", "-static-libgcc", "-static-libstdc++")
             if sys.platform == "win32"
@@ -67,6 +71,10 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
         build.cleanup()
         raise SolverError(f"management: native compilation failed: {result.stderr}")
     return build, path
+
+
+def native_source_digest(source: Path) -> str:
+    return hashlib.sha256(source.read_bytes() + b"\0" + management_formula().encode()).hexdigest()
 
 
 def verified_load_path(compiled: Path) -> Path:
@@ -116,12 +124,12 @@ class NativeKernel:
                 path = verified_load_path(path)
                 compiled = NativeArtifact(
                     path=str(path),
-                    source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+                    source_sha256=native_source_digest(source),
                     binary_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                 )
             self.artifact = compiled
             if (
-                hashlib.sha256(source.read_bytes()).hexdigest() != compiled.source_sha256
+                native_source_digest(source) != compiled.source_sha256
                 or hashlib.sha256(Path(compiled.path).read_bytes()).hexdigest()
                 != compiled.binary_sha256
             ):

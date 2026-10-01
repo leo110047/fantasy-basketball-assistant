@@ -314,6 +314,7 @@ def test_invariants_detect_old_fault_classes_in_native_kernel(tmp_path, monkeypa
     from test_managed import small_arrays
 
     import fba.adapters.native as native
+    from fba.adapters.native_formula import management_formula
     from fba.contracts.auction import SolverError
     from fba.contracts.season import TacticalArrays
 
@@ -328,6 +329,7 @@ def test_invariants_detect_old_fault_classes_in_native_kernel(tmp_path, monkeypa
     assert source.count(before) == 1
     changed = tmp_path / "mutant.cpp"
     changed.write_text(source.replace(before, after))
+    (tmp_path / "management-formula.h").write_text(management_formula())
     library = tmp_path / "mutant.so"
     subprocess.run(
         [
