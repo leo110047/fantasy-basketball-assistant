@@ -231,10 +231,22 @@ def test_recorded_matchup_trade_and_lineup_inputs_reproduce_displayed_numbers():
     daily = today(sim, sim.as_of.astimezone(sim.zone).date(), "Asia/Taipei")
     traces = list(walk_traces([x.model_dump() for x in (week, trade, daily)]))
     assert len(traces) >= 20
+    array_ids = {row.id for row in ARRAY_FORMULAS}
+    scalar_count, array_count = 0, 0
     for trace in traces:
-        assert evaluate(trace["formula_id"], **trace["inputs"]).result == pytest.approx(
-            trace["result"], abs=1e-12
-        )
+        if trace["formula_id"] in array_ids:
+            actual = evaluate_array(
+                trace["formula_id"],
+                **{key: np.asarray(value) for key, value in trace["inputs"].items()},
+            ).result
+            np.testing.assert_allclose(actual, np.asarray(trace["result"]), atol=1e-12, rtol=0)
+            array_count += 1
+        else:
+            assert evaluate(trace["formula_id"], **trace["inputs"]).result == pytest.approx(
+                trace["result"], abs=1e-12
+            )
+            scalar_count += 1
+    assert scalar_count >= 20 and array_count > 0
     for row in daily.players:
         if row.marginal is not None:
             assert row.marginal.result >= -sim.params.tolerance.value
