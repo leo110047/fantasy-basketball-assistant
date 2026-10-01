@@ -1,0 +1,2 @@
+# Source-byte evidence must survive a checkout on every supported platform.
+* text=auto eol=lf

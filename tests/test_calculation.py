@@ -107,13 +107,13 @@ def projection_bundle(tmp_path):
     data = {
         "format_version": 3,
         "calibration": calibration.model_dump(mode="json"),
-        "calibration_snapshot": str(frozen.relative_to(tmp_path)),
+        "calibration_snapshot": frozen.relative_to(tmp_path).as_posix(),
         "config": effective.model_dump(mode="json"),
         "players": players,
         "teams": [{"id": team, "dates": dates, "full_season_games": 4} for team in ("A", "B")],
         "artifacts": [
             {
-                "path": str(p.relative_to(tmp_path)),
+                "path": p.relative_to(tmp_path).as_posix(),
                 "sha256": digest(p.read_bytes()),
                 "size": p.stat().st_size,
                 "provenance": None,
@@ -247,7 +247,7 @@ def legacy_projection_bundle(projection_bundle):
         team["possession_budget"] = 100.0
     data["artifacts"] = [
         {
-            "path": str(p.relative_to(path.parent)),
+            "path": p.relative_to(path.parent).as_posix(),
             "sha256": digest(p.read_bytes()),
             "size": p.stat().st_size,
             "provenance": None,

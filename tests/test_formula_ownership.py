@@ -13,7 +13,7 @@ def test_native_and_javascript_source_inventory_covers_every_current_file():
     root = Path(__file__).parents[1]
     inventory = json.loads((root / "design/formula-ownership.json").read_text())["source_files"]
     actual = {
-        str(path.relative_to(root)): sha256(path.read_bytes()).hexdigest()
+        path.relative_to(root).as_posix(): sha256(path.read_bytes()).hexdigest()
         for path in (root / "src/fba").rglob("*")
         if path.suffix in (".js", ".cpp")
     }
