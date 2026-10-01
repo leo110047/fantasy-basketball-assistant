@@ -1,0 +1,2700 @@
+{
+  "format_version": 1,
+  "scope": "All src/fba Python numerical candidates; pending is unresolved F1 work, not acceptance. Native and JS semantic coverage is tracked in formula-ownership.md.",
+  "candidates": {
+    "fba.adapters.acquisition.acquire": {
+      "role": "structure",
+      "owner": "fba.adapters.acquisition.acquire",
+      "reason": "Source path resolution; network acquisition remains outside pure equations.",
+      "signature": "a5ac40628256638a9ee4ac908be052b696e2f6a10e43759e2730684f85d5e12e"
+    },
+    "fba.adapters.annual.previous_evaluation": {
+      "role": "structure",
+      "owner": "fba.adapters.annual.previous_evaluation",
+      "reason": "Immutable previous-season artifact path selection.",
+      "signature": "c2618c27230dc99c0c3de0251c17e3d945aa552b2d4041535db8511b2540f5b0"
+    },
+    "fba.adapters.auction.auction_details": {
+      "role": "structure",
+      "owner": "fba.adapters.auction.auction_details",
+      "reason": "Input/artifact paths, array shape construction and execution timing.",
+      "signature": "a3ca2f49d092032af9234ac23e8fe8745b791e087ef6ad11021f60e4627ef3d0"
+    },
+    "fba.adapters.auction.auction_file": {
+      "role": "structure",
+      "owner": "fba.adapters.auction.auction_file",
+      "reason": "Input/artifact paths, array shape construction and execution timing.",
+      "signature": "2a6588457a0060830b5abb7fdeb499900e763abd7004500986e1e985da1960f2"
+    },
+    "fba.adapters.auction.draft_template": {
+      "role": "structure",
+      "owner": "fba.adapters.auction.draft_template",
+      "reason": "Input/artifact paths, array shape construction and execution timing.",
+      "signature": "42c1b7973889b65aa4b60c2746aa84537d1e1a2bb9b8e57913a06fa9ad609023"
+    },
+    "fba.adapters.auction.load_auction": {
+      "role": "structure",
+      "owner": "fba.adapters.auction.load_auction",
+      "reason": "Input/artifact paths, array shape construction and execution timing.",
+      "signature": "cda9c63f8c7a33ed963abc2caedd25de58277fa2184b33ba191488fb044eb7c7"
+    },
+    "fba.adapters.auction.prepare_auction": {
+      "role": "structure",
+      "owner": "fba.adapters.auction.prepare_auction",
+      "reason": "Input/artifact paths, array shape construction and execution timing.",
+      "signature": "238e9f87e9f76945a703d53f156e46713bd69107919c004ea0227b36b677213d"
+    },
+    "fba.adapters.auction.prepare_management": {
+      "role": "structure",
+      "owner": "fba.adapters.auction.prepare_management",
+      "reason": "Input/artifact paths, array shape construction and execution timing.",
+      "signature": "763be1f1e629159adc1b66cfef78a7520c6ac7019f46bbda01fa6441ef7d50ff"
+    },
+    "fba.adapters.auction_metadata.auction_teams": {
+      "role": "structure",
+      "owner": "fba.adapters.auction_metadata.auction_teams",
+      "reason": "Roster coverage set difference validation.",
+      "signature": "f2e54420fd74940166144a60c463e57da0a7e73d30b773d2360eebec8d7d3938"
+    },
+    "fba.adapters.backtest.backtest_file": {
+      "role": "structure",
+      "owner": "fba.adapters.backtest.backtest_file",
+      "reason": "Historical cutoff dates, sorted scan cursors, output paths and timings.",
+      "signature": "adcee8dd9050227f39b1fc1cd807ad00910ee1e6116b0de782d44e53c24d68b5"
+    },
+    "fba.adapters.backtest.known_tipoffs": {
+      "role": "structure",
+      "owner": "fba.adapters.backtest.known_tipoffs",
+      "reason": "Historical cutoff dates, sorted scan cursors, output paths and timings.",
+      "signature": "e4d73e085d593b44295cdc16d5719b361f4f8243233698416b334e3addd185af"
+    },
+    "fba.adapters.backtest.validate_timeline": {
+      "role": "structure",
+      "owner": "fba.adapters.backtest.validate_timeline",
+      "reason": "Historical cutoff dates, sorted scan cursors, output paths and timings.",
+      "signature": "d46fd4b94337801e1a2cbd1114a78adf393c0e95d74ca33bf8ebcf4322588ee6"
+    },
+    "fba.adapters.calculation.publish_result": {
+      "role": "structure",
+      "owner": "fba.adapters.calculation.publish_result",
+      "reason": "Frozen artifact paths, completed-season dates and publication names.",
+      "signature": "08a6cd2000c337f19a68d271f5ef1c971aaad88aa8e4267d61cedd748d61527c"
+    },
+    "fba.adapters.calculation.require_completed_season": {
+      "role": "structure",
+      "owner": "fba.adapters.calculation.require_completed_season",
+      "reason": "Frozen artifact paths, completed-season dates and publication names.",
+      "signature": "3a0bca1b13ebeb53a2afb8311e28d5294810ae9a627fb537428d1760b492076f"
+    },
+    "fba.adapters.calculation.verify_calculation_input": {
+      "role": "structure",
+      "owner": "fba.adapters.calculation.verify_calculation_input",
+      "reason": "Frozen artifact paths, completed-season dates and publication names.",
+      "signature": "b1ad820035f9c443744cd4f9a42508fde1c3b49d9cfe3c45cb1e4bef46243381"
+    },
+    "fba.adapters.desk.atomic_exchange": {
+      "role": "structure",
+      "owner": "fba.adapters.desk.atomic_exchange",
+      "reason": "Atomic file paths and platform function argument shapes.",
+      "signature": "72169074aa9eee721f06d303663e89739157ba5ba6e6b545d1803ffb6b514057"
+    },
+    "fba.adapters.desk.check_storage": {
+      "role": "structure",
+      "owner": "fba.adapters.desk.check_storage",
+      "reason": "Atomic file paths and platform function argument shapes.",
+      "signature": "40f02390b35d1201919b080bfd428e1a6db0bbc50fe09eac35f41576a1697a41"
+    },
+    "fba.adapters.desk.save_draft": {
+      "role": "structure",
+      "owner": "fba.adapters.desk.save_draft",
+      "reason": "Atomic file paths and platform function argument shapes.",
+      "signature": "0d40c53e3bdee5ec65dbe4a8a845570a34b5dce2e05250dc92885643de5a242d"
+    },
+    "fba.adapters.desk.windows_exchange": {
+      "role": "structure",
+      "owner": "fba.adapters.desk.windows_exchange",
+      "reason": "Atomic file paths and platform function argument shapes.",
+      "signature": "50199d3bc1247a4b61ddc10eacc79ccf8c310759f057d4d7be5a6782999ab4f2"
+    },
+    "fba.adapters.espn.schedule": {
+      "role": "structure",
+      "owner": "fba.adapters.espn.schedule",
+      "reason": "ESPN timestamp milliseconds-to-seconds and preceding-season wire code conversion.",
+      "signature": "15b8dca2d3bb5cf26e3f3c796dd28bde50276f217c5f2e8147df30d9591846f3"
+    },
+    "fba.adapters.espn.stat_values": {
+      "role": "validation",
+      "owner": "fba.adapters.espn.stat_values",
+      "reason": "Provider-owned PTS/shot/count consistency rejection; observed statistics are not replaced by the check.",
+      "signature": "4fdd3ff4853a3024b998b5e65c181062293783d836a7bafa2190fef0c96597f6"
+    },
+    "fba.adapters.espn.validate_source_season": {
+      "role": "validation",
+      "owner": "fba.adapters.espn.validate_source_season",
+      "reason": "ESPN season identifier/year encoding check; no forecast estimate.",
+      "signature": "476ae5248aca6a2dee03e042a8e4d4a36b56712fbb443130a01d789311e9f00e"
+    },
+    "fba.adapters.forecast_scenarios.freeze_scenarios": {
+      "role": "structure",
+      "owner": "fba.adapters.forecast_scenarios.freeze_scenarios",
+      "reason": "Read-only frozen scenario input and output paths.",
+      "signature": "adf5dbb43800a438da302dc8f1dc6e98f5a0073bc3a47ee245fc031476b04833"
+    },
+    "fba.adapters.forecast_scenarios.valued_projection": {
+      "role": "structure",
+      "owner": "fba.adapters.forecast_scenarios.valued_projection",
+      "reason": "Read-only frozen scenario input and output paths.",
+      "signature": "23d5442e618c84ea9ccb775e788165767ceda1eb334972d3a1482c7f36fe9a2f"
+    },
+    "fba.adapters.migration.frozen_calibration": {
+      "role": "structure",
+      "owner": "fba.adapters.migration.frozen_calibration",
+      "reason": "Migration artifact path/provenance composition.",
+      "signature": "b09f268cbf73787d4de2bde8b0efea9edaa023860cf516f25d4f0660b3a37eaa"
+    },
+    "fba.adapters.migration.migrate_projection": {
+      "role": "structure",
+      "owner": "fba.adapters.migration.migrate_projection",
+      "reason": "Migration artifact path/provenance composition.",
+      "signature": "21ebf1c21cb1d54147a9a6d56144dbf0b36709b938f54ab581bbe57b7ecd9a44"
+    },
+    "fba.adapters.native.NativeKernel.__init__": {
+      "role": "structure",
+      "owner": "fba.adapters.native.NativeKernel.__init__",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "998fdac875a0df6bcecf09532bc41283c82069b8ef8377349ffa335dc8f663e1"
+    },
+    "fba.adapters.native.NativeKernel.run": {
+      "role": "structure",
+      "owner": "fba.adapters.native.NativeKernel.run",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "ffe6f07d91c0073dd6f48657a36397ac12e07c0c6412f1d782ae7b1c90259147"
+    },
+    "fba.adapters.native.compile_kernel": {
+      "role": "structure",
+      "owner": "fba.adapters.native.compile_kernel",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "1acd3cf923b3260b14410ff3d26de7c638eeebd04bf5b1e36bb5b964282e919f"
+    },
+    "fba.adapters.native.decode_events": {
+      "role": "structure",
+      "owner": "fba.adapters.native.decode_events",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "b8894e239a17df1f6278f9659c12f546d26a0cf0f0e6feafc03d261573ee7db2"
+    },
+    "fba.adapters.native.validate_arrays": {
+      "role": "structure",
+      "owner": "fba.adapters.native.validate_arrays",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "e08106c5f09c05bb06a1b4d9b42bf272fcd6a2e6bc827f1ba63e85be733484ab"
+    },
+    "fba.adapters.native.validate_known_week_games": {
+      "role": "validation",
+      "owner": "fba.adapters.native.validate_known_week_games",
+      "reason": "Native int32/layout validation and remaining matchup date cardinality bound.",
+      "signature": "a7e7f7780fe3c3a7e80e18fdb46746b7addde356594d7982ad8597e8a31cc70c"
+    },
+    "fba.adapters.native.validate_native_integers": {
+      "role": "structure",
+      "owner": "fba.adapters.native.validate_native_integers",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "9b181f28c5fd37708f709256b10b2b859a9d92e60e70e8971c56af0785a14f2e"
+    },
+    "fba.adapters.native.validate_tactics": {
+      "role": "structure",
+      "owner": "fba.adapters.native.validate_tactics",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "dca488217ab432d65c7f288edd3ca53db97ab11cdac62ba88be8f6d192838adc"
+    },
+    "fba.adapters.native.verified_load_path": {
+      "role": "structure",
+      "owner": "fba.adapters.native.verified_load_path",
+      "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
+      "signature": "b8ce41bb02e1039765f4ddfea5b4c90d9362927ccc4fb22f0dd592723ddfcb6d"
+    },
+    "fba.adapters.nba.release_counts": {
+      "role": "structure",
+      "owner": "fba.adapters.nba.release_counts",
+      "reason": "Published announced/pending schedule cardinalities; preserves official counts without modeling unannounced games.",
+      "signature": "19295a0616460aa9fbad5b2077e97cf33cd55389e6118c708246737cc265f1ea"
+    },
+    "fba.adapters.paths.paths_file": {
+      "role": "structure",
+      "owner": "fba.adapters.paths.paths_file",
+      "reason": "Complete-pair/solver counters and elapsed wall time in the execution report.",
+      "signature": "e85b38f61da64e4a97ed92e6985eae12e0b24ba8a91e2a94855b2d4eeb529b9b"
+    },
+    "fba.adapters.paths.verdict": {
+      "role": "structure",
+      "owner": "fba.adapters.paths.verdict",
+      "reason": "Tolerance-based classification of already-computed path deltas; no new numerical score.",
+      "signature": "edfe6c24d77e81a8bc48eda8ca581908775545884f32a452c15dfd8f352ac859"
+    },
+    "fba.adapters.preparation.difference_report": {
+      "role": "pending",
+      "owner": "fba.adapters.preparation.difference_report",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "8025ec5fdb1cd2fb7225bc61318d5093e5c231a5dd9bb8853d509aa55c451d97"
+    },
+    "fba.adapters.preparation.project": {
+      "role": "structure",
+      "owner": "fba.adapters.preparation.project",
+      "reason": "Artifact paths and publication; previous price differences remain separately pending.",
+      "signature": "a9a54fe2b042b1c163441c53bcedb2bedf25acf896b31e996c91c7eda6442fac"
+    },
+    "fba.adapters.preparation.projection_input": {
+      "role": "structure",
+      "owner": "fba.adapters.preparation.projection_input",
+      "reason": "Artifact paths and publication; previous price differences remain separately pending.",
+      "signature": "e5c046ec62904c73f06d0ede853762c3233a1d2ec763bb6c82bb3af14555e31e"
+    },
+    "fba.adapters.roster.import_roster": {
+      "role": "structure",
+      "owner": "fba.adapters.roster.import_roster",
+      "reason": "CSV field and position-set coverage checks.",
+      "signature": "e284aaa3a731d9651897442f9bae8152000cd5f244e09447deb25fda0693fee2"
+    },
+    "fba.adapters.snapshots.checked_path": {
+      "role": "structure",
+      "owner": "fba.adapters.snapshots.checked_path",
+      "reason": "Snapshot path validation and atomic publication.",
+      "signature": "ff2f005b59c440d85922665174cabaab7a94d50e7e6eaf006a16dd6d9a377a0d"
+    },
+    "fba.adapters.snapshots.load_snapshot": {
+      "role": "structure",
+      "owner": "fba.adapters.snapshots.load_snapshot",
+      "reason": "Snapshot path validation and atomic publication.",
+      "signature": "a0e9b73c5e3b6650a73c09d7054ba28558232a9081e18490ffa2b412720cd259"
+    },
+    "fba.adapters.snapshots.publish_bundle": {
+      "role": "structure",
+      "owner": "fba.adapters.snapshots.publish_bundle",
+      "reason": "Snapshot path validation and atomic publication.",
+      "signature": "52971a4dd1a8d82e11f9f07e70bbb1601ed87e480b02aea510eeb333fa32782f"
+    },
+    "fba.adapters.team_minutes.minute_estimates": {
+      "role": "pending",
+      "owner": "fba.adapters.team_minutes.minute_estimates",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "7d05252558dcd1fa1281010ef224d943ee5ab47a3699156f1de00fce024ec315"
+    },
+    "fba.adapters.team_minutes.team_members": {
+      "role": "structure",
+      "owner": "fba.adapters.team_minutes.team_members",
+      "reason": "Published announced plus pending schedule counts select the configured observation window; estimates delegate to minute_estimates.",
+      "signature": "5f3ada7888e7e55bc25bc8cd0844bc542173cebbc7c4f4243015497cc0bdc2c0"
+    },
+    "fba.adapters.team_minutes.team_observations": {
+      "role": "structure",
+      "owner": "fba.adapters.team_minutes.team_observations",
+      "reason": "Frozen source artifact path resolution and source/identity validation.",
+      "signature": "c8f41d4b9808a098bb8bc6dacce2d560defabc57966e9ef53a08bd3636015def"
+    },
+    "fba.adapters.team_offense.offense_baselines": {
+      "role": "pending",
+      "owner": "fba.adapters.team_offense.offense_baselines",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "190a3c8cc88c02b2b22ccdd54f96a4c0fc901d16fe22877d77966eef46496103"
+    },
+    "fba.adapters.team_offense.offense_sources": {
+      "role": "structure",
+      "owner": "fba.adapters.team_offense.offense_sources",
+      "reason": "Removes the minutes column and groups source rows; mathematical priors/baselines delegate to outside_prior/offense_baselines.",
+      "signature": "1dd36920466fca7481fe8e9bbd7a0086d7b9af13ae24ca492527f5b1a0491366"
+    },
+    "fba.adapters.team_offense.outside_prior": {
+      "role": "pending",
+      "owner": "fba.adapters.team_offense.outside_prior",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "a128f04dee26747e198aad4e5b63c3579d0793fdca094ec87f916ea6cd2591e2"
+    },
+    "fba.apps.annual.finish_annual": {
+      "role": "structure",
+      "owner": "fba.apps.annual.finish_annual",
+      "reason": "CLI output paths.",
+      "signature": "84757bb15a967297ce7aea7d626a3a6b0f7159f3ea5e54ccecedb76298ac8fe9"
+    },
+    "fba.apps.auction.AuctionSession.caps": {
+      "role": "structure",
+      "owner": "fba.apps.auction.AuctionSession.caps",
+      "reason": "Workload counts, chunk widths and worker progress.",
+      "signature": "c552422e83674198ac612e7880ec0ae38ab169ac45f2d90f2bb952ddf3f3c368"
+    },
+    "fba.apps.auction.AuctionSession.features": {
+      "role": "structure",
+      "owner": "fba.apps.auction.AuctionSession.features",
+      "reason": "Workload counts, chunk widths and worker progress.",
+      "signature": "ef6bd0dfca088bdb5cb9db04d3f795832efb7ca1cb9bbc185f573925c20322d8"
+    },
+    "fba.apps.auction.cap_batch": {
+      "role": "structure",
+      "owner": "fba.apps.auction.cap_batch",
+      "reason": "Workload counts, chunk widths and worker progress.",
+      "signature": "7b326d866335ce79f61bf338383247689865bcaa32d9430ae4514b7fb639e418"
+    },
+    "fba.apps.cli.build": {
+      "role": "structure",
+      "owner": "fba.apps.cli.build",
+      "reason": "CLI argument/date/path composition and process timing.",
+      "signature": "0c4006f2a063d766b7f0d1fa77e9672015fe493b4e0637842854b19f8011d61c"
+    },
+    "fba.apps.cli.rebuild": {
+      "role": "structure",
+      "owner": "fba.apps.cli.rebuild",
+      "reason": "CLI argument/date/path composition and process timing.",
+      "signature": "cda9d5acb34a569c05823707a903eb3084b9023b114f2085b8200b14e9c9bf6c"
+    },
+    "fba.apps.cli.run_cli": {
+      "role": "structure",
+      "owner": "fba.apps.cli.run_cli",
+      "reason": "CLI argument/date/path composition and process timing.",
+      "signature": "d4b4bb3a804f5dda689ef0172290504fa74a0631bc45bdc4cf877029524f7707"
+    },
+    "fba.apps.desk.AuctionDesk.comparison": {
+      "role": "structure",
+      "owner": "fba.apps.desk.AuctionDesk.comparison",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "e429fe2057ee805019ce1d36296e70c04fbdbf8930cd7fa69afbacc2202efd8c"
+    },
+    "fba.apps.desk.AuctionDesk.market": {
+      "role": "structure",
+      "owner": "fba.apps.desk.AuctionDesk.market",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "2ca071c31d25374cc5b3cc242ea7b9de68d3476ad43ae246c785f342e9150a76"
+    },
+    "fba.apps.desk.AuctionDesk.save": {
+      "role": "structure",
+      "owner": "fba.apps.desk.AuctionDesk.save",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "33b6ea1a999d1e0c62a7041a1f92244504eb31513ab550c68ce0f3cf2037a6bd"
+    },
+    "fba.apps.desk.AuctionDesk.sensitivity": {
+      "role": "structure",
+      "owner": "fba.apps.desk.AuctionDesk.sensitivity",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "bb3528abb8d53ec65e4e9b2bcba0e3bc5e32a46ee812afbe46e2a69b888660e6"
+    },
+    "fba.apps.desk.AuctionDesk.streaming": {
+      "role": "structure",
+      "owner": "fba.apps.desk.AuctionDesk.streaming",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "e6e1341ff2443e735683052b59274bd6f32a156b94ea55a05ac19fb4629aa798"
+    },
+    "fba.apps.desk.LatestCalculation.failure": {
+      "role": "structure",
+      "owner": "fba.apps.desk.LatestCalculation.failure",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "c15b5d30c7df4767ab12513ea2d8fccfac0c00fe177ae922d5baab64ac38661b"
+    },
+    "fba.apps.desk.LatestCalculation.finish": {
+      "role": "structure",
+      "owner": "fba.apps.desk.LatestCalculation.finish",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "3de1db124d277c4b5972ab063de6b234a72dab3ceaee032f332609b081e19838"
+    },
+    "fba.apps.desk.LatestCalculation.request": {
+      "role": "structure",
+      "owner": "fba.apps.desk.LatestCalculation.request",
+      "reason": "UI command paths, event counters and totals of solver call diagnostics.",
+      "signature": "3d7b055bdd8f3b6537e0fa6808946a10b90049ceea75aac7c347562369586ee3"
+    },
+    "fba.apps.inseason.api.Jobs.run": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.api.Jobs.run",
+      "reason": "Elapsed operation time and input hash/audit record; calculations delegate to basic_action.",
+      "signature": "f85b7cd24bfd42dbd84b7d354414a253c12e611c0d6365b4dbb8b3fe212f7c95"
+    },
+    "fba.apps.inseason.api.Jobs.start": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.api.Jobs.start",
+      "reason": "Sequential local job identifier; no prediction/utility computation.",
+      "signature": "77b0209eea1a46d9d0310f011de82617d9a7564e2ab7d4a5ca7b798e413aa0d4"
+    },
+    "fba.apps.inseason.api.calculation_action": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.api.calculation_action",
+      "reason": "Bundle cardinality selects the configured calculation budget; dispatch delegates to the domain evaluator.",
+      "signature": "3c1a03c4b69b82e5b8be28a770fc9a990f19ef5ff4819450cc29e6915074f460"
+    },
+    "fba.apps.inseason.api.today_result": {
+      "role": "validation",
+      "owner": "fba.apps.inseason.api.today_result",
+      "reason": "Configured deadline and remaining-add capacity reject expired/oversized saved plans; Today evaluator owns results.",
+      "signature": "f903514b3f5e5ac08423cdc668ae884a71a63f8256eacc41e4972769bcc58d2e"
+    },
+    "fba.apps.inseason.server.SeasonHandler.do_GET": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.server.SeasonHandler.do_GET",
+      "reason": "Whitelisted static asset filesystem path.",
+      "signature": "7705886e0c99a2608c301fd7d71332355cbdc1d43514f1c310f00e893700ee24"
+    },
+    "fba.apps.inseason.server.SeasonHandler.reply": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.server.SeasonHandler.reply",
+      "reason": "HTTP media-type charset string concatenation.",
+      "signature": "b15e283d9e9702e71d6a24657a32e8b4aa89db01b585eb20e20af4a48ee0a47c"
+    },
+    "fba.apps.inseason.server.SeasonServer.schedule": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.server.SeasonServer.schedule",
+      "reason": "Scheduled synchronization wall-clock/monotonic deadlines.",
+      "signature": "e11eed4a8cbbc2acae81316b7cc2fdb7da7e8e7ca1e396aa726045cad39b5cae"
+    },
+    "fba.apps.inseason.server.serve_inseason": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.server.serve_inseason",
+      "reason": "Instance lock/defaults paths and server lifecycle orchestration.",
+      "signature": "5200640400b2b7a957097aacb2aee1c002da0eebf0fc76a4e7c752933717c7ef"
+    },
+    "fba.apps.inseason.trade_workers.TradeWorkers.distribute": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.trade_workers.TradeWorkers.distribute",
+      "reason": "Worker batch partitioning, completion counts and progress fraction; results are ranked by the domain owner.",
+      "signature": "6964d534a81d80caa3e65610cedbd6540e5e5903d093851750863cdb686b5d53"
+    },
+    "fba.apps.inseason.trade_workers.trade_work": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.trade_workers.trade_work",
+      "reason": "Workload cardinality estimate selects existing worker policy; does not change candidate scores or sample budgets.",
+      "signature": "d7a335d469b69269effcfa1c3fe2e1df65a7987878a12e99737e09b42a39b95d"
+    },
+    "fba.apps.server.DeskHandler.do_GET": {
+      "role": "structure",
+      "owner": "fba.apps.server.DeskHandler.do_GET",
+      "reason": "Static asset paths and local server lifecycle.",
+      "signature": "38c1cbe4c2d640a35381c2916e75a6fac7f68c237bfc7e3bf9de5bda96761132"
+    },
+    "fba.apps.server.serve": {
+      "role": "structure",
+      "owner": "fba.apps.server.serve",
+      "reason": "Static asset paths and local server lifecycle.",
+      "signature": "43d90268639e379d69a0e8193e4a1a10fec5eaf6a619c3f4ce330e591908ca5a"
+    },
+    "fba.apps.workers.cancellation_check<locals>.cancelled": {
+      "role": "structure",
+      "owner": "fba.apps.workers.cancellation_check<locals>.cancelled",
+      "reason": "Batch dimensions, task counts, pool sizing and chunk indices.",
+      "signature": "8c3aac1b76d320471a8123311a47d865a4eb999359f989e9edc70e59f63725a6"
+    },
+    "fba.apps.workers.parallelism": {
+      "role": "structure",
+      "owner": "fba.apps.workers.parallelism",
+      "reason": "Batch dimensions, task counts, pool sizing and chunk indices.",
+      "signature": "291dffe94e7d7e2aba11b40e3581164205bf919ead7d34c6051f89ee48bb24f3"
+    },
+    "fba.apps.workers.worker_limit": {
+      "role": "structure",
+      "owner": "fba.apps.workers.worker_limit",
+      "reason": "Batch dimensions, task counts, pool sizing and chunk indices.",
+      "signature": "e6f0bfaf2b46931f3a1315decb16bf12fdf43dd5ba5c76bc7ccf96d1746679b0"
+    },
+    "fba.auction.auction.caps_for": {
+      "role": "structure",
+      "owner": "fba.auction.auction.caps_for",
+      "reason": "Solver-call counter delta/addition; cap arithmetic remains in Portfolio.cap.",
+      "signature": "d1f6da1693ad9f1a131ac5f547f950174ce2e9acc9ab5d783ae5b93cce325488"
+    },
+    "fba.auction.auction.compare": {
+      "role": "pending",
+      "owner": "fba.auction.auction.compare",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "8d79e44cbc0a05bd088aac69b6e46104785e77b00bb44b8d54acb919650c8e97"
+    },
+    "fba.auction.auction.comparison_plans": {
+      "role": "structure",
+      "owner": "fba.auction.auction.comparison_plans",
+      "reason": "Sum of branch solver-call counters; branch scores remain owned by comparison_branch.",
+      "signature": "341d50bb57f5544c55e25c0e0a0c0fd27201070b399cdeaabffa31d83de625e0"
+    },
+    "fba.auction.auction.nominations": {
+      "role": "pending",
+      "owner": "fba.auction.auction.nominations",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "e8aa5475195b4b6c47c4ab779af232c6267d9d4247a8e62381ea75af43fbd9a9"
+    },
+    "fba.auction.auction.result_number": {
+      "role": "structure",
+      "owner": "fba.auction.auction.result_number",
+      "reason": "Configured rounding of an already-computed result for the output contract.",
+      "signature": "9c89c0a99f5f5d6a3c781dd77b990bde33525852d1888a453aaf7100f3dbbe7b"
+    },
+    "fba.auction.auction.run_caps": {
+      "role": "structure",
+      "owner": "fba.auction.auction.run_caps",
+      "reason": "Solver-call counter delta/addition; cap arithmetic remains in Portfolio.cap.",
+      "signature": "e29b9d4263a534da5472faf992b6c2353e8926a7d1f9adae58d083e79184bf01"
+    },
+    "fba.auction.fit.FittedUtility.__init__": {
+      "role": "structure",
+      "owner": "fba.auction.fit.FittedUtility.__init__",
+      "reason": "Sobol exponent/sample axis sizing and statistic dimension; not a probability transformation.",
+      "signature": "1d03ba1fc07d01ce789ac74934e6beae136138202e05f727c820b7b8ff3dea20"
+    },
+    "fba.auction.fit.FittedUtility.block_scores": {
+      "role": "pending",
+      "owner": "fba.auction.fit.FittedUtility.block_scores",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "af938a5f566ff9c39164a77714cdefa797ab6106dbb4c57396a225f2cac0337b"
+    },
+    "fba.auction.fit.FittedUtility.difference": {
+      "role": "pending",
+      "owner": "fba.auction.fit.FittedUtility.difference",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "ffdadb35ec8a4198e55640dd0ecd4da12137114fe5a45a0f87170e254b9de523"
+    },
+    "fba.auction.fit.FittedUtility.gradient": {
+      "role": "pending",
+      "owner": "fba.auction.fit.FittedUtility.gradient",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "1a6192696e011d6a76301dbc36066443df99605279dab9b9e0e9f419f26ab888"
+    },
+    "fba.auction.fit.FittedUtility.marginals": {
+      "role": "pending",
+      "owner": "fba.auction.fit.FittedUtility.marginals",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "200764de0aa5833c5fa2252d9019a415a3e7e0cd42c2609cb6a90283e4fe4b65"
+    },
+    "fba.auction.fit.FittedUtility.reference": {
+      "role": "pending",
+      "owner": "fba.auction.fit.FittedUtility.reference",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "0b48c11d01de922f7e3495059c2ae7dafe1212de1a9a57d627cd3a375e857d5b"
+    },
+    "fba.auction.fit.FittedUtility.sensitivity": {
+      "role": "pending",
+      "owner": "fba.auction.fit.FittedUtility.sensitivity",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "daaed8142612ade90488d2839b8d583b8fcd15e9413ad89c4f9187062b84346f"
+    },
+    "fba.auction.fit.FittedUtility.solve": {
+      "role": "pending",
+      "owner": "fba.auction.fit.FittedUtility.solve",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "7ff4a41b56f5fe0c8bd5b60ab4ec11fa08a2a32cea04da946afeacb380df88d0"
+    },
+    "fba.auction.fit.FittedUtility.waiver_pool": {
+      "role": "structure",
+      "owner": "fba.auction.fit.FittedUtility.waiver_pool",
+      "reason": "Free-pool ranking by existing prices and remaining draft-slot cardinality.",
+      "signature": "aecb9ec60117224dcfaa58823b81f1530ebad20345ad392f7e1b56dbf24e73c8"
+    },
+    "fba.auction.fit.marginal_batch": {
+      "role": "pending",
+      "owner": "fba.auction.fit.marginal_batch",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "8844cde4847becdb273bb80d09be5329318ef6e8a284c8ac4b039e768ee264b9"
+    },
+    "fba.auction.fit.opponent_rosters": {
+      "role": "structure",
+      "owner": "fba.auction.fit.opponent_rosters",
+      "reason": "Deterministic roster construction/matching order using existing anchors/fair prices; tuple concatenation and alternating turn index.",
+      "signature": "6ba5c2bb8656311d33b9362854808f92b4e010b8b074517672edf4ea6e012427"
+    },
+    "fba.auction.managed.ManagedSeason.__init__": {
+      "role": "pending",
+      "owner": "fba.auction.managed.ManagedSeason.__init__",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "6fe81eee2cbc724cd550defaea2b7a5b198637decf8024f7c861bf74fde5c235"
+    },
+    "fba.auction.managed.ManagedSeason.control": {
+      "role": "pending",
+      "owner": "fba.auction.managed.ManagedSeason.control",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "ac265dcc4d58a3a550d1bf5a14883d1341a67d062f086670923371156be920b5"
+    },
+    "fba.auction.managed.ManagedSeason.control_mean": {
+      "role": "pending",
+      "owner": "fba.auction.managed.ManagedSeason.control_mean",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "cabbcb77ae3f9b66b97bf8bcecf42e54cf03a92804ac68b78a1bb9dc7dc813e8"
+    },
+    "fba.auction.managed.ManagedSeason.forecast": {
+      "role": "pending",
+      "owner": "fba.auction.managed.ManagedSeason.forecast",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "25fa2c8d07e0e2942ca47db93fca5329d91e30659989279d7ba33a7c02f367f0"
+    },
+    "fba.auction.managed.ManagedSeason.health_paths": {
+      "role": "pending",
+      "owner": "fba.auction.managed.ManagedSeason.health_paths",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "755cbb36283828d135c016fd881fc1e008311fa02243179d57530736f345ca65"
+    },
+    "fba.auction.managed.ManagedSeason.known_week_games": {
+      "role": "structure",
+      "owner": "fba.auction.managed.ManagedSeason.known_week_games",
+      "reason": "Counts scheduled games published as of each day; no availability/expected-game model.",
+      "signature": "178d86a79ceb51a934f611a4a55d6acb4e558957d4983ad88b2829d932eb3f77"
+    },
+    "fba.auction.managed.ManagedSeason.lineup": {
+      "role": "structure",
+      "owner": "fba.auction.managed.ManagedSeason.lineup",
+      "reason": "Position matching ordered by the existing player priority; no new priority calculation.",
+      "signature": "985f09071809c99b2a8bd520f7281d743d52728e1e8aa4420aa40c3419fb4c35"
+    },
+    "fba.auction.managed.ManagedSeason.run_counts": {
+      "role": "structure",
+      "owner": "fba.auction.managed.ManagedSeason.run_counts",
+      "reason": "Clamps requested streaming-seat cardinality to roster size, then dispatches the native management kernel.",
+      "signature": "f1f9b7f5b7f6646d4976229759a2aafd4b30074322ce12d1fb8d4d25d14f3498"
+    },
+    "fba.auction.managed.ManagedSeason.summarize": {
+      "role": "pending",
+      "owner": "fba.auction.managed.ManagedSeason.summarize",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "6483b35f7913b0b762f9f13cd41009cc3181ea51e7fbce0beadaeaafc8d046d5"
+    },
+    "fba.auction.managed.ManagedSeason.tactics": {
+      "role": "pending",
+      "owner": "fba.auction.managed.ManagedSeason.tactics",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "154c8d7174c56aa9496b83ace1ac6b1958400051845cad60a3fec6052570cbae"
+    },
+    "fba.auction.managed.management_calendar": {
+      "role": "structure",
+      "owner": "fba.auction.managed.management_calendar",
+      "reason": "Calendar date construction covering the configured management horizon.",
+      "signature": "206ac79b67cb08a95e3860df2d501eb079d4e99d50b5cd1af7adc33d78ece10e"
+    },
+    "fba.auction.paths.AuctionPaths.__init__": {
+      "role": "structure",
+      "owner": "fba.auction.paths.AuctionPaths.__init__",
+      "reason": "Scenario budget count and sorting by existing anchors/fair prices; bid draws use registered path_bid/lognormal_taste.",
+      "signature": "47dc77cc71fd4e5971a542db0aec6e921295c847d8f8b2198f09fd40fe337da7"
+    },
+    "fba.auction.paths.AuctionPaths.compare": {
+      "role": "pending",
+      "owner": "fba.auction.paths.AuctionPaths.compare",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "a8417ce3fa2c902f12545574300c69041035e2db944485328111f4fe07d83f01"
+    },
+    "fba.auction.paths.AuctionPaths.continuation": {
+      "role": "pending",
+      "owner": "fba.auction.paths.AuctionPaths.continuation",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "1a9deb13cf9f12860c44d7ccb15bcb2152b75557a520a861e415451b0e790fae"
+    },
+    "fba.auction.paths.AuctionPaths.sale_id": {
+      "role": "structure",
+      "owner": "fba.auction.paths.AuctionPaths.sale_id",
+      "reason": "Avoids collision of synthetic sale identifiers by appending a string suffix.",
+      "signature": "79e269f249eba8026f134e9b70f1252ccb526b97c3a68ca889a53b7732f07a01"
+    },
+    "fba.auction.paths.AuctionPaths.validate_nomination": {
+      "role": "validation",
+      "owner": "fba.auction.paths.AuctionPaths.validate_nomination",
+      "reason": "Nomination ceiling/bid-increment divisibility and player eligibility checks.",
+      "signature": "595f8d09811cb22ca8c0aee001d1ecbf80fd96862a0bf10119baae09ac2a95dc"
+    },
+    "fba.auction.paths.clearing": {
+      "role": "structure",
+      "owner": "fba.auction.paths.clearing",
+      "reason": "Winner ordering on already-generated bids and team tie-breaks; no sale-price formula body.",
+      "signature": "0cfd719bf211245ccd81ca051daa77f4478f756324d72eb4b77616d18999a9c2"
+    },
+    "fba.auction.portfolio.Portfolio.__init__": {
+      "role": "pending",
+      "owner": "fba.auction.portfolio.Portfolio.__init__",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "b3d936e8c2ca6d60ac25b71a5c2a5f9a0ad3c834fe799b369c95105deab8ac3a"
+    },
+    "fba.auction.portfolio.Portfolio.candidates": {
+      "role": "structure",
+      "owner": "fba.auction.portfolio.Portfolio.candidates",
+      "reason": "Counts boolean dominance relations to select solver candidates; no utility derivation.",
+      "signature": "eeafa786ad7e407b43f6d49d2b90bb9438423d695d1fdea12ee108a731daa0ca"
+    },
+    "fba.auction.portfolio.Portfolio.cannot_afford_value": {
+      "role": "pending",
+      "owner": "fba.auction.portfolio.Portfolio.cannot_afford_value",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "5af1dfd01c1f9da9dcf35862bc3998d25c955c6abf925d358c67d65e52a6baa4"
+    },
+    "fba.auction.portfolio.Portfolio.canonical_choice": {
+      "role": "pending",
+      "owner": "fba.auction.portfolio.Portfolio.canonical_choice",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "cf262bbc200aa00266a8ccfb06ff3be0bf92ed25336d9999a2e010e7bbbfe706"
+    },
+    "fba.auction.portfolio.Portfolio.cap": {
+      "role": "pending",
+      "owner": "fba.auction.portfolio.Portfolio.cap",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "54dc12fb54d148340f69b73f719c0ccbbdae4119b88081c54a85de900c07a254"
+    },
+    "fba.auction.portfolio.Portfolio.optimize": {
+      "role": "structure",
+      "owner": "fba.auction.portfolio.Portfolio.optimize",
+      "reason": "Exact configured MILP dispatch and binary result decoding; solver-call counter.",
+      "signature": "3caf9a8c9aee7562dda6975bd87951424a96ccf3ab4b530278f83d6a02f2439d"
+    },
+    "fba.auction.portfolio.Portfolio.plan": {
+      "role": "pending",
+      "owner": "fba.auction.portfolio.Portfolio.plan",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "6123c7fd561cd451417653bc3952387040993ea7c76f63f2484e4e806ae3a8d8"
+    },
+    "fba.auction.portfolio.Portfolio.solve": {
+      "role": "pending",
+      "owner": "fba.auction.portfolio.Portfolio.solve",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "075b20adde10369e2ee6c3e9c49d4c8194bbcafe842747f3221ad02d1dabab2c"
+    },
+    "fba.auction.season.actual_boxes": {
+      "role": "pending",
+      "owner": "fba.auction.season.actual_boxes",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "81ec7bcbe55309ee833deb8ad236c67fb3bfe5a367d8698b0148357a389b653d"
+    },
+    "fba.auction.season.health_tape": {
+      "role": "structure",
+      "owner": "fba.auction.season.health_tape",
+      "reason": "Observed health event cursor, IL group repetition and identity set validation; no health estimate.",
+      "signature": "2b9c99884482e6f26bdc41af8fd9d09911cab8da9b1a12120cb3fbd108ecb8ea"
+    },
+    "fba.auction.sensitivity.cap_sensitivity": {
+      "role": "pending",
+      "owner": "fba.auction.sensitivity.cap_sensitivity",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "a064eee1e175310480148e03f741b520c0a1205cd2df5fc0f175199b73e0f8f3"
+    },
+    "fba.auction.streaming.analyze_streaming": {
+      "role": "pending",
+      "owner": "fba.auction.streaming.analyze_streaming",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "791a7760e798b5924b81bcea037929177aec8cb910020f5105bc055d435929c8"
+    },
+    "fba.auction.streaming.flex_candidates": {
+      "role": "pending",
+      "owner": "fba.auction.streaming.flex_candidates",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "13ed46278926aba4807a1bc01e38b189f0bd668ca368ee2321e5619abc47f4f6"
+    },
+    "fba.auction.streaming.select_streaming": {
+      "role": "pending",
+      "owner": "fba.auction.streaming.select_streaming",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "7280d4512f538dd07b98554ccf0143dc9a7673976a19dd9133e821d4cb175540"
+    },
+    "fba.contracts.base.IdentityError.__init__": {
+      "role": "structure",
+      "owner": "fba.contracts.base.IdentityError.__init__",
+      "reason": "Decoded input validation and error-path composition.",
+      "signature": "889584d719ed30de8b862f12ccb741bd87592128a74fc4524341be142662c303"
+    },
+    "fba.core.config.require_members": {
+      "role": "structure",
+      "owner": "fba.core.config.require_members",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "9204652104d3108fbbc0210b656672483356c9b1201cafe0c805050abba83537"
+    },
+    "fba.core.config.validate_calculation_model": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_calculation_model",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "95fd60e18d072a55b4c28eeb44a0d8a37e1e52ac3659f33f4d1f174176c001c3"
+    },
+    "fba.core.config.validate_fit_model": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_fit_model",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "79caa62067595d6cbd6b1ee3c75d2e5843695ca70b6e5243efddab614d17cda5"
+    },
+    "fba.core.config.validate_league": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_league",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "9e1b56820a9ca2fb22a80c1629c67f18f4aac7820b00c90720329e7de2bf49a8"
+    },
+    "fba.core.config.validate_nested_counts": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_nested_counts",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "acf401823d0e0db70b86f7801531d1cdde48a8d26fc2e113e3843f4f4a40ab0d"
+    },
+    "fba.core.config.validate_offense": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_offense",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "cba80d28e0af1a91c4328e886f6e211ecb4e16188c7c93140470308d3bbf2f58"
+    },
+    "fba.core.config.validate_periods": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_periods",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "3443a8d34456675a1fe4cefe288fc0461a38c5eb34622b3d4680bdfefe3f380e"
+    },
+    "fba.core.config.validate_playoffs": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_playoffs",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "9d45027b7faf39cf58dc6b8d89d17db36e5ab73b88ee0b8f415fd01aa06d4a05"
+    },
+    "fba.core.config.validate_sources": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_sources",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "f3ef5681262fca96f4599372ad21ac56ba34b73bb196ccda8eaac857aea49dd7"
+    },
+    "fba.core.config.validate_stats": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_stats",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "346b1618d9e3a57dddf3a492d4c03f39cd1cb783339ea8f80fe11b231979d603"
+    },
+    "fba.core.config.validate_team_minutes": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_team_minutes",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "be0a116f852968d57141ce1d61b1f9cb27331c004def3907e0997104af58b76d"
+    },
+    "fba.core.config.validate_team_offense": {
+      "role": "structure",
+      "owner": "fba.core.config.validate_team_offense",
+      "reason": "Configuration dimensions, capacities, ranges and invariant validation.",
+      "signature": "8d9b6e95ff17a06a1d12940c0cfff8b2e0a85ad60779839a8d8914f9c6ee391d"
+    },
+    "fba.core.data.validate_schedule": {
+      "role": "structure",
+      "owner": "fba.core.data.validate_schedule",
+      "reason": "Source dimension/completeness validation.",
+      "signature": "ab3fc5dfe7d0a5b764c15f319379ae0bd63b9463d76401853da3f8277238f298"
+    },
+    "fba.core.inseason.availability": {
+      "role": "structure",
+      "owner": "fba.core.inseason.availability",
+      "reason": "String/set field references, freshness dates and ledger ordering.",
+      "signature": "f0a310a4bc0c69a84b7dd6771dc48855948203f3ae20a79d2ccdd6d7e16112dc"
+    },
+    "fba.core.inseason.required_statistics": {
+      "role": "validation",
+      "owner": "fba.core.inseason.required_statistics",
+      "reason": "Statistic dependency set traversal; add mutates a set, not numeric addition.",
+      "signature": "3b793cdec10a2df9504f94fb1de91c8434b4e460c2bdc8cffedaca9e3c96e1dd"
+    },
+    "fba.core.inseason.validate_inseason": {
+      "role": "structure",
+      "owner": "fba.core.inseason.validate_inseason",
+      "reason": "String/set field references, freshness dates and ledger ordering.",
+      "signature": "381317268272b0d7bbcd4a11a1853eb5c225b3bcf1aec1b33b1986d1a5a9f7d6"
+    },
+    "fba.core.inseason.validate_ledger": {
+      "role": "structure",
+      "owner": "fba.core.inseason.validate_ledger",
+      "reason": "String/set field references, freshness dates and ledger ordering.",
+      "signature": "86c89f580a9e22b32bac4aa956b74882b88adae2570fafaf5a4b83a691b8a610"
+    },
+    "fba.core.lineups.best_lineup": {
+      "role": "structure",
+      "owner": "fba.core.lineups.best_lineup",
+      "reason": "Graph/assignment indices and solver bounds; compares caller-supplied objective values.",
+      "signature": "e57974a94ea7e6e4a49a73902b80aeccd054ac1474526ec9257919730e9c70d0"
+    },
+    "fba.core.lineups.legal_subsets": {
+      "role": "structure",
+      "owner": "fba.core.lineups.legal_subsets",
+      "reason": "Graph/assignment indices and solver bounds; compares caller-supplied objective values.",
+      "signature": "d722ac7f05b67d46a7db0b89f3672c9565617acdc0bad2cc50b19fbc953bdfd6"
+    },
+    "fba.core.proposals.latest_proposals": {
+      "role": "structure",
+      "owner": "fba.core.proposals.latest_proposals",
+      "reason": "Immutable proposal replacement/deduplication; add mutates an identity set.",
+      "signature": "c9ac7a405c6beed595ed385384f68e64884720f9dbb0d083fd182ad52fadd6f6"
+    },
+    "fba.core.qualification.qualification_possible": {
+      "role": "structure",
+      "owner": "fba.core.qualification.qualification_possible",
+      "reason": "Discrete result feasibility constraint encoding and witness validation; no probability estimate.",
+      "signature": "4e6d70122e16c9b6c932a073d6622b775f623515ac5ea2513ef6a402f2898c8a"
+    },
+    "fba.core.replay_schedule.schedule_tape": {
+      "role": "structure",
+      "owner": "fba.core.replay_schedule.schedule_tape",
+      "reason": "Date horizon and candidate grouping for legal schedule search.",
+      "signature": "01fc09e976c7f5644e13e6c52747b732fd45ba45c511e86dd1c00076f601e21e"
+    },
+    "fba.core.replay_schedule.season_days": {
+      "role": "structure",
+      "owner": "fba.core.replay_schedule.season_days",
+      "reason": "Date horizon and candidate grouping for legal schedule search.",
+      "signature": "9f28d48644b7567f86f7fd5e73b4c4ef755fa1cda95b95153836d3a646682236"
+    },
+    "fba.core.roster.capacity": {
+      "role": "structure",
+      "owner": "fba.core.roster.capacity",
+      "reason": "Hall/matching capacity constraints, set unions and integer search indices.",
+      "signature": "06a7c774e4d448e96ac896cfb8b9ed6c4b64e0730cc128b4eb57cf10b65583db"
+    },
+    "fba.core.roster.completable": {
+      "role": "structure",
+      "owner": "fba.core.roster.completable",
+      "reason": "Hall/matching capacity constraints, set unions and integer search indices.",
+      "signature": "4344ef7fde336dd64d6848cb9c43bb81c9ef0f869db0433116607af51af817f8"
+    },
+    "fba.core.roster.hall_constraints": {
+      "role": "structure",
+      "owner": "fba.core.roster.hall_constraints",
+      "reason": "Hall/matching capacity constraints, set unions and integer search indices.",
+      "signature": "df69c642ade6c6f6d745f6badca1813f21c56462fc81273ff7458bc514477008"
+    },
+    "fba.core.roster.match_slots<locals>.augment": {
+      "role": "structure",
+      "owner": "fba.core.roster.match_slots<locals>.augment",
+      "reason": "Bipartite matching traversal; add marks a visited slot in a set.",
+      "signature": "c33b9a147440ca26504622e5002967fb3e321a24ff13a8ed7712f2553f9ebe21"
+    },
+    "fba.core.roster.validate_draft": {
+      "role": "structure",
+      "owner": "fba.core.roster.validate_draft",
+      "reason": "Hall/matching capacity constraints, set unions and integer search indices.",
+      "signature": "8d66e70e25828e744200dcd87d2084852a7c61bc4103018ec27a56d00c9ee878"
+    },
+    "fba.data.codec.canonical": {
+      "role": "structure",
+      "owner": "fba.data.codec.canonical",
+      "reason": "String encoding/decoding and hash serialization.",
+      "signature": "472046cf9f9e334c12d9ee514f0ed93cef892c8580b72d27f4b1dcab30855d7e"
+    },
+    "fba.data.inseason_sources.read_priors": {
+      "role": "pending",
+      "owner": "fba.data.inseason_sources.read_priors",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "b161d228502600d29a650c1c0e448f840e27cc3249d1cf41a52f63544c45ce91"
+    },
+    "fba.data.storage.Store.append_snapshot": {
+      "role": "structure",
+      "owner": "fba.data.storage.Store.append_snapshot",
+      "reason": "Snapshot paths, bounded cursor arithmetic and payload framing.",
+      "signature": "3e18d1f3b06a8acf72e9025b3ee4dc7f322b3a7b4a6827de2ef9ae2a03af6069"
+    },
+    "fba.data.storage.Store.find_snapshot": {
+      "role": "structure",
+      "owner": "fba.data.storage.Store.find_snapshot",
+      "reason": "Snapshot paths, bounded cursor arithmetic and payload framing.",
+      "signature": "7e33dd631a76de83e4027bd5831b7628ffbb7053c6013996d6430bb49c96fad1"
+    },
+    "fba.data.storage.Store.history": {
+      "role": "structure",
+      "owner": "fba.data.storage.Store.history",
+      "reason": "Snapshot paths, bounded cursor arithmetic and payload framing.",
+      "signature": "42d1a95b9645dd5d1110941600946e344ec4ad726d5111e5197b59a5c313cae2"
+    },
+    "fba.data.storage.Store.load_snapshot": {
+      "role": "structure",
+      "owner": "fba.data.storage.Store.load_snapshot",
+      "reason": "Snapshot paths, bounded cursor arithmetic and payload framing.",
+      "signature": "fd2db3c20215e1bb32f7ec74ed82915c8e1ae316158eff78c6d8e80e11c5080f"
+    },
+    "fba.data.storage.Store.read": {
+      "role": "structure",
+      "owner": "fba.data.storage.Store.read",
+      "reason": "Snapshot paths, bounded cursor arithmetic and payload framing.",
+      "signature": "660d1c67e56d12debbb657d3df0c7f62b1b7453dec3e87342d6844bbc21f8be1"
+    },
+    "fba.data.storage.Store.snapshot": {
+      "role": "structure",
+      "owner": "fba.data.storage.Store.snapshot",
+      "reason": "Snapshot paths, bounded cursor arithmetic and payload framing.",
+      "signature": "9907cbd76ece0207728a9e7cd861581ad9e1e22a1291112661c4b3f469d0f160"
+    },
+    "fba.data.storage.Store.write": {
+      "role": "structure",
+      "owner": "fba.data.storage.Store.write",
+      "reason": "Snapshot paths, bounded cursor arithmetic and payload framing.",
+      "signature": "f8364147c8a8fcc44080c27ba85abd5834ec05d821aa8f64ddfd56540571b945"
+    },
+    "fba.data.yahoo.YahooSync.current_transactions": {
+      "role": "structure",
+      "owner": "fba.data.yahoo.YahooSync.current_transactions",
+      "reason": "Provider pagination/cursors, dates and completeness validation; no forecast equation.",
+      "signature": "f49239f193c53901b407cd89d4b40ab04b82d8d5ad3ca4c8532d2078b77b4f74"
+    },
+    "fba.data.yahoo.YahooSync.fetch": {
+      "role": "structure",
+      "owner": "fba.data.yahoo.YahooSync.fetch",
+      "reason": "Provider pagination/cursors, dates and completeness validation; no forecast equation.",
+      "signature": "415135323c6777d2b66cd2736bd04f7ab196d977b69c4788b7d1dd9bc30e0614"
+    },
+    "fba.data.yahoo.YahooSync.pages": {
+      "role": "structure",
+      "owner": "fba.data.yahoo.YahooSync.pages",
+      "reason": "Provider pagination/cursors, dates and completeness validation; no forecast equation.",
+      "signature": "cff9fbaa47e1464d17368404c801e2a2288774fec46ecbe44f58a9a4a4093a8f"
+    },
+    "fba.data.yahoo.YahooSync.sync": {
+      "role": "structure",
+      "owner": "fba.data.yahoo.YahooSync.sync",
+      "reason": "Provider pagination/cursors, dates and completeness validation; no forecast equation.",
+      "signature": "0ad8aa423b398b87c49e0be6e03aed5ca627d7c24ccbf66820ebb8b0c53b12c8"
+    },
+    "fba.data.yahoo.discover": {
+      "role": "structure",
+      "owner": "fba.data.yahoo.discover",
+      "reason": "Provider pagination/cursors, dates and completeness validation; no forecast equation.",
+      "signature": "fe5b7b06724eaf8766f48c602aba7afdd9b3601e8cdf829986e087aa684415e7"
+    },
+    "fba.data.yahoo.row_count": {
+      "role": "structure",
+      "owner": "fba.data.yahoo.row_count",
+      "reason": "Provider pagination/cursors, dates and completeness validation; no forecast equation.",
+      "signature": "bdb55534b5990285c75c2cc2054d8d90f6272fbe33b30823c357dc372e6e081f"
+    },
+    "fba.data.yahoo.xml": {
+      "role": "structure",
+      "owner": "fba.data.yahoo.xml",
+      "reason": "Provider pagination/cursors, dates and completeness validation; no forecast equation.",
+      "signature": "e366380197b999722fa9c64ba0d24f97de0d5fb33d1c99acb39f02f2ce317626"
+    },
+    "fba.data.yahoo_auth.YahooAuth.configure": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_auth.YahooAuth.configure",
+      "reason": "Credential expiry, retry delays and HTTP response framing.",
+      "signature": "dd60e0ea0926fe167cc370e45c18af1b83e6c2a397bd6de5f46588f9a89aa799"
+    },
+    "fba.data.yahoo_auth.YahooAuth.token_request": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_auth.YahooAuth.token_request",
+      "reason": "Credential expiry, retry delays and HTTP response framing.",
+      "signature": "66cc12e0b3aff4ab2940fdb4dd07e7adbef58fc9580eb2c77bc27d3545bca87a"
+    },
+    "fba.data.yahoo_auth.YahooReader.get": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_auth.YahooReader.get",
+      "reason": "Credential expiry, retry delays and HTTP response framing.",
+      "signature": "6fa6dbc60d38579f1b70faa335c92b06c81f99cc4d1682a9107d445fe5277d4f"
+    },
+    "fba.data.yahoo_normalize.differences": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_normalize.differences",
+      "reason": "Provider format/unit conversions and snapshot time/shape normalization.",
+      "signature": "114e489e6dd4bde0353150608ab8a2e3e11e8ff232d641fdeb8a6acc958f799b"
+    },
+    "fba.data.yahoo_normalize.normalize_league": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_normalize.normalize_league",
+      "reason": "Provider format/unit conversions and snapshot time/shape normalization.",
+      "signature": "41b31ec9ac883e8857db7897e14cb0a36ba9470858c708903f6fa55cfd68ed3b"
+    },
+    "fba.data.yahoo_normalize.ownership": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_normalize.ownership",
+      "reason": "Provider format/unit conversions and snapshot time/shape normalization.",
+      "signature": "b99618a4aa04a5c5a20d240cf261ef3ae0e93564fa37a23f5c091a95ea0b3a4c"
+    },
+    "fba.data.yahoo_normalize.settings_draft": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_normalize.settings_draft",
+      "reason": "Provider format/unit conversions and snapshot time/shape normalization.",
+      "signature": "73eec7882d9659b9a93b2b38f5d5d637c544fbe15e6b01c6c213898b15a778d3"
+    },
+    "fba.data.yahoo_normalize.transaction_adds": {
+      "role": "structure",
+      "owner": "fba.data.yahoo_normalize.transaction_adds",
+      "reason": "Provider format/unit conversions and snapshot time/shape normalization.",
+      "signature": "5e19634890796419236b3ca831882b63bd4379c92d28e6e0b7df4dac14ad1bb4"
+    },
+    "fba.formulas.actual.observed_means": {
+      "role": "composition",
+      "owner": "fba.formulas.actual.observed_means",
+      "reason": "Registered ratio is applied to season totals; residual sums validate recorded game coverage.",
+      "signature": "a2dcc4a216dd61784e0df5dd3e2adc0ac5ea741db49d58c134e810fc9279fc09"
+    },
+    "fba.formulas.actual.observed_players": {
+      "role": "composition",
+      "owner": "fba.formulas.actual.observed_players",
+      "reason": "Configured threshold owner is called once per observed game; totals are grouped by player.",
+      "signature": "f39deb011571cb4ada6879c87550dc334e2cfb475a516b46ac94721a0b2bdd90"
+    },
+    "fba.formulas.array_catalog.<module>": {
+      "signature": "4a10e53ec8e1967d6830832785bbdb8e857c40d672d9b176cfc58481f35513e2",
+      "role": "structure",
+      "owner": "fba.formulas.array_catalog.<module>",
+      "reason": "Formula registration metadata and signed example inputs; no executable model equation body."
+    },
+    "fba.formulas.categories.category_values": {
+      "role": "composition",
+      "owner": "fba.formulas.categories.category_values",
+      "reason": "Registered linear_totals/category_ratio outputs are oriented by configured category direction.",
+      "signature": "a826f05c2ba0accd9b618be0c772f4dce507bb04712fe26bb0c31b5ea05fd352"
+    },
+    "fba.formulas.categories.derive_games": {
+      "role": "pending",
+      "owner": "fba.formulas.categories.derive_games",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "f2c4ae56133150d71c59f0c219065e6e7659900fbc67e722e138d6dd465b7c8c"
+    },
+    "fba.formulas.categories.score_samples": {
+      "role": "composition",
+      "owner": "fba.formulas.categories.score_samples",
+      "reason": "Registered category_points/week_points outputs are aggregated for the configured scoring mode.",
+      "signature": "3dfb7979f7c83938e8ed531eacc45741b01fb5b307168a18485ee4429708a566"
+    },
+    "fba.formulas.categories.scoring_differences": {
+      "role": "composition",
+      "owner": "fba.formulas.categories.scoring_differences",
+      "reason": "Registered comparison_margin applied per configured category; -1 identifies the category output axis.",
+      "signature": "c1dec7d01233b02af5abee1b7caeb4b29c1711a73e611402819722e66a48fd72"
+    },
+    "fba.formulas.distribution.calibrate": {
+      "role": "composition",
+      "owner": "fba.formulas.distribution.calibrate",
+      "reason": "Registered calibration distribution called with configured axes; residual -1 is a reshape dimension.",
+      "signature": "8e981bb9391aa4f60739820c421ff155a947bb23b39d46810b96492688bcd7ba"
+    },
+    "fba.formulas.distribution.discrete_states": {
+      "role": "composition",
+      "owner": "fba.formulas.distribution.discrete_states",
+      "reason": "Registered rounding_distribution called with configured groups; -1 slices result/probability columns.",
+      "signature": "bdf2c281d5806b18dfb33555e75d588c6e1d5ec2725c9f862d4aa58cc15510ce"
+    },
+    "fba.formulas.distribution.moments": {
+      "role": "composition",
+      "owner": "fba.formulas.distribution.moments",
+      "reason": "Registered threshold and weighted first/second moments are combined across integration batches.",
+      "signature": "6aac1a8f6fb2ef75eed66101e36ec2ddc1a6ce63edaf86f4abeef11241e8c385"
+    },
+    "fba.formulas.evaluation.compare": {
+      "role": "composition",
+      "owner": "fba.formulas.evaluation.compare",
+      "reason": "Registered error/correlation formulas are combined into validation report fields.",
+      "signature": "ce78cfbf4f0b10dc2a5302fbd7e2b24de4f416527566e7ab43d0ea45028c671f"
+    },
+    "fba.formulas.fitting.fit_acceptance": {
+      "role": "composition",
+      "owner": "fba.formulas.fitting.fit_acceptance",
+      "reason": "Registered logistic objective/gradient/Hessian feed numerical root solving and coefficient unscaling.",
+      "signature": "aa0e9370f0dec2af45dd71f4fa75434e72abbd8e294733f3264d137a0de3dffc"
+    },
+    "fba.formulas.health.healthy_games": {
+      "role": "composition",
+      "owner": "fba.formulas.health.healthy_games",
+      "reason": "Registered health-capacity/clipped-affine equations are dispatched according to prepared evidence.",
+      "signature": "e061272c006769983b6426139657cca5f36f86868c305ff23fd7445f26bfa806"
+    },
+    "fba.formulas.market.distribution_price": {
+      "role": "pending",
+      "owner": "fba.formulas.market.distribution_price",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "784dbe9ee20cb23c7fb61a89ea2e32195556bef438fdd9cfc431411da8426daf"
+    },
+    "fba.formulas.market.market_factors": {
+      "role": "pending",
+      "owner": "fba.formulas.market.market_factors",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "353aa25baeeea410260ce1f2d293d115b4e31c03135fcb6c6419fafba574e67e"
+    },
+    "fba.formulas.market.opening_anchors": {
+      "role": "pending",
+      "owner": "fba.formulas.market.opening_anchors",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "7125a334918f21ba504b942aa3087b94b778051554b76edd4fb486c691dd3355"
+    },
+    "fba.formulas.market.price_market": {
+      "role": "pending",
+      "owner": "fba.formulas.market.price_market",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "6ba3daeafcf627a9ec5fd3b1183bac99851e97c3cf011bf04477eda11a427595"
+    },
+    "fba.formulas.projection.calibrated_games": {
+      "role": "composition",
+      "owner": "fba.formulas.projection.calibrated_games",
+      "reason": "Registered affine/capacity equations compose game estimates and configured rounding.",
+      "signature": "776e86806207c9b9f9e4671576fe8084dacf0fa600a1cd2fe963f4be2ecd0039"
+    },
+    "fba.formulas.projection.prior": {
+      "role": "composition",
+      "owner": "fba.formulas.projection.prior",
+      "reason": "Registered weighted equations are selected by matching prior source identifiers.",
+      "signature": "208086dcf439682c0df2aa872d69e8f81e26ac863ee45aefd680f85d82b0e236"
+    },
+    "fba.formulas.projection.prior_weights": {
+      "role": "composition",
+      "owner": "fba.formulas.projection.prior_weights",
+      "reason": "Selects and normalizes configured prior source weights via registered ratio.",
+      "signature": "772652f96e9fa042c788f5cdc64399c998ef5283f061eb4d820a4018b98635c0"
+    },
+    "fba.formulas.projection.validate_availability": {
+      "role": "validation",
+      "owner": "fba.formulas.projection.validate_availability",
+      "reason": "Validates calibration coverage and projected-season support.",
+      "signature": "a183de8881890b3bdf8ace4443986058dde8abef3c6858a8109c951e1e9e4b55"
+    },
+    "fba.formulas.registry.definitions": {
+      "role": "composition",
+      "owner": "fba.formulas.registry.definitions",
+      "reason": "Combines scalar/vector metadata catalogs; no model calculation.",
+      "signature": "d3b07e3c371a150e797b4f8e7307318a5a54b0c3daf90f9a8b4f8e512abfb107"
+    },
+    "fba.formulas.scalar.acceptance": {
+      "role": "registered",
+      "owner": "acceptance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "cac73b642e85e0643b1d798d17f5e319509ff6a407b27c00a3545ac4ae8805ea"
+    },
+    "fba.formulas.scalar.add_score": {
+      "role": "registered",
+      "owner": "add_score",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ff7587568f8a863dcae11233b230410079f8bb4ec1feefcf30bf87e69805c2bb"
+    },
+    "fba.formulas.scalar.affordable_cap": {
+      "role": "registered",
+      "owner": "affordable_cap",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "c2e7b640bc4914ff2a1039f98fceb7a6f5694cc2643c09a22d52e5057acf5774"
+    },
+    "fba.formulas.scalar.anchor_scale": {
+      "role": "registered",
+      "owner": "anchor_scale",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "e59d375a74f3a178a5781d7a5646ff9cf59ae1fe477152eb10fe7d1b14a8a47b"
+    },
+    "fba.formulas.scalar.bidder_wealth": {
+      "role": "registered",
+      "owner": "bidder_wealth",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "be324f4e697800c6b589ac77c7145a3de47c9be14ab1b889729a998c802e387f"
+    },
+    "fba.formulas.scalar.blend": {
+      "role": "registered",
+      "owner": "blend",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "9b500cd88ebe70750e1d3720b2aa6a098ae0a919132eba5e236a9f9a12a422ef"
+    },
+    "fba.formulas.scalar.brier": {
+      "role": "registered",
+      "owner": "brier",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "b7a19effa0265a3d22094df684d6ca6bd13f8a985a049d6dd5dd1be1f74ce0eb"
+    },
+    "fba.formulas.scalar.budget_fraction": {
+      "role": "registered",
+      "owner": "budget_fraction",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "2c5ec8c5ecd86e3bce91ee5fc1a3324bcfb1c47abe549a4cd1cd66f8601d0300"
+    },
+    "fba.formulas.scalar.clipped_affine": {
+      "role": "registered",
+      "owner": "clipped_affine",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "d20d8e9c95af84a9657e6c7277ca30550d10f860ab797bfe3f9c383f5f0e1316"
+    },
+    "fba.formulas.scalar.clipped_anchor": {
+      "role": "registered",
+      "owner": "anchor",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "f76b45a0bcb50dd27e36c4610b5960f78a8845ed4cc8105b96d75ee6c149a628"
+    },
+    "fba.formulas.scalar.complementary_value": {
+      "role": "registered",
+      "owner": "complementarity",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "94286d855fd237962a37cb33c9f20f8733b95bb4f87d7fd7ebf157d9a15dd5f4"
+    },
+    "fba.formulas.scalar.difference": {
+      "role": "registered",
+      "owner": "difference",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "94cdc0bf1409ffefc4d44bc48c60d7d70c0e231cedf22676f9e072ee10096c37"
+    },
+    "fba.formulas.scalar.dollar_scale": {
+      "role": "registered",
+      "owner": "dollar_scale",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "3caeda7c83a2ac29d0de4aaaaa23416f36e949dcd6b04021de065fc01ea57ea4"
+    },
+    "fba.formulas.scalar.dollar_value": {
+      "role": "registered",
+      "owner": "dollar_value",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "70f0fe227c2f81136d2bb146d77c565939f582cccf65d97647d74bb4fa61a870"
+    },
+    "fba.formulas.scalar.effective_samples": {
+      "role": "registered",
+      "owner": "effective_samples",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "e8b367457bfcc2c4af3af9a422b3dbdc6beea27f6d734ba9719625d48657dad7"
+    },
+    "fba.formulas.scalar.empirical_error": {
+      "role": "registered",
+      "owner": "empirical_error",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ea62b104470b8d9009954c5e2b391a00b0be5084ca7fea9a9738f225d804ff8d"
+    },
+    "fba.formulas.scalar.expectation": {
+      "role": "registered",
+      "owner": "expectation",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "fce6fd0797a0177b74037da02c7d09dd1e252de55c8b5cd432d75e1cfeab27c9"
+    },
+    "fba.formulas.scalar.exposure_error": {
+      "role": "registered",
+      "owner": "exposure_error",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "a8f9eaab46e31e1ca64243270776d26f1e8963e14fcf6977de24678c5f3d951a"
+    },
+    "fba.formulas.scalar.exposure_rate": {
+      "role": "registered",
+      "owner": "exposure_rate",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "7a9f79645c2a1cc3f9679ae63ff6021e95051f3872e00b9f5d7becc7e2a34bc3"
+    },
+    "fba.formulas.scalar.healthy_capacity": {
+      "role": "registered",
+      "owner": "healthy_capacity",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "97430b39dbbd027343fc300072c26be7ab712a7e346b2b5fa49f197d10b3d62f"
+    },
+    "fba.formulas.scalar.historical_share": {
+      "role": "registered",
+      "owner": "historical_share",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "17467fd8df2326d351ba04b27ae14f97e903d9a41050133018f9009a237557bb"
+    },
+    "fba.formulas.scalar.log_loss": {
+      "role": "registered",
+      "owner": "log_loss",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "cdf871f35ffdfff518f5d5d41bca1e9659c3c49429b5823bae1ea80681b34647"
+    },
+    "fba.formulas.scalar.market_inflation": {
+      "role": "registered",
+      "owner": "inflation",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "e958825edd607dde569dced8ce7adf032aee73c5fcc453ae613b956a03416461"
+    },
+    "fba.formulas.scalar.market_normalization": {
+      "role": "registered",
+      "owner": "market_normalization",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "c82eda0c2c84e38499c3d0cb03a0b8febd2ab9ccabbdfdcd890692a13cf0263b"
+    },
+    "fba.formulas.scalar.market_normalization<locals>.integrand": {
+      "role": "component",
+      "owner": "fba.formulas.scalar.market_normalization",
+      "reason": "Private quadrature integrand is part of the registered market normalization equation, with no independent surface.",
+      "signature": "ae639db4e65cc17dc04905e8b7e0183adc6cf10c3e513eb9f27f4e145576f2da"
+    },
+    "fba.formulas.scalar.mean": {
+      "role": "registered",
+      "owner": "mean",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5bf3988a12af6c44ce9137df7ab30aa74a08b58a4a35421f96136c4c67c7c49f"
+    },
+    "fba.formulas.scalar.mean_absolute_error": {
+      "role": "registered",
+      "owner": "mae",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "98f433302d928eba5bb68b06e79b477df5cd6f11663e11d8a71c573817f4d73c"
+    },
+    "fba.formulas.scalar.median": {
+      "role": "registered",
+      "owner": "median",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "cede3cf73443998d3ca085278001c6cf3356a5fd8cded26b63fedee5dbf311f2"
+    },
+    "fba.formulas.scalar.minute_budget": {
+      "role": "registered",
+      "owner": "minute_budget",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5fdcef233e78176af712cfe6e505f5572becd3af2c2dc441ddb78bf83214a5a9"
+    },
+    "fba.formulas.scalar.minutes": {
+      "role": "registered",
+      "owner": "minutes",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "06ba7c0c3cbf258dfa0c8787869ac357b6f17c3b6de84bf81eb56a730ccbdefc"
+    },
+    "fba.formulas.scalar.monitor_margin": {
+      "role": "registered",
+      "owner": "monitor_margin",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "405272fc53276c17e79e02e353096a3e13ae96ca15337ab75fb323b9d576b8a1"
+    },
+    "fba.formulas.scalar.normal_probability": {
+      "role": "registered",
+      "owner": "normal",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "32217cf0948455daa38a54456b3444f294de242d33b1b915b61d137523a898ad"
+    },
+    "fba.formulas.scalar.path_bid": {
+      "role": "registered",
+      "owner": "path_bid",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "2d43a468b0111916c2fea9896c029415682c20ee62bf12432efa31d8262f6fa1"
+    },
+    "fba.formulas.scalar.planning_cost": {
+      "role": "registered",
+      "owner": "planning_cost",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ab467aaba259a681b2a00dee864db422e61dde81df2f1c011d6423a5761b9a07"
+    },
+    "fba.formulas.scalar.population_variance": {
+      "role": "registered",
+      "owner": "variance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "a01e0a134a88f8c5c3e37fc81a8e2641ebde7120c3dee3562a86b68b3678f97d"
+    },
+    "fba.formulas.scalar.probability": {
+      "role": "registered",
+      "owner": "probability",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "b6379d077d1711426390ccf051e0cd4bbc3fd3c71c8e703b7f1f4a2efc6de87b"
+    },
+    "fba.formulas.scalar.product": {
+      "role": "registered",
+      "owner": "product",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "e9cae0fe24b4f427f519ff9ff3bc137a07146bdfc86d5068e00d9407bfedfbd5"
+    },
+    "fba.formulas.scalar.rank_correlation": {
+      "role": "registered",
+      "owner": "rank_correlation",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "1a6a2fdb29f92ea5d32076621fb6edb675ef18fb2093c4594f827657a9b54b08"
+    },
+    "fba.formulas.scalar.rank_value": {
+      "role": "registered",
+      "owner": "rank_value",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "4cd15853ecd5f898350b00e603fda9ae5b6672cb78f396c80213fdaa68eac31d"
+    },
+    "fba.formulas.scalar.ratio_impact": {
+      "role": "registered",
+      "owner": "ratio_impact",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "41bbc18ff3780e727aede2233fbe49222a3b848d4a9ed366d40975268b648604"
+    },
+    "fba.formulas.scalar.reallocate": {
+      "role": "registered",
+      "owner": "reallocate",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5aa2286cddbeb15498d26b50eb28e204c01dbebdb14ca3be85efaba93d55451c"
+    },
+    "fba.formulas.scalar.sale_cost": {
+      "role": "registered",
+      "owner": "sale_cost",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "c1bb6c623b3a4ef7f4de83143d6316af0c164449f49c739128128a221f6496bf"
+    },
+    "fba.formulas.scalar.sample_weight": {
+      "role": "registered",
+      "owner": "weight",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "d40f84d9c6829d21bffb2751ad5066a612254a8b1d8719ba6da6ccf0ef1d6584"
+    },
+    "fba.formulas.scalar.sampling_error": {
+      "role": "registered",
+      "owner": "error",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "7dbb937f29ec7b32dda01732743ae83a7af5e85db60bb3086a80c7d80a229f85"
+    },
+    "fba.formulas.scalar.score_calibration": {
+      "role": "registered",
+      "owner": "score_calibration",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "4e4e371a50f03c0b119ba1f4645abaec99ef1c0d2149697d80fc6f0704e44e74"
+    },
+    "fba.formulas.scalar.season_rate": {
+      "role": "registered",
+      "owner": "season_rate",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "3713404ccb667c372d488b907771fbd3a9baab8c06bde887e36367eb549e82f5"
+    },
+    "fba.formulas.scalar.season_utility": {
+      "role": "registered",
+      "owner": "season_utility",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ec77b3aaed25f92014f01f763292cec252eda2a8654965c71f07ef20c01ed4dd"
+    },
+    "fba.formulas.scalar.second_price": {
+      "role": "registered",
+      "owner": "second_price",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "e5f4f227739af2df1e5b17407662704fd814f8cd04f64de947f59fe79738c7a5"
+    },
+    "fba.formulas.scalar.shrink": {
+      "role": "registered",
+      "owner": "calibration",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "da60047f33ba6dd4b20aaa20e024e3bdb53f1675ec61860d8422a170c2f8f69c"
+    },
+    "fba.formulas.scalar.standardize": {
+      "role": "registered",
+      "owner": "standardize",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "a44c891a59b71bb01d4c359935e50fc9c7925e11a96a10638f5d02b9a175c275"
+    },
+    "fba.formulas.scalar.threshold_count": {
+      "role": "registered",
+      "owner": "threshold",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "624bcbfc503bdf2e4a17362357fc0cd08f02e2a7188b98d860cfbe4e3ca65a9f"
+    },
+    "fba.formulas.scalar.total_ratio": {
+      "role": "registered",
+      "owner": "ratio",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "289b474c62fa03f98b4fe0d75805a608dbddccf55913507de42a0d235e5d7dc7"
+    },
+    "fba.formulas.scalar.trade_value_ratio": {
+      "role": "registered",
+      "owner": "trade_value_ratio",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "1548de046bd982c3c0973a3d55dbb721ea4acf0ec99eb532342b9fd15b3b49d0"
+    },
+    "fba.formulas.scalar.weighted_mean": {
+      "role": "registered",
+      "owner": "weighted_mean",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "606db441d808f47d3e1e579d2c9408b48af362049399726f39ed9c7d6390f342"
+    },
+    "fba.formulas.scalar.weighted_sum": {
+      "role": "registered",
+      "owner": "linear",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "a7d8cd74eeb8d5245e77ff87394b7e4dae200e4031e74d4b66257a61f7c806c3"
+    },
+    "fba.formulas.scalar.winning_cost": {
+      "role": "registered",
+      "owner": "winning_cost",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5a1a8b9958755938a69e80a2c14bdf063a748fdab2b6d44b55d045f0552bab72"
+    },
+    "fba.formulas.scalar.z_score": {
+      "role": "registered",
+      "owner": "z",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "652d3fd6c186f1d66ed024ce5042ae2e42d28a74b0c38655fcd16d843fd0e3ec"
+    },
+    "fba.formulas.scoring.bracket_order": {
+      "role": "composition",
+      "owner": "fba.formulas.scoring.bracket_order",
+      "reason": "Seed-index permutation only, no numeric forecast.",
+      "signature": "8bf0a2767d4acc0e5b10ca0e56d14662e5a448959fbdaabb3b9c6f0c0c114cd5"
+    },
+    "fba.formulas.scoring.matchup": {
+      "role": "composition",
+      "owner": "fba.formulas.scoring.matchup",
+      "reason": "Configured Python comparison rounding is retained; registered category_points supplies both teams credits.",
+      "signature": "1e788502bdc87c880d85ba269b9c2384d361bdf7419f8349c4c1c635ab276c10"
+    },
+    "fba.formulas.scoring.playoff_round": {
+      "role": "composition",
+      "owner": "fba.formulas.scoring.playoff_round",
+      "reason": "Bracket pairing and rule-based winner selection from registered matchup outcomes.",
+      "signature": "19a4fce849e1a7bea69bcbf2a41f98190e67dbcf36671f0f1e4ed33aac2f65b7"
+    },
+    "fba.formulas.scoring.score_season": {
+      "role": "composition",
+      "owner": "fba.formulas.scoring.score_season",
+      "reason": "Registered matchup outcomes are scheduled into a playoff bracket.",
+      "signature": "53d107c5e4b59a866e21eb6843be1135ac7a98e31af770ad9d8587a8b01eec9d"
+    },
+    "fba.formulas.scoring.standings": {
+      "role": "composition",
+      "owner": "fba.formulas.scoring.standings",
+      "reason": "Registered standings credit composes completed records; tied teams are grouped by configured seeding rules.",
+      "signature": "96c66864989fc7f8d6449fdc2e95ce09842152449616195c2fb979059e1a2a82"
+    },
+    "fba.formulas.simulation.category_ratio": {
+      "role": "registered",
+      "owner": "category_ratio",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "9c28ec939bccdabf468cb20b8705567690e5d0b6bf303ac55c833a0ff9474d94"
+    },
+    "fba.formulas.simulation.comparison_margin": {
+      "role": "registered",
+      "owner": "comparison_margin",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "886e897646b98d933702fd879c246ed161497c6bc102af55cd5c06acf7d32757"
+    },
+    "fba.formulas.simulation.control_covariance": {
+      "role": "registered",
+      "owner": "control_covariance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "98afb699be984f9f800cd1c8c62f54915e57a2a2879106a8ad1ec52b4118b943"
+    },
+    "fba.formulas.simulation.game_threshold": {
+      "role": "registered",
+      "owner": "game_threshold",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "661d8714aac04e69c4c27f5eb75eec1d732bcd5e5a82fc5d17c940e8c0f64627"
+    },
+    "fba.formulas.simulation.health_decay": {
+      "role": "registered",
+      "owner": "health_decay",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "2910ba11a9b34ac85a1d94f895c0a2ecaec76b9c76cf676cdea8aae374cd1752"
+    },
+    "fba.formulas.simulation.highest_bid_survival": {
+      "role": "registered",
+      "owner": "highest_bid_survival",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5aeffe4b96c916904f6d58178060f3350ae14dbcb39039b2e0fb434ba8298d70"
+    },
+    "fba.formulas.simulation.linear_interval": {
+      "role": "registered",
+      "owner": "linear_interval",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "7c9c9558902c288d61f47ad836d3a8f504c833c71ec32dc80283b94ea94120c5"
+    },
+    "fba.formulas.simulation.linear_totals": {
+      "role": "registered",
+      "owner": "linear_totals",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "1f70f375b1d01864b83367513d340545a86d74143f1b4effef7595942be3b754"
+    },
+    "fba.formulas.simulation.lognormal_taste": {
+      "role": "registered",
+      "owner": "lognormal_taste",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "40be857922348fa26d33d8f3bbb7ff3b73d828de1edb5f01832376107e2a63a9"
+    },
+    "fba.formulas.simulation.median_bid": {
+      "role": "registered",
+      "owner": "median_bid",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "35fae6a35be6bd7e574ec10779cb167051eb9b38e2084a0698fe7772b597a220"
+    },
+    "fba.formulas.simulation.normal_quantile": {
+      "role": "registered",
+      "owner": "normal_quantile",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "fd1ec006229f0d56a3d0d102843d133a2adbb4d013f263a5b8b43908e99261f0"
+    },
+    "fba.formulas.simulation.playoff_odds": {
+      "role": "registered",
+      "owner": "playoff_odds",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "8d79ea2beaecd41c5826ad270f5be05dfb3d8f2d130e2862fe455b671fc8cbe7"
+    },
+    "fba.formulas.simulation.portfolio_cost_floor": {
+      "role": "registered",
+      "owner": "portfolio_cost_floor",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "bafa500e87b3629ff4d82eafd11174983276cf6d82990f3e7527713945620978"
+    },
+    "fba.formulas.simulation.ranked_health_value": {
+      "role": "registered",
+      "owner": "ranked_health_value",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "a4a14e0edbb2ae613da05499e99bf620dcdc9d976ba88ce7a62bfec81a2a18c2"
+    },
+    "fba.formulas.simulation.ratio_interval": {
+      "role": "registered",
+      "owner": "ratio_interval",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "3608ce6fcfaee69236528e38fccf46094dfe05fdc244fefe0d9c0022a3fa56c7"
+    },
+    "fba.formulas.simulation.reduction_axes": {
+      "role": "validation",
+      "owner": "fba.formulas.simulation.reduction_axes",
+      "reason": "Validates integer reduction axis identifiers.",
+      "signature": "3b6299a26a50097d0f9cf3fa74788a304fd8fd59e03348364595db7afe3cf856"
+    },
+    "fba.formulas.simulation.sample_deviation": {
+      "role": "registered",
+      "owner": "sample_deviation",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5a81de65fa0a8d4335ddef99499fb4464051a99fab352550d42bad70315385e2"
+    },
+    "fba.formulas.simulation.sample_mean": {
+      "role": "registered",
+      "owner": "sample_mean",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "94f53fd310bda21fafda35701bc416dec7b5cbcfc018c36f10c28e74889a1cc2"
+    },
+    "fba.formulas.simulation.sample_variance": {
+      "role": "registered",
+      "owner": "sample_variance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "b68694d5f5933a6a808995960d76b26ac27f964fdb921806c5c73ca9510f751d"
+    },
+    "fba.formulas.simulation.scheduled_health": {
+      "role": "registered",
+      "owner": "scheduled_health",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "24c3a60e4efa7a464d9ee7c38fd20b55bb4de415d1678590306870c3517e223e"
+    },
+    "fba.formulas.simulation.standings_credit": {
+      "role": "registered",
+      "owner": "standings_credit",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ea6be0e14dc23a57284daf7de7678ff819fb4dce3e61a3025d7b135a0edbc81f"
+    },
+    "fba.formulas.simulation_catalog.<module>": {
+      "signature": "13d3908eda2df4120bd507bd19ddd968d21ca466d815caf8219adb86c9f8caf6",
+      "role": "structure",
+      "owner": "fba.formulas.simulation_catalog.<module>",
+      "reason": "Formula registration metadata and signed example inputs; no executable model equation body."
+    },
+    "fba.formulas.team_minutes.allocate_team": {
+      "role": "composition",
+      "owner": "fba.formulas.team_minutes.allocate_team",
+      "reason": "Registered minute budget, seasonal rate and budget fraction compose ordered priority-group allocation.",
+      "signature": "ed409fee9b08f3328e44d2675114e70d4ad6e35d85c4b67ab4d2e1c52d6848da"
+    },
+    "fba.formulas.team_minutes.constrain_participation": {
+      "role": "composition",
+      "owner": "fba.formulas.team_minutes.constrain_participation",
+      "reason": "Applies registered participation adjustments and presentation precision to catalog rows.",
+      "signature": "bb5fb6e3b8ac0631f95f670f8cc949d484c6449dc14197b62d617ee0186e5c8d"
+    },
+    "fba.formulas.team_minutes.member_minutes": {
+      "role": "composition",
+      "owner": "fba.formulas.team_minutes.member_minutes",
+      "reason": "Registered weighted prior and game-calibration equations compose member participation.",
+      "signature": "431f4275e20a4fcba344652fab62a6fb5e09dfaa1f67f3f7bf1e8cc409ecd2ad"
+    },
+    "fba.formulas.team_minutes.validate_minutes": {
+      "role": "validation",
+      "owner": "fba.formulas.team_minutes.validate_minutes",
+      "reason": "Validates allocated capacity including decimal-rounding error allowance.",
+      "signature": "de5a7ef446747bf5e766e0d62247955d90517e88f3fb7aac715af64b04e0c2a7"
+    },
+    "fba.formulas.team_offense.allocate_team_offense": {
+      "role": "composition",
+      "owner": "fba.formulas.team_offense.allocate_team_offense",
+      "reason": "Registered possession proxy and seasonal contribution compose modeled/reserved team budgets.",
+      "signature": "3c57e93b86156774dff2b85961944fdb8885690433e7b6f40253dd8821f6122e"
+    },
+    "fba.formulas.team_offense.allocate_usage": {
+      "role": "composition",
+      "owner": "fba.formulas.team_offense.allocate_usage",
+      "reason": "Registered linear, seasonal-rate, product and budget-fraction equations compose possession/assist allocation.",
+      "signature": "f53a1a51661df1517003f6cc17f6c7014948a09f18ac9a629013842aceb2e35b"
+    },
+    "fba.formulas.team_offense.validate_offense": {
+      "role": "validation",
+      "owner": "fba.formulas.team_offense.validate_offense",
+      "reason": "Validates possession/assist conservation including decimal-rounding error allowance.",
+      "signature": "7f154727e4b128b9e552c5ab5b36ed3ffdbeacb2f6e835e20ee70a085dcd76bd"
+    },
+    "fba.formulas.valuation.category_impacts": {
+      "role": "pending",
+      "owner": "fba.formulas.valuation.category_impacts",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "9ba9f6497977c9504207e2ce289828de67ea3080f58d40f5a613e1207b630476"
+    },
+    "fba.formulas.valuation.fit_category": {
+      "role": "pending",
+      "owner": "fba.formulas.valuation.fit_category",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "7f8ba7638b79929aa05f3597c8795408ed6ff1ae8127dede8dedd88bab94701e"
+    },
+    "fba.formulas.valuation.fit_ruler": {
+      "role": "pending",
+      "owner": "fba.formulas.valuation.fit_ruler",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "be73277b9ae199374f3416554d4a8d2ddbe550ebe60eb0274a0409cd452b4877"
+    },
+    "fba.formulas.valuation.fit_ruler<locals>.rank": {
+      "role": "pending",
+      "owner": "fba.formulas.valuation.fit_ruler<locals>.rank",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "4406649049a6b16a69ab9b751e680c617db775a32d45b86dd277bc101bc448b6"
+    },
+    "fba.formulas.valuation.price_traces": {
+      "role": "pending",
+      "owner": "fba.formulas.valuation.price_traces",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "61e18dbe51e5d7a7889ca01a06aa69a8b8dc17c40db0b0ffb25fef3f8a153916"
+    },
+    "fba.formulas.valuation.ratio_rate": {
+      "role": "pending",
+      "owner": "fba.formulas.valuation.ratio_rate",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "223d4d3b653eae07c389c2c9adc82b6943c14ce78a0b6254d180a627973400d5"
+    },
+    "fba.formulas.valuation.validate_population": {
+      "role": "validation",
+      "owner": "fba.formulas.valuation.validate_population",
+      "reason": "Validates population and replacement capacity.",
+      "signature": "3fab81e69846a7e1ef0304b42868b4887a472ff85fb312c8c1a6f98354c7fdc2"
+    },
+    "fba.formulas.valuation.value": {
+      "role": "pending",
+      "owner": "fba.formulas.valuation.value",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "15763da842d1d600fe20127ff48aee4cfc5e36848f9d4b9652d8e47f2f1b1826"
+    },
+    "fba.formulas.vector.availability_regression": {
+      "role": "registered",
+      "owner": "availability_regression",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "18ec8277fa418c7e96975144e1277993b03191526ff4566eb5d65cce04ca6ee5"
+    },
+    "fba.formulas.vector.availability_value": {
+      "role": "registered",
+      "owner": "availability_value",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5f654c32b78eea5a0e89507322c1c4dd31138556cf37aa6ff3d25a1b5065547c"
+    },
+    "fba.formulas.vector.average_ranks": {
+      "role": "registered",
+      "owner": "average_ranks",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "d8066c5790f5f4aba8943c3d99e3fbc2fecb2242227da87ea68fae2951baaae1"
+    },
+    "fba.formulas.vector.bernoulli_covariance": {
+      "role": "registered",
+      "owner": "bernoulli_covariance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "768914e70fab411bf8c98018fdf98c54670bc11aaa55e51c336587088fd3a600"
+    },
+    "fba.formulas.vector.bernoulli_mean": {
+      "role": "registered",
+      "owner": "bernoulli_mean",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "e1d5efae31c4013785b8ddd1e7652de1ff3cef1281cece80c66f472f649a2ff8"
+    },
+    "fba.formulas.vector.bid_distribution": {
+      "role": "registered",
+      "owner": "bid_distribution",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "fbf1d4b121bc746a42344f8f1ba03989192df61a91f9103d48cc3a5d959313a8"
+    },
+    "fba.formulas.vector.bootstrap_scale": {
+      "role": "registered",
+      "owner": "bootstrap_scale",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "fa7928cbd8231e94425a5206fdd6f89c3c01dcc20c7f91fd5bef1322179dc9e0"
+    },
+    "fba.formulas.vector.bounded_mean": {
+      "role": "registered",
+      "owner": "bounded_mean",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "a64e3ab7fb0edf3707c020486ecf0171bf7ec68536b53bb1b80066db3ea2c046"
+    },
+    "fba.formulas.vector.calibrate_distribution": {
+      "role": "registered",
+      "owner": "calibrate_distribution",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "bb354b8a6a55755564963536897f9141ea4567e7af0219ed2b9c36b5e757a5a8"
+    },
+    "fba.formulas.vector.calibration_fit": {
+      "role": "registered",
+      "owner": "calibration_fit",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "dbb948c6f3308e7b03f63be2ab48b030be7b0af4fa6b979f8fff61e0b45c769f"
+    },
+    "fba.formulas.vector.category_marginals": {
+      "role": "registered",
+      "owner": "category_marginals",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "fb4439d6755a8377437350497ec3a53039f316150475f22e133bace137093350"
+    },
+    "fba.formulas.vector.category_points": {
+      "role": "registered",
+      "owner": "category_points",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "236818294f833f3e51ac5c6422839b1b31759286a0ecebdf9d98884d19d4ec5d"
+    },
+    "fba.formulas.vector.centered_covariance": {
+      "role": "registered",
+      "owner": "centered_covariance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ea3690be23bb763f4bc45e0fa4ee2c3fe8645f8ebaa73926a412b89089db689a"
+    },
+    "fba.formulas.vector.central_difference": {
+      "role": "registered",
+      "owner": "central_difference",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "16a2a4bb723bf8d1a96abf9507d385813f0466460a72f5e18186ebbd8d6e8f2a"
+    },
+    "fba.formulas.vector.conditional_health": {
+      "role": "registered",
+      "owner": "conditional_health",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "d675eb58e3a37b4a9aa594a6e06939dca0bf3f2292f27c18e2cb0ce10aaeffa5"
+    },
+    "fba.formulas.vector.control_variate": {
+      "role": "registered",
+      "owner": "control_variate",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "c8fc9725cccdb48f635946d7476a8f4883dffe0e55649e7caf224e12e97d0df1"
+    },
+    "fba.formulas.vector.covariance_root": {
+      "role": "registered",
+      "owner": "covariance_root",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "b8fb7d6e824c4ae82a73cece0349b797d4929f09a5dbff998052a16f88adb372"
+    },
+    "fba.formulas.vector.health_count_covariance": {
+      "role": "registered",
+      "owner": "health_count_covariance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "cf713c8ee27ba2a0cb09438cea214587b80a8ad5fb1e1e4adbceafbc271aeba1"
+    },
+    "fba.formulas.vector.health_transitions": {
+      "role": "registered",
+      "owner": "health_transitions",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "d49a8d3037835fd872b1e38337d023703e6b5c8d812e8ec8848e39cbbc8d8b1c"
+    },
+    "fba.formulas.vector.logistic_gradient": {
+      "role": "registered",
+      "owner": "logistic_gradient",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "b94877b4aedde870047a78ec5b9c28782f4722b9106e24a302ae3ed5ce35fd9b"
+    },
+    "fba.formulas.vector.logistic_hessian": {
+      "role": "registered",
+      "owner": "logistic_hessian",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "e1a8d020d35ff49e69c9ae7d69890f1d379c6459f4b8644c2e8e7b97b154f139"
+    },
+    "fba.formulas.vector.logistic_objective": {
+      "role": "registered",
+      "owner": "logistic_objective",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "d95f47bd3b89811bf95b4c90a76333f2dc9ba1061cd884ff4e00ed4082381a2f"
+    },
+    "fba.formulas.vector.managed_covariance": {
+      "role": "registered",
+      "owner": "managed_covariance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "0c588de7e51496e6c4d708f748d2af930cdcab38b27e0f19920437a43fc7c229"
+    },
+    "fba.formulas.vector.matrix_product": {
+      "role": "registered",
+      "owner": "matrix_product",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "2cb35921f3fa38b74b095ca1533cfbcd21d43049f798c402ebb36eb13955bf4d"
+    },
+    "fba.formulas.vector.rounding_distribution": {
+      "role": "registered",
+      "owner": "rounding_distribution",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "0d1f453d6c071aceaca86c925be2120dac67f9d9d4024c2012a9a4bbd0fa5f61"
+    },
+    "fba.formulas.vector.row_rates": {
+      "role": "registered",
+      "owner": "row_rates",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5ed2e9e3cd7f7a851321a2ffc328a9eebc690b30262e873963b1d6151c2fa346"
+    },
+    "fba.formulas.vector.sample_covariance": {
+      "role": "registered",
+      "owner": "sample_covariance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "030844e3ca7bd663be8db1af1e4789380386234119d61769e090d7203e7e7d93"
+    },
+    "fba.formulas.vector.sampling_covariance": {
+      "role": "registered",
+      "owner": "sampling_covariance",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "5eb2f952ee52f6365a2936246f40835d20a87507d5d69212c1264a7727fc088d"
+    },
+    "fba.formulas.vector.scoring_axes": {
+      "role": "validation",
+      "owner": "fba.formulas.vector.scoring_axes",
+      "reason": "Validates statistic axes, coefficients and nested count/rate feasibility.",
+      "signature": "750f3605a7ce0abcfbf0db1c30413ce6889f70256bd893567ee05fbf3babc4a0"
+    },
+    "fba.formulas.vector.second_bid_survival": {
+      "role": "registered",
+      "owner": "second_bid_survival",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ecc385a35474f89398ed3706212aa2507e4c0961b91b43dd43965b64a3b9148c"
+    },
+    "fba.formulas.vector.soft_majority": {
+      "role": "registered",
+      "owner": "soft_majority",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "93ef35afdb139fcb95d0aa73d54f1c3cfcc1ca40d0457a3f5b4849aa9720d00d"
+    },
+    "fba.formulas.vector.standard_deviation_floor": {
+      "role": "registered",
+      "owner": "standard_deviation_floor",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "08ca54194415492fd93f6b0515394d999a92ee678d42d634e5896914f9287e36"
+    },
+    "fba.formulas.vector.standardized_margins": {
+      "role": "registered",
+      "owner": "standardized_margins",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "b38fb383f92d171b66621c25e279973b91575dba1e270e948eeb14216961a753"
+    },
+    "fba.formulas.vector.stratified_uniform": {
+      "role": "registered",
+      "owner": "stratified_uniform",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "21a51fb1265ad84de490b46bc93be3112845ce3a942fb983b84391b890aa305d"
+    },
+    "fba.formulas.vector.utility_blend": {
+      "role": "registered",
+      "owner": "utility_blend",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "1facf57b072a69ac70ef69b555646fdcea43fa23f444646eab309e8f2a1ef352"
+    },
+    "fba.formulas.vector.utility_rescale": {
+      "role": "registered",
+      "owner": "utility_rescale",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "d2416fefb6a2e3490d2610b3855f44c5acefcf9d935814eb1d6194480933dd01"
+    },
+    "fba.formulas.vector.week_points": {
+      "role": "registered",
+      "owner": "week_points",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "618aa5e3c96b84892855bad30f6bb1b1f7083ef19ccc5004e8a5e64d58eb0333"
+    },
+    "fba.formulas.vector.weighted_rows": {
+      "role": "registered",
+      "owner": "weighted_rows",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "f2a05daab233b8a38ad05b3fe5836bf34b37c8c28fa849af2728aa8dc206682d"
+    },
+    "fba.formulas.vector.weighted_second": {
+      "role": "registered",
+      "owner": "weighted_second",
+      "reason": "Executable registry owns this numerical equation and its metadata/example.",
+      "signature": "ddfc2351af83a11a06988b03902c7003c261f2652bf5f3ac71e7572588bc7247"
+    },
+    "fba.inseason.adjustments.active_entries": {
+      "role": "structure",
+      "owner": "fba.inseason.adjustments.active_entries",
+      "reason": "Causal manual-ledger replacement/revocation membership; add mutates a set.",
+      "signature": "fb47b32cbe19527f36575d5374486b2899c7c2ad4cd11e37659fad8e45d10baf"
+    },
+    "fba.inseason.adjustments.entry_state": {
+      "role": "structure",
+      "owner": "fba.inseason.adjustments.entry_state",
+      "reason": "Ledger replacement/revocation state labels; add mutates a set.",
+      "signature": "f5b700007657d0055a7b29910a409b1f96513173e312deeec324ac26250368fc"
+    },
+    "fba.inseason.adjustments.redistribute": {
+      "role": "pending",
+      "owner": "fba.inseason.adjustments.redistribute",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "6e83a90431028e247a92600a254cc3cc145e848a03721bce909271578a56e910"
+    },
+    "fba.inseason.backtest.checkpoint_errors": {
+      "role": "pending",
+      "owner": "fba.inseason.backtest.checkpoint_errors",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "39bc0614cc61211a66cf6ca322736f433bc41cd9ee1942849ba82ef70488c1ab"
+    },
+    "fba.inseason.backtest.component_error": {
+      "role": "pending",
+      "owner": "fba.inseason.backtest.component_error",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "326444de468b8d70075d8020130eded909f2cdd43edc7e7b833f0cb4b5396da3"
+    },
+    "fba.inseason.backtest.component_rows": {
+      "role": "pending",
+      "owner": "fba.inseason.backtest.component_rows",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "f81962c065bc01f489eefe4e390293d56649a58dd737034525b4d08ddbee0714"
+    },
+    "fba.inseason.backtest.flag_report": {
+      "role": "pending",
+      "owner": "fba.inseason.backtest.flag_report",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "b1b00628a9eefe9439ac908ab1bdfbffda5d8d54d27aeee894e7f890f1fa01d5"
+    },
+    "fba.inseason.backtest.run_study": {
+      "role": "pending",
+      "owner": "fba.inseason.backtest.run_study",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "dbea15cff829e2ee1c56fd409021b0d22985c9ef4b32214ba3278e14cdd2716b"
+    },
+    "fba.inseason.drop_candidates.prioritized_drops": {
+      "role": "pending",
+      "owner": "fba.inseason.drop_candidates.prioritized_drops",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "47ab2ff08dc9054116be69e0e586781b85fb578e14616e506c8b7879285e46e9"
+    },
+    "fba.inseason.forecast.category_forecast": {
+      "role": "pending",
+      "owner": "fba.inseason.forecast.category_forecast",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "29ae1859d1539551fcbc2a91a81ba6fd1310c44f37b6b979834035af7d281a41"
+    },
+    "fba.inseason.forecast.forecast": {
+      "role": "pending",
+      "owner": "fba.inseason.forecast.forecast",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "ca4560ced23e567d7e4e9972a68ad62e7eb146591e2e309754282d6693693407"
+    },
+    "fba.inseason.injury_returns.cache_saved_returns": {
+      "role": "validation",
+      "owner": "fba.inseason.injury_returns.cache_saved_returns",
+      "reason": "Recorded IL date/protection/lock/roster-capacity validation; no saved-plan score is recomputed.",
+      "signature": "dfddf35c5c09a1c7604288374fa5ffa499f315df04365573e408cc52b68f2d77"
+    },
+    "fba.inseason.injury_returns.legal_return_suffix": {
+      "role": "structure",
+      "owner": "fba.inseason.injury_returns.legal_return_suffix",
+      "reason": "Recursive legal IL event ordering and one-day lock postponement; numerical estimate remains in return_plan.",
+      "signature": "144ba56ae488a6930a45abb2e05835d2eb901e49dc9bc87adbdcd68db0642104"
+    },
+    "fba.inseason.injury_returns.release_options": {
+      "role": "structure",
+      "owner": "fba.inseason.injury_returns.release_options",
+      "reason": "Legal release candidate selection based on configured capacity, locks and protected players.",
+      "signature": "ea060c43da8c1b852eac9c50d198a61e98577dae85268f3e717b6d16afaded7d"
+    },
+    "fba.inseason.injury_returns.return_plan": {
+      "role": "pending",
+      "owner": "fba.inseason.injury_returns.return_plan",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "279288f04351ee0fbba884956374d086f87019afa7db36d0d5795bf3752c854d"
+    },
+    "fba.inseason.injury_returns.reuse_return_plans": {
+      "role": "structure",
+      "owner": "fba.inseason.injury_returns.reuse_return_plans",
+      "reason": "Caches/constructs IL scenarios using configured roster capacity; consumes existing projection probabilities.",
+      "signature": "f14d270bea1ccb637cbe57328eb643babff94f0add344214a5cbb4b26fc54ae4"
+    },
+    "fba.inseason.lineup_bounds.assignment_ceiling": {
+      "role": "pending",
+      "owner": "fba.inseason.lineup_bounds.assignment_ceiling",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "07aa8b152ab9d945a82895f5e020a86caeb76588948eedfb1d2287f70d1d650e"
+    },
+    "fba.inseason.lineup_bounds.certified_loss": {
+      "role": "pending",
+      "owner": "fba.inseason.lineup_bounds.certified_loss",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "6fbb3535cfc4d90b750cd316c9350ce7290d0ac4f9baf70b44d225e026ca73af"
+    },
+    "fba.inseason.lineup_bounds.score_ceilings": {
+      "role": "pending",
+      "owner": "fba.inseason.lineup_bounds.score_ceilings",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "302fb2601a90fe86b1b913d71f78fe7649b0fe9c437358c0409d46851629bf52"
+    },
+    "fba.inseason.lineup_space.ordered_row_sums": {
+      "role": "pending",
+      "owner": "fba.inseason.lineup_space.ordered_row_sums",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "acd479921ec6560461b7147c5fc6eda05dbaaef4b48f5ab6ab953ababec6f790"
+    },
+    "fba.inseason.lineup_space.ordered_row_sums<locals>.ordered": {
+      "role": "pending",
+      "owner": "fba.inseason.lineup_space.ordered_row_sums<locals>.ordered",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "f21b1e7bb49c8d0c685748ea64d2192e0d80e318ddf8a91b4f25a2dd23932882"
+    },
+    "fba.inseason.matchup.Simulation.actual": {
+      "role": "structure",
+      "owner": "fba.inseason.matchup.Simulation.actual",
+      "reason": "Selects most recent source score and validates required-statistic coverage; source values are unchanged.",
+      "signature": "bf11e0f21df8c1d946cd676f2f84c856d74e20f087d5cedb6cd63408900d50c2"
+    },
+    "fba.inseason.matchup.Simulation.budget": {
+      "role": "structure",
+      "owner": "fba.inseason.matchup.Simulation.budget",
+      "reason": "Monotonic calculation deadline and nested budget selection.",
+      "signature": "a68508da20a9b78d56c189117053eea889d9b9fa9dccf4b719f1deb914aad37b"
+    },
+    "fba.inseason.matchup.Simulation.daily_draws": {
+      "role": "pending",
+      "owner": "fba.inseason.matchup.Simulation.daily_draws",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "34e243f9c3f32ff7e85c4a64a8698f1fbe6f0964531bc51c1d121b33b32626e6"
+    },
+    "fba.inseason.matchup.Simulation.expected_assignment<locals>.objective": {
+      "role": "pending",
+      "owner": "fba.inseason.matchup.Simulation.expected_assignment<locals>.objective",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "4e1830af926f6009d7d88e54a10bc6846a3c0bfc279c65a32e785cfa9de562a3"
+    },
+    "fba.inseason.matchup.Simulation.expected_assignment<locals>.objectives": {
+      "role": "pending",
+      "owner": "fba.inseason.matchup.Simulation.expected_assignment<locals>.objectives",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "9a7cfa2be2d7a7b4276edfbb8cf8dc92e647aacbebba70ca4abd0be3b208cc5c"
+    },
+    "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objective": {
+      "role": "pending",
+      "owner": "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objective",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "15287dc8387afb15cce7723df14261d788a55c00da738179d1ca0494df50d11f"
+    },
+    "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objectives": {
+      "role": "pending",
+      "owner": "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objectives",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "f13fae167e7a265afa56534f277057e5d59b1ac850893406dd47bfdbf5cb9750"
+    },
+    "fba.inseason.matchup.Simulation.optimize_total": {
+      "role": "pending",
+      "owner": "fba.inseason.matchup.Simulation.optimize_total",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "72596c7ed8d7b6e9fae321c6f48b7ab9bf9658fd097f0b039e4f77920bbeeb01"
+    },
+    "fba.inseason.matchup.Simulation.total": {
+      "role": "pending",
+      "owner": "fba.inseason.matchup.Simulation.total",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "da4bdd92df34118722af8b804e6724d3f5f15cc986228b756c876b80ee2c5cc0"
+    },
+    "fba.inseason.operations.calibration_status": {
+      "role": "structure",
+      "owner": "fba.inseason.operations.calibration_status",
+      "reason": "Validation artifact filesystem path.",
+      "signature": "ffed05f328f0890df14f3edb90987d1f4d3f6af9a8791cdf90dd0feff62bc0fe"
+    },
+    "fba.inseason.operations.latest_plan": {
+      "role": "structure",
+      "owner": "fba.inseason.operations.latest_plan",
+      "reason": "Tolerance-quantized ordering of saved scores with deterministic ID tie-break; does not derive a new score.",
+      "signature": "767c4a894243b8dcc7975cc272072a5c04a9ddcc70466af9cb96cdf4c79102ea"
+    },
+    "fba.inseason.parameter_fit.availability_fit": {
+      "role": "composition",
+      "owner": "fba.inseason.parameter_fit.availability_fit",
+      "reason": "Registered mean and Brier formulas for observed statuses; tuple repetition only aligns sample axes.",
+      "signature": "efb5c8677abf3f3895d3d6a6fd6224ed6683b02e9619f1aff6428332891f388d"
+    },
+    "fba.inseason.parameter_fit.availability_samples": {
+      "role": "validation",
+      "owner": "fba.inseason.parameter_fit.availability_samples",
+      "reason": "Causal observation identity/status/time checks and missing-status diagnostic string.",
+      "signature": "4441bc22f26532b20560ae6f8275547c1b38a90d01508cdb4e2d39e9c6366be0"
+    },
+    "fba.inseason.parameter_fit.production_trial": {
+      "role": "pending",
+      "owner": "fba.inseason.parameter_fit.production_trial",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "a95ca6442b3c97f15e59f9156a6815c9f19d7bdd32019bae823d8f34473f3a3f"
+    },
+    "fba.inseason.priority.classify_matchup": {
+      "role": "pending",
+      "owner": "fba.inseason.priority.classify_matchup",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "c01c2fd6b58c1038bdcd5a462bf449ac473a598a273483ce2b60ce6c983686b7"
+    },
+    "fba.inseason.priority.classify_matchup<locals>.possible": {
+      "role": "pending",
+      "owner": "fba.inseason.priority.classify_matchup<locals>.possible",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "82f5bc3d38d7bcce97bdb9fe5e6c667a8f26ac8f2a03014036f1ab781fbbc997"
+    },
+    "fba.inseason.projection.adjusted_values": {
+      "role": "composition",
+      "owner": "fba.inseason.projection.adjusted_values",
+      "reason": "Configured manual field dispatch to registered product; residual additions concatenate rate/shot keys.",
+      "signature": "25541e016d31fd4697954c07f5e56f2cd970cff93e1621bbadff8347957e6668"
+    },
+    "fba.inseason.projection.back_to_back_teams": {
+      "role": "structure",
+      "owner": "fba.inseason.projection.back_to_back_teams",
+      "reason": "Previous-day schedule lookup for back-to-back labels.",
+      "signature": "a59f9dc8b9374a7938b51f214f2700093dedca97ac159470d5df616eceb12fad"
+    },
+    "fba.inseason.projection.blend_player": {
+      "role": "pending",
+      "owner": "fba.inseason.projection.blend_player",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "c37c757090587ea85ccf1c6f8111b8c659dc273278b558defc9787949c4ce239"
+    },
+    "fba.inseason.projection.effective_projection": {
+      "role": "pending",
+      "owner": "fba.inseason.projection.effective_projection",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "269906645bbde8bbad6e3c42070f86b2e079eec874bbcf77fb018197b3abba4d"
+    },
+    "fba.inseason.projection.flag_suggestions": {
+      "role": "composition",
+      "owner": "fba.inseason.projection.flag_suggestions",
+      "reason": "Registered ratio produces suggested multiplier; residual addition concatenates the rate field key.",
+      "signature": "42c297e0f16701318f3ed75d9efddb8ec0c217ccbf6a64e4c6d88c4d9976597b"
+    },
+    "fba.inseason.projection.player_flags": {
+      "role": "pending",
+      "owner": "fba.inseason.projection.player_flags",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "2b49071eb18f477c370db97ee8a6593c84df963b7f93abb876dbc45cc5307e02"
+    },
+    "fba.inseason.recommendations.admissible_plan": {
+      "role": "validation",
+      "owner": "fba.inseason.recommendations.admissible_plan",
+      "reason": "Known plan score/strength compared to configured tolerance and must-win policy; no new estimate.",
+      "signature": "66a8a4d8b811539c171c2a8d0b04e6ff95874214c8ce81df14cbba0711632593"
+    },
+    "fba.inseason.recommendations.candidate_moves": {
+      "role": "structure",
+      "owner": "fba.inseason.recommendations.candidate_moves",
+      "reason": "Roster tuple changes and waiver release date; quick_score owns candidate numerical estimates.",
+      "signature": "7209fd7a736c5b35ab8a832a918926994dd2c576cee0c77c8b203914a1603a35"
+    },
+    "fba.inseason.recommendations.earliest_move": {
+      "role": "structure",
+      "owner": "fba.inseason.recommendations.earliest_move",
+      "reason": "League cutoff/effective-day rules advance the calendar by zero or one day.",
+      "signature": "6880c084b3114ff1a01bbab3c11f8670c94908cff4af4c744a8e7243f06cd4d5"
+    },
+    "fba.inseason.recommendations.evaluate_plan": {
+      "role": "composition",
+      "owner": "fba.inseason.recommendations.evaluate_plan",
+      "reason": "Registered difference/add_score generate score/traces; remaining arithmetic is future-date and starter-game event counting.",
+      "signature": "f27b3c97c89fce2d69a44fe429b6cb2cc4a9106c940709d3796b1234fe1aab99"
+    },
+    "fba.inseason.recommendations.legal_roster": {
+      "role": "validation",
+      "owner": "fba.inseason.recommendations.legal_roster",
+      "reason": "Roster capacity, uniqueness and known-player membership; does not require filled starter slots.",
+      "signature": "b223c32ae856c691e9f623912d9edce344a51ddd127c6be0164c1b1dc8617453"
+    },
+    "fba.inseason.recommendations.quick_score": {
+      "role": "pending",
+      "owner": "fba.inseason.recommendations.quick_score",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "a4d42b5f375093871f09c78e265302807d18173b443b14c5ee15c06707866e3d"
+    },
+    "fba.inseason.recommendations.search_add_plans": {
+      "role": "pending",
+      "owner": "fba.inseason.recommendations.search_add_plans",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "c9be110f6aef277b7253bbca940f58b6ddc67c88c73834f7f1ba91bf9e0f8d24"
+    },
+    "fba.inseason.replay.realized": {
+      "role": "pending",
+      "owner": "fba.inseason.replay.realized",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "86b6a483f75c2992f8c326821e4f6b7c4918e50b52a4f96c0d8480a12d71a712"
+    },
+    "fba.inseason.replay.replay_case": {
+      "role": "pending",
+      "owner": "fba.inseason.replay.replay_case",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "ca9a41e1f61ccdf8944c8c284a0095fd4004320e82892f5e474cd8a53c8fd936"
+    },
+    "fba.inseason.replay.run_policy_replay": {
+      "role": "pending",
+      "owner": "fba.inseason.replay.run_policy_replay",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "82dcc3f6e6886fd5e6ebd5d95aa52f599a1186782c713bb40e94b5ed2ecd4cdf"
+    },
+    "fba.inseason.replay_oracle.exhaustive_plans": {
+      "role": "pending",
+      "owner": "fba.inseason.replay_oracle.exhaustive_plans",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "46d83d1f8c3bf891e7c4dfe394fa858c59b59e98689ed5b4ed29f71a6952187c"
+    },
+    "fba.inseason.review.calibration_bins": {
+      "role": "pending",
+      "owner": "fba.inseason.review.calibration_bins",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "8c7055787c3ddc61b2b215bce84b165bb05dcb9d5cef26b37fcc2dc2f1f2037e"
+    },
+    "fba.inseason.review.cumulative_review": {
+      "role": "composition",
+      "owner": "fba.inseason.review.cumulative_review",
+      "reason": "Registered Brier/weighted_mean formulas aggregate original cohorts; remaining sums count predictions/excluded legacy weeks.",
+      "signature": "44b4da57600306fc2d87e327021d737980af76a639f0e7c4aa4ef1825d7abf88"
+    },
+    "fba.inseason.review.fit_observations": {
+      "role": "composition",
+      "owner": "fba.inseason.review.fit_observations",
+      "reason": "Registered calibration fit/calibration/Brier equations; max selects the latest observation timestamp for provenance.",
+      "signature": "59810753f1d740af2f784ddb6ac3d1889bf5fa7f6adc8dd715b4f2f2136ff0d2"
+    },
+    "fba.inseason.review.weekly_review": {
+      "role": "composition",
+      "owner": "fba.inseason.review.weekly_review",
+      "reason": "Registered probability/calibration/Brier equations and original decision cohort; residual set subtraction checks source statistic coverage.",
+      "signature": "60591a037a2cd6322863dddebfae1bdf36534a3f3b20fbfaa28c0de41be32f33"
+    },
+    "fba.inseason.sampling.sample_game": {
+      "role": "pending",
+      "owner": "fba.inseason.sampling.sample_game",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "d73bbd85d70b46d54ab6161fd6ebd8cc00f99ed6cf7ebfb5df25456e5395526e"
+    },
+    "fba.inseason.season.playoff_probability": {
+      "role": "pending",
+      "owner": "fba.inseason.season.playoff_probability",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "f3ae7b2a121008859a4255504069cf6f5a12348ad3a0c4b6119737ddf56e9b3a"
+    },
+    "fba.inseason.season.season_value": {
+      "role": "pending",
+      "owner": "fba.inseason.season.season_value",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "4968798552d26aead62c8d876a67383672ea136ea6e5f825acb5a9e23362f9e8"
+    },
+    "fba.inseason.session.InseasonSession.__init__": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.__init__",
+      "reason": "Required configuration/defaults filesystem paths.",
+      "signature": "34ff0553dc69982a994446b069e3f744014477641f1feccd148872fbbb03e6e7"
+    },
+    "fba.inseason.session.InseasonSession.identities": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.identities",
+      "reason": "League/player/workspace/ledger/notes/state filesystem paths; data are delegated to Storage.",
+      "signature": "549552d7271e23b2b5182eb16da0b4cb527766a224858642b02c7800426441cb"
+    },
+    "fba.inseason.session.InseasonSession.league_store": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.league_store",
+      "reason": "League/player/workspace/ledger/notes/state filesystem paths; data are delegated to Storage.",
+      "signature": "3cf1711899be99309bc3b6175f94235e4b8038d0f57e2852225d3d762537dc1d"
+    },
+    "fba.inseason.session.InseasonSession.ledger": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.ledger",
+      "reason": "League/player/workspace/ledger/notes/state filesystem paths; data are delegated to Storage.",
+      "signature": "1ccdf52ced4c6071c8906eb4222245fc458c612b4b5020b439349286e40b3fa3"
+    },
+    "fba.inseason.session.InseasonSession.notes": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.notes",
+      "reason": "League/player/workspace/ledger/notes/state filesystem paths; data are delegated to Storage.",
+      "signature": "9a8e8dc9e6562ecf5b5c3189bfc3002961c27d8f653206465007912fee0771ee"
+    },
+    "fba.inseason.session.InseasonSession.select": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.select",
+      "reason": "League/player/workspace/ledger/notes/state filesystem paths; data are delegated to Storage.",
+      "signature": "fb3e6be891c7e4959de9b7bfe9180cf3fd15bd51340794b006cfdde76303413c"
+    },
+    "fba.inseason.session.InseasonSession.setting_differences": {
+      "role": "validation",
+      "owner": "fba.inseason.session.InseasonSession.setting_differences",
+      "reason": "Set differences identify missing/unconfirmed source settings; no model arithmetic.",
+      "signature": "42f0730ee9d57c6659f2f410e12c733050b5f1a924e24159d1a80b409feefdf7"
+    },
+    "fba.inseason.session.InseasonSession.simulation": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.simulation",
+      "reason": "Final negative array index selects the most recent observation time; constructs/caches Simulation.",
+      "signature": "678a7f26c8bae9e106846293b197db5df03f4d82973f1b1954b5b2eeffc184a0"
+    },
+    "fba.inseason.session.InseasonSession.working_store": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.working_store",
+      "reason": "League/player/workspace/ledger/notes/state filesystem paths; data are delegated to Storage.",
+      "signature": "03e9487ddb168ec252e220b5977ccd53d24663431df203f8cc3eeaaeca70024c"
+    },
+    "fba.inseason.session.InseasonSession.workspace": {
+      "role": "structure",
+      "owner": "fba.inseason.session.InseasonSession.workspace",
+      "reason": "League/player/workspace/ledger/notes/state filesystem paths; data are delegated to Storage.",
+      "signature": "72d3dff8e5cb2c21068670a96ffe5bf40dae4e73e87382a7d8e2cbb25b5eb39e"
+    },
+    "fba.inseason.session.snapshot_record": {
+      "role": "structure",
+      "owner": "fba.inseason.session.snapshot_record",
+      "reason": "Stable immutable snapshot record prefix.",
+      "signature": "e161a735aabc69a2d92551bd28c94f9809fa9d932cab53a67073918e018ed38f"
+    },
+    "fba.inseason.simulation_cache.reuse_simulation": {
+      "role": "structure",
+      "owner": "fba.inseason.simulation_cache.reuse_simulation",
+      "reason": "Counts causal clock intervals solely for simulation cache identity/invalidation.",
+      "signature": "9fb65a0714d03dbc8942eefee942aba9952931a42fec2223070c1e7a50da0e6b"
+    },
+    "fba.inseason.team_view.team_views": {
+      "role": "composition",
+      "owner": "fba.inseason.team_view.team_views",
+      "reason": "Registered linear/mean/difference formulas supply team values; residual arithmetic counts scheduled events and prior-day calendar labels.",
+      "signature": "e9fb268d7aeab602ed2248fee630fcfdda6a1912dea673975719d125ab30dcb8"
+    },
+    "fba.inseason.today.injury_actions": {
+      "role": "structure",
+      "owner": "fba.inseason.today.injury_actions",
+      "reason": "Configured IL/active slot occupancy and action reminder strings; preserves existing return decisions.",
+      "signature": "50684157b9f3ff57607e26f8425cdb8cde586786a505f51811d91cead6ca9269"
+    },
+    "fba.inseason.today.lineup_effects": {
+      "role": "pending",
+      "owner": "fba.inseason.today.lineup_effects",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "fde1f6fdc6f88281a7f6f6453987c3c0b69de9526f353132387dd42a2cdf30fe"
+    },
+    "fba.inseason.today.today": {
+      "role": "structure",
+      "owner": "fba.inseason.today.today",
+      "reason": "Earliest game clock supplies lineup lock display; actions/scores delegate to their owners.",
+      "signature": "c012f2d2586a6171c807bf2540093dc7c4aa5102ea1ec70ed88a2db874563245"
+    },
+    "fba.inseason.today.today_players": {
+      "role": "structure",
+      "owner": "fba.inseason.today.today_players",
+      "reason": "Player/slot/source selection and explanation strings consuming lineup_effects traces; no arithmetic on effects.",
+      "signature": "6941c2d18eba16823ed0d1a776e11b840f885c0e62fdd96bd2359a0d232ca7f2"
+    },
+    "fba.inseason.trade_bounds.addition_ceilings": {
+      "role": "pending",
+      "owner": "fba.inseason.trade_bounds.addition_ceilings",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "71bc6b46b3daa089469e68f3b2e9925f9e58cded43f968ad831ff709849cd679"
+    },
+    "fba.inseason.trade_bounds.completion_contexts": {
+      "role": "pending",
+      "owner": "fba.inseason.trade_bounds.completion_contexts",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "c3dfc59b43d0e724c165a1401d11eb62c53763837a12697def06df1e74bf5c51"
+    },
+    "fba.inseason.trade_bounds.free_agent_bounds": {
+      "role": "pending",
+      "owner": "fba.inseason.trade_bounds.free_agent_bounds",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "f7c93f7e501ad19cb9368aa119390273ffe16594de9e64811a601b2926fdd4b6"
+    },
+    "fba.inseason.trade_bounds.gain_bound": {
+      "role": "pending",
+      "owner": "fba.inseason.trade_bounds.gain_bound",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "2ec66fca131865b8f4b72577a30fe2d04f6ba9926f88b80d18cf0d3e7187a521"
+    },
+    "fba.inseason.trade_bounds.roster_ceiling": {
+      "role": "pending",
+      "owner": "fba.inseason.trade_bounds.roster_ceiling",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "0fb87b1488f1c2c3f9012eca80aa624cde70ad2740540a75e680a5faaf04318a"
+    },
+    "fba.inseason.trade_bounds.season_limits": {
+      "role": "pending",
+      "owner": "fba.inseason.trade_bounds.season_limits",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "6f92c7b16ac5088d7bf936f10594bd70d1c842b967d26944fa55526532ba67c0"
+    },
+    "fba.inseason.trades.addition_candidates": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.addition_candidates",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "50e82fbe8810be0e0847acc4f56e728584c49a1fc885d69b87c7be150ca58751"
+    },
+    "fba.inseason.trades.complementary_teams": {
+      "role": "composition",
+      "owner": "fba.inseason.trades.complementary_teams",
+      "reason": "Registered mean/complementarity equations rank partners; residual arithmetic quantizes only the sorting key.",
+      "signature": "89e5d2299138b432f85a8120cf5a6aaec2f88f5a27dc5e31b97fcbab06677377"
+    },
+    "fba.inseason.trades.completion_candidates": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.completion_candidates",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "02e40bbfbdfa6885489252050ba952d79ad5746add77770689e7c899e0bcc671"
+    },
+    "fba.inseason.trades.eligible_trade_bundles": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.eligible_trade_bundles",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "69bed53fb81918e8c2eb7e1759e89e46a20afbf31c3763695d95ef0375808b96"
+    },
+    "fba.inseason.trades.evaluate_trade_bundles": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.evaluate_trade_bundles",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "a398f893a96489e7a7a71a953322c44daac3955cff2624b7a6054dcd631aeff2"
+    },
+    "fba.inseason.trades.normalize_roster": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.normalize_roster",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "14985a733f44380bd8a96dbde57a0cb8d1d439a4c14bb17dee9c67973ee157b6"
+    },
+    "fba.inseason.trades.rank_trades": {
+      "role": "structure",
+      "owner": "fba.inseason.trades.rank_trades",
+      "reason": "Tolerance-quantized ordering of existing trade results with opponent/player tie-breaks; no new expected-gain calculation.",
+      "signature": "6ca859b798c653cc08e9f4409499da572a94183fff47a0613e938c06f8b81ff4"
+    },
+    "fba.inseason.trades.trade_effects": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.trade_effects",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "d2496d68f991ef11bdd21ffd1fb4d2646ba88a76c2078c2a2c72c3c2060e1b62"
+    },
+    "fba.inseason.trades.trade_summary": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.trade_summary",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "91c0281e157f9fdea7f30e0a44ae0eaf9e92ac21e75f2675218a6327f8872d5f"
+    },
+    "fba.inseason.trades.trade_summary<locals>.playoff_games": {
+      "role": "pending",
+      "owner": "fba.inseason.trades.trade_summary<locals>.playoff_games",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "46a984860aba7e564fa1b6566e279d2117d95be4b6d07d0609fd454584ebb25e"
+    },
+    "fba.inseason.weekly_lineups.joint_lineup": {
+      "role": "pending",
+      "owner": "fba.inseason.weekly_lineups.joint_lineup",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "c037fa0ab4d9f60d2dd9cf7c15cfb5eb5ea4c8ff8c0d057c73c4421dee11768b"
+    },
+    "fba.projection.preparation.adjust_player": {
+      "role": "pending",
+      "owner": "fba.projection.preparation.adjust_player",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "54fc42c1566c6c1c7bda9b055818519c95e529e3f34a4d28af9e240d83c64045"
+    },
+    "fba.projection.preparation.complete_forecast": {
+      "role": "pending",
+      "owner": "fba.projection.preparation.complete_forecast",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "704e971ea6e3607c63a732d6b33026304e5db747a0f1e51b155f658fcf65691a"
+    },
+    "fba.projection.preparation.game_samples": {
+      "role": "pending",
+      "owner": "fba.projection.preparation.game_samples",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "2d3cb4ec77e121b2d01ecd0de2cbd196fad135ef9633b2b5895312535438d27f"
+    },
+    "fba.projection.preparation.history_pools": {
+      "role": "pending",
+      "owner": "fba.projection.preparation.history_pools",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "406632bb1cd5701ce12436ea8353d2da1eb24f46015114e2f5b4a2ec4e83df30"
+    },
+    "fba.projection.preparation.prepare": {
+      "role": "pending",
+      "owner": "fba.projection.preparation.prepare",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "007a84e3aaee24c2561613d942676f88d90ec319ad876664f55b8b2aa06d1f02"
+    },
+    "fba.projection.preparation.prepare_player": {
+      "role": "pending",
+      "owner": "fba.projection.preparation.prepare_player",
+      "reason": "Numerical candidate retained for semantic review, equation extraction or trace coverage; this entry is not an exemption.",
+      "signature": "8a8e792112fc0d96ce772c2688ca5f36568c7fec63a37fa0ec860c384e779f60"
+    },
+    "fba.runtime.assets.formula_script": {
+      "role": "structure",
+      "owner": "fba.runtime.assets.formula_script",
+      "reason": "Generated formula metadata/static script byte framing.",
+      "signature": "800cddbca1aa70937f0657a0eb96d088e1f911715f7f90a0eb3a43d940e7de8e"
+    },
+    "fba.runtime.local.LocalServer.__init__": {
+      "role": "structure",
+      "owner": "fba.runtime.local.LocalServer.__init__",
+      "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
+      "signature": "22120758eec8f1a5e287ef44a03a68162628ab7965d9d558fc6c4ad857d52722"
+    },
+    "fba.runtime.local.launch_browser": {
+      "role": "structure",
+      "owner": "fba.runtime.local.launch_browser",
+      "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
+      "signature": "f3341d4a1695a232a894cde15082365560109579ac8561a3856a3af1986347e9"
+    },
+    "fba.runtime.local.open_existing": {
+      "role": "structure",
+      "owner": "fba.runtime.local.open_existing",
+      "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
+      "signature": "269512793f3ff7af0ed69f0682bc0a39f351d87ed60e9c523f74c6d887bf7d0e"
+    },
+    "fba.runtime.local.permitted": {
+      "role": "structure",
+      "owner": "fba.runtime.local.permitted",
+      "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
+      "signature": "051ff0a07b698edb4b83fc4802b78868f82ad318c2fe1fdfc1d083d1b6139489"
+    },
+    "fba.runtime.processes.ExtendedLimits.<class>": {
+      "role": "structure",
+      "owner": "fba.runtime.processes.ExtendedLimits.<class>",
+      "reason": "Windows ABI fixed-width IO-counter array layout; no model equation.",
+      "signature": "fd7e61ee3d90be5e475f104dab17138426a2a3f0f837f7c75fb98f5ef10afd23"
+    }
+  }
+}
