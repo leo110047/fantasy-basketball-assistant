@@ -10,11 +10,21 @@
 
 使用者後續明確選擇保留通過價值門檻的完整交易搜尋，繼續改善精確演算法，並指出競標桌既有依工作量啟用核心的機制。候選已沿用該 worker 政策、共同基準與摘要／詳情流程；計時與最新審查仍以 Git 外報告為準，不沿用舊候選的綠燈。
 
+## 2026-10-01 接續工作（本機候選）
+
+本批持續處理 F1 與同日換人 UI 缺口；程式尚未提交／推送。原生完整檢查初次通過 1,142 項測試（264.70 秒）；Goldband 初審發現盤點漏記外層負號，以及隔離測試讀到背景執行緒正在寫入的半筆日誌。兩項已重現並修正，修補候選在本機與隔離環境各通過 1,145 項測試，正式 closure 已關閉兩項 finding。之後另做 81 項語意分類與 NumPy 呼叫漏記修正；此最新候選的 fresh verification／補審狀態見 Git 外入口 `/private/tmp/fba-continuation-report/current-status.md`，不沿用較早候選的綠燈。
+
+- 24 條公式抽到共同 owner 並補登錄／手算答案，登錄總數由 90 增至 114。樣本摘要、類別／雙十、保守區間、戰績／晉級、健康模型、競標抽樣、成交價格與球隊預算已有呼叫處搬移。
+- 建立 [公式所有權盤點](formula-ownership.md) 與全 Python 數值候選變動檢查，逐條分類 81 項原 pending；補檢 NumPy 最小／最大／加總等呼叫後，140 檔／449 候選中仍有 107 `pending`。這不是 107 條確認漏登錄；F1 仍未結案，native 機會成本、JavaScript 與最終 UI trace 仍需逐條核對。
+- 同日連續換人的實際 Chrome 合成流程已讀回：先加入 p7／釋出 p2，再加入 p8／釋出 p7，最終名單 p1／p6／p8；IL 必要釋出與啟用在前。保留原樣本數和產品驗證；有效合成 credential 只留在 fixture vault，所有 provider transport 明確拒絕呼叫。沒有真實 Yahoo 驗收。Today 冷啟動後若重跑 IL／ROS 會直接失敗，本次成功沿用已保存 F3。
+- 審查修正：數值候選簽章保留完整函式內容，並加入負號／外層 abs 與單獨負號的失敗後回歸；日誌測試使用既有 writer lock 取得完整紀錄，保留所有原始保存狀態斷言。沒有修改產品的交易保存／記錄行為。
+- 本輪原始證據入口：`/private/tmp/fba-continuation-report/`。Chrome DOM／截圖為 `chain-today-dom.txt`、`chain-today.jpg`。驗收伺服器已經由實際「結束助手」正常關閉。
+
 ## 1. 接手時先知道的事
 
 **整份規格尚未完成，現況不能當成一般使用者 clone 後即可使用的成品。**
 主要缺口仍是真實 NBA／公開排名入口、真實 Yahoo、完整公式盤點、因果歷史回測／校準及實際交付平台。大型排陣與換人搜尋的品質驗收也未完成。
-最新本機與隔離容器各通過 1,127 項測試，Goldband 本輪複審結案；這些證據不代表真實供應商、原生 Windows、歷史 holdout 或整份規格通過。效能驗收暫停。
+接續前一批的本機與隔離容器各通過 1,127 項測試，Goldband 複審結案；本批最新證據見上方接續段落與 Git 外入口。這些證據不代表真實供應商、原生 Windows、歷史 holdout 或整份規格通過。效能驗收暫停。
 
 權威需求：
 
@@ -25,7 +35,7 @@
 - 使用者要求 commit 分批；本次只授權 commit 與交接，沒有 push、部署、付費訂閱或代操作 Yahoo 的授權。
 - Yahoo 維持唯讀，建議由使用者在 Yahoo 手動執行。不得為了測試直接變更真實聯盟。
 
-## 2. 最新修正與審查
+## 2. 接續前一批修正與審查
 
 | Commit | 本輪範圍 |
 | --- | --- |
@@ -34,7 +44,7 @@
 
 前一輪本機四批為 `868df63`（公式）、`f4b5f14`（預測與季賽安全契約）、`7e0d8cb`（畫面）、`a4f7bfe`（benchmark 與文件）。本輪基準為 `a4f7bfe`；程式兩批合併後 HEAD 為 `88c96cb744e1520b5f17ab33c63230252b25d1d6`。文件更新另批提交，提交序列以 `git log` 為準。沒有 push。
 
-最新驗證與獨立審查：
+接續前一批的驗證與獨立審查：
 
 - 原生 macOS `scripts/verify.py`：exit 0，**1,127 passed／260.64 秒**，JS 語法、6 個匯入契約、Ruff、220 檔格式、型別、vulture、deptry 通過。
 - Goldband 複審 `df550959-264c-4718-9b00-481366b2d354`：兩項 required evidence 均 fresh verified-pass，0 failure／coverage gap／runtime incomplete；隔離完整測試 **1,127 passed／288.38 秒**。鎖定 Python 3.13.7 與依賴、唯讀容器、UID 65534、隔離網路已實際稽核。
@@ -160,7 +170,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 | M2 | 雙位置去重、零／部分出賽分鐘分配已修；prior groups 仍粗且為 Assumption。 | `inseason/projection.py::fallback_prior`、`inseason/adjustments.py::redistribute`、參數檔 | 位置／分鐘 peer 分組與資料依據、無 peer 明確失敗、雙位置去重；補部分傷病與隊伍分鐘分配的情境驗收。不要把粗群組描述成已校準先驗。 |
 | M3 | 缺完賽比分涵蓋時明確不可算；真實 Yahoo 不漏算／不重複仍未完成。 | `inseason/matchup.py::actual/total/daily_draws` | 核對 `through` 與來源比分的真正語義；覆蓋已完成、進行中、當天多場、官方更正。不漏算、不重複加入部分已含的比分，不猜歷史 Yahoo 先發。 |
 | M4 | 無 history 的隨機 frozen prior 本機已補；相關性及樣本外品質未驗。 | `inseason/matchup.py::game_draw`、來源歷史資料契約 | 開季、新秀／新升上來球員可計算；補足歷史或明確定義先驗預測抽樣與不確定性。不能用全零／確定常數偷偷代替未知，也不能把未來資料帶入回測。 |
-| M5 | 本機已修 IL／未來換人合併事件、完整合法後續、容量／保護／鎖定延期、再取得與冷啟動 Today 沿用。多 IL 仍逐次估值，未證明聯合最優；真實 Yahoo 未驗，同日連續換人瀏覽器案例待補。 | `inseason/matchup.py::roster`、`inseason/season.py`、`inseason/today.py` | 包含預計回歸、移出 IL、容量、保護及必要丟人的合法轉換；與未來換人共用時間軸，動作與條件排陣一致，不把球星 ROS 當零。合成 oracle 不能替代真實來源與完整搜尋品質驗收。 |
+| M5 | 本機已修 IL／未來換人合併事件、完整合法後續、容量／保護／鎖定延期、再取得與冷啟動 Today 沿用；本批已補同日連續換人的合成 Chrome 流程。多 IL 仍逐次估值，未證明聯合最優；真實 Yahoo 未驗。 | `inseason/matchup.py::roster`、`inseason/season.py`、`inseason/today.py` | 包含預計回歸、移出 IL、容量、保護及必要丟人的合法轉換；與未來換人共用時間軸，動作與條件排陣一致，不把球星 ROS 當零。合成 oracle 不能替代真實來源與完整搜尋品質驗收。 |
 | M6 | 類別／整週參數、匯出及擬合分開本機已修；holdout 未完成。 | 參數契約／defaults、`inseason/matchup.py`、`inseason/review.py::calibration_history/refit_history`、backtest | 分開類別 0.82／整週 0.80 的規格初值及出處；匯出兩層級的預測與結果，分開擬合、展示與樣本外驗證。舊版積分不可當新整週勝率訓練資料。 |
 | M7 | 自建接受模型案例、分離／不識別檢查及求解已驗；真實提案機率未校準。 | `formulas/fitting.py`、`inseason/operations.py::refit_acceptance`、保存的 acceptance-fits | 自行建立正常、分離與不識別案例，驗證係數／需求方向、殘差、log loss、顯示與既有報告處理；真實提案樣本另作驗收。不要把合成訓練擬合說成真實接受機率校準。 |
 
@@ -180,8 +190,8 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 | U1 | 本機已補對手／時間／場次／基準／raw 機率；真實聯盟整合未驗。 | `apps/inseason/static/views.js`、結果契約 | 明確基準線與所選週資料，不和「無手調」基準混淆；數字可追溯且經瀏覽器核對。 |
 | U2 | 待確認項、來源／理由及失效路徑已補；全部來源／狀態情境未逐條驗收。 | UI、projection flags、同步設定差異 | 依規格整理待確認事項、來源／理由／操作，核對忽略／到期／狀態改變後行為。 |
 | U3 | 本機完成 20 數字獨立手算、實際手調／撤銷、UI 與模擬值同源；合成資料邊界。 | `apps/inseason/static/views.js::playerCard`、`inseason/projection.py::blend_player/effective_projection` | 清楚分開先驗、混合、手調及最後由命中率重算的 made；抽 20 個 UI 數字獨立手算（至少 3 位小數）並驗證傳給模擬的值。 |
-| U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；同日連續換人 UI 案例被 fixture 授權狀態擋住，尚未驗完；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
-| F1 | 未完成：90 條已登錄不代表全部；136 個 Python 檔中的 453 個含算術函式只有盤點線索，尚未語意分類。仍缺完整 inventory、唯一 owner 搬移與一對一 gate，不能把候選數當漏登錄數。 | `formulas/*`、`inseason/projection.py`、`inseason/matchup.py`、相關 tests | 自行盤點全範圍函式，分清公式與協調／驗證函式；建立全範圍一對一檢查，移出業務模組公式本體，UI trace 與實作同源。不得只改檢查範圍假裝覆蓋。 |
+| U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；本批另完成同日連續換人的有效合成授權／保存計畫沿用流程；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
+| F1 | 本批增至 114 條登錄，已補全 Python 候選 inventory／變動檢查及登錄 owner 一對一，並逐條分類 81 項原 pending。140 檔／449 候選中仍有 107 pending；native、JS 與最終 UI trace 未完整核對，F1 未結案。 | `formulas/*`、`inseason/projection.py`、`inseason/matchup.py`、相關 tests | 自行盤點全範圍函式，分清公式與協調／驗證函式；建立全範圍一對一檢查，移出業務模組公式本體，UI trace 與實作同源。不得只改檢查範圍假裝覆蓋。 |
 | F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；規格提到 `claude-report-v2/evidence-2026-09-27/backtest_inseason.py`、`backtest_matchup.py` 及 JSON，目前未取得。無證據不能改標已校準；OREB 等未回測項另列。 |
 | F3 | 10 隊、不同位置與 OREB／A/T／H2H Each Category 的合成 F0–F6 本機已有驗證。 | `tests/inseason_support.py`、`test_inseason_portability.py`、跨功能測試 | 真正改類別公式（含比率／A/T）、位置、10 隊、H2H Each Category，F0–F6 跑完且合法；只改設定，不在程式塞聯盟特例。 |
 
@@ -208,7 +218,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 
 1. 核對 `git status`、本文件及最新程式／文件 commit；不要沿用第一批的 753 或前一輪的 1,093 項測試當作最新候選結果。
 2. 先完成 F1 的全範圍語意公式盤點：分清公式本體與編排／索引／集合／日期運算，重用既有公式 owner，搬移真正的業務算式，再建立一對一檢查。既有算術候選清單僅是線索，不能以白名單或擴大檢查範圍假裝完成。
-3. 繼續 A1/A2/A6/A7 與 M3/V1 的正式資料來源／Yahoo 證據；遵守免費、條款允許及唯讀。補完同日連續換人的合成 UI 驗收；既有 IL 合併與規則變更回歸不需重做未變的測試。
+3. 繼續 A1/A2/A6/A7 與 M3/V1 的正式資料來源／Yahoo 證據；遵守免費、條款允許及唯讀。同日連續換人的合成 UI 已補；既有 IL 合併與規則變更回歸不需重做未變的測試。
 4. 取得合法歷史後執行 R4/F2 holdout／因果策略回測；執行 V2–V6 的原生 Windows、無 Python 乾淨 clone、跨平台實際 CI 與完整整合驗收。未校準項保留 `Assumption`，不以合成訓練擬合冒充樣本外品質。
 5. 效能工作依使用者指示暫放；B1–B6 不因暫停而結案，也不為本輪審查降低抽樣、刪候選或放寬產品 budgets。大型整週與 F3 shortlist／beam 的品質缺口保留。
 6. 新程式變更需相符的驗證與 Goldband 獨立審查，再分批 commit；push／部署另取得授權。
