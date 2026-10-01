@@ -157,7 +157,17 @@ class TeamBudget(Record):
     maximum_bid: Natural
 
 
+class RoomSummary(Record):
+    cash: Natural
+    spendable: Natural
+    slots: Natural
+    traces: tuple[FormulaTrace, ...]
+
+
 class MarketPrice(Record):
+    difference: Finite | None = None
+    discount: Finite | None = None
+    focused: bool = False
     traces: tuple[FormulaTrace, ...] = ()
     player_id: Text
     anchor: Nonnegative | None
@@ -168,6 +178,9 @@ class MarketPrice(Record):
 
 
 class MarketResult(Record):
+    focus_difference: Nonnegative | None = None
+    focus_discount: Finite | None = None
+    summary: RoomSummary | None = None  # Older execution records remain readable.
     room: tuple[TeamBudget, ...]
     prices: tuple[MarketPrice, ...]
     inflation: Nonnegative
@@ -199,6 +212,7 @@ class Infeasible(Record):
 
 
 class Cap(Record):
+    edge: Finite | None = None
     traces: tuple[FormulaTrace, ...] = ()
     player_id: Text
     amount: Natural | None
@@ -283,6 +297,8 @@ class AuctionResult(Record):
 
 
 class Comparison(Record):
+    traces: tuple[FormulaTrace, ...] = ()
+    remaining_budget: dict[Literal["buy", "skip"], Natural | None] = {}
     player_id: Text
     price: PositiveInt
     buy: Plan | Infeasible

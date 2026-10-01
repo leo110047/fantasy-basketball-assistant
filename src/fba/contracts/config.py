@@ -317,6 +317,8 @@ class MarketAssumptions(Record):
     wealth_upper: Nonnegative
     wealth_exponent: Nonnegative
     competition_bid: PositiveInt
+    focus_difference: Nonnegative = 5.0  # Legacy display policy; configurable in model.market.
+    focus_discount: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)] = 0.2
     evidence: Evidence
 
 

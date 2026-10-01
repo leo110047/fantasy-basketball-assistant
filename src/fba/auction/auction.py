@@ -17,6 +17,7 @@ from fba.contracts.auction import (
 )
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import AuctionModel, ManagedPricingModel
+from fba.contracts.formula import FormulaTrace
 from fba.contracts.season import SeasonKernel
 from fba.core.roster import completable, effective_players, validate_draft
 from fba.formulas.market import price_market
@@ -134,6 +135,11 @@ def caps_for(
             amount, reason = 0, "position cannot complete roster"
         else:
             amount, loss, forced, traces = computed[i]
+        edge = (
+            evaluate("difference", after=float(amount), before=expected)
+            if amount is not None and (expected := prices[player.id].expected) is not None
+            else None
+        )
         caps.append(
             Cap(
                 player_id=player.id,
@@ -142,7 +148,8 @@ def caps_for(
                 conditional=not player.positions_confirmed or prices[player.id].anchor is None,
                 forced=forced,
                 loss=loss,
-                traces=traces,
+                edge=edge.result if edge is not None else None,
+                traces=(*traces, *((edge,) if edge is not None else ())),
             )
         )
     return tuple(caps)
@@ -324,16 +331,33 @@ def compare(
             }
         )
     delta = (
-        evaluate("difference", after=buy.utility, before=skip.utility).result
+        evaluate("difference", after=buy.utility, before=skip.utility)
         if isinstance(buy, Plan) and isinstance(skip, Plan)
         else None
     )
+    branches: tuple[tuple[Literal["buy", "skip"], Plan | Infeasible], ...] = (
+        ("buy", buy),
+        ("skip", skip),
+    )
+    remaining: dict[Literal["buy", "skip"], FormulaTrace | None] = {
+        key: evaluate("difference", after=float(portfolio.budget), before=float(plan.cost))
+        if isinstance(plan, Plan)
+        else None
+        for key, plan in branches
+    }
     decimals = portfolio.parameters.result_decimals
     return Comparison(
         player_id=player_id,
         price=price,
         buy=result_plan(buy, decimals),
         skip=result_plan(skip, decimals),
-        delta=result_number(delta, decimals) if delta is not None else None,
+        delta=result_number(delta.result, decimals) if delta is not None else None,
+        traces=(
+            *((delta,) if delta is not None else ()),
+            *(t for t in remaining.values() if t is not None),
+        ),
+        remaining_budget={
+            key: int(t.result) if t is not None else None for key, t in remaining.items()
+        },
         solver_calls=calls,
     )

@@ -612,6 +612,19 @@
           "title": "Competition Bid",
           "type": "integer"
         },
+        "focus_difference": {
+          "default": 5.0,
+          "minimum": 0,
+          "title": "Focus Difference",
+          "type": "number"
+        },
+        "focus_discount": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Focus Discount",
+          "type": "number"
+        },
         "evidence": {
           "$ref": "#/$defs/Evidence"
         },
@@ -1175,6 +1188,19 @@
           "exclusiveMinimum": 0,
           "title": "Competition Bid",
           "type": "integer"
+        },
+        "focus_difference": {
+          "default": 5.0,
+          "minimum": 0,
+          "title": "Focus Difference",
+          "type": "number"
+        },
+        "focus_discount": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Focus Discount",
+          "type": "number"
         },
         "evidence": {
           "$ref": "#/$defs/Evidence"

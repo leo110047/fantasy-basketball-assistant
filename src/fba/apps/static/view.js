@@ -77,14 +77,16 @@ export function renderProjectionDetail(container, player) {
 }
 
 let roomHash = null;
-export function renderRoom(data, players, editSale) {
+export function renderRoom(data, players, editSale, definitions) {
   if (roomHash === data.market.state_sha256) return;
   roomHash = data.market.state_sha256;
   const {state, market} = data;
   const names = new Map(state.teams.map(t => [t.id, t.name]));
   const own = market.market.room.find(t => t.id === state.mine);
-  const cash = market.market.room.reduce((sum,t) => sum+t.budget,0), spendable = market.market.room.filter(t => t.slots).reduce((sum,t) => sum+t.budget,0);
-  el("cashSummary").textContent = `全場剩餘 ${money(cash)} · 尚有名額的隊伍可用 ${money(spendable)} · 剩 ${market.market.room.reduce((sum,t) => sum+t.slots,0)} 格`;
+  const summary = market.market.summary;
+  el("scope").querySelector('[value="focus"]').textContent = `重點價差（≥ ${money(market.market.focus_difference)} 且 ≥ ${quantity(market.market.focus_discount * 100)}%）`;
+  if (!summary) throw new Error("市場結果缺少全場現金與名額摘要，請重新計算。");
+  el("cashSummary").replaceChildren(node("span", `全場剩餘 ${money(summary.cash)} · 尚有名額的隊伍可用 ${money(summary.spendable)} · 剩 ${summary.slots} 格`), ...summary.traces.map(trace => formula(trace, definitions)));
   el("teamTitle").textContent = names.get(state.mine);
   el("myBudget").replaceChildren(node("strong", money(own.budget)), node("div", `剩 ${own.slots} 格 · 最高可付 ${money(own.maximum_bid)}`));
   el("room").replaceChildren(...market.market.room.map(t => {
@@ -206,24 +208,23 @@ export function renderPlan(result, players, market, nominate, unavailable, defin
   }
 }
 
-export function renderComparison(value, players, data) {
+export function renderComparison(value, players, data, definitions) {
   const {comparison:c} = value;
   const quotes = new Map(data.market.market.prices.map(p => [p.player_id,p.planning_cost]));
   const owned = new Set(data.market.market.room.find(t => t.id === data.state.mine).owned);
-  const budget = data.market.market.room.find(t => t.id === data.state.mine).budget;
   const grid = node("div", "", "comparison-grid");
   for (const [key, title] of [["buy", `買入 ${money(c.price)}`], ["skip", "不買此人"]]) {
     const branch = c[key], col = node("div", ""); col.append(node("strong", title));
     if (branch.reason) col.append(node("p", `無解：${branch.reason}`, "warning"));
     else {
-      col.append(node("p", `支出 ${money(branch.cost)} · 留 ${money(budget - branch.cost)}`));
+      col.append(node("p", `支出 ${money(branch.cost)} · 留 ${money(c.remaining_budget[key])}`));
       const other = new Set(c[key === "buy" ? "skip" : "buy"].players ?? []);
       const ordered = [...branch.players].sort((a,b) => Number(other.has(a))-Number(other.has(b)) || a.localeCompare(b,"en"));
       const list = node("ul", ""); ordered.forEach(id => list.append(node("li", `${other.has(id) ? "共同" : "差異"} · ${players.get(id)?.name ?? id} · ${owned.has(id) ? "已持有" : money(id === c.player_id && key === "buy" ? c.price : quotes.get(id))}`))); col.append(list);
     }
     grid.append(col);
   }
-  el("comparison").replaceChildren(node("strong", comparisonLabel(c)), node("p", c.delta == null ? "至少一個分支無合法方案" : `組隊效用差 ${c.delta.toFixed(3)}；不是勝率。`, "muted"), grid);
+  el("comparison").replaceChildren(node("strong", comparisonLabel(c)), node("p", c.delta == null ? "至少一個分支無合法方案" : `組隊效用差 ${c.delta.toFixed(3)}；不是勝率。`, "muted"), grid, ...(c.traces ?? []).map(trace => formula(trace, definitions)));
 }
 import {priceRows, rowTags, comparisonLabel, normalized, floorBackup, forecastRange} from "/presentation.js";
 import {formula} from "/formulas.js";

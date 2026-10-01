@@ -8,11 +8,6 @@ export function matches(player, query) {
   const needle = normalized(query);
   return !needle || needle.split(" ").every(part => text.includes(part)) || text.replaceAll(" ", "").includes(needle.replaceAll(" ", "")) || initials === needle || capitals === needle;
 }
-export function valueGap(fair, expected) {
-  if (fair == null || expected == null) return {difference:null, discount:null, focused:false};
-  const difference = fair - expected, discount = fair > 0 ? difference / fair : null;
-  return {difference, discount, focused:difference >= 5 && discount >= 0.2};
-}
 export function priceRows(players, desk, result, watched, filters) {
   const sales = new Map(desk.state.sales.map(s => [s.player_id, s]));
   const quotes = new Map(desk.market.market.prices.map(q => [q.player_id, q]));
@@ -21,8 +16,8 @@ export function priceRows(players, desk, result, watched, filters) {
   const flex = new Set(result?.streaming?.flex.map(p => p.player_id) ?? []);
   const rows = [...players.values()].map(player => {
     const quote = quotes.get(player.id), cap = caps.get(player.id), sale = sales.get(player.id);
-    const gap = valueGap(player.fair, quote?.expected);
-    const edge = cap?.amount == null || quote?.expected == null ? null : cap.amount - quote.expected;
+    const gap = {difference:quote?.difference ?? null, discount:quote?.discount ?? null, focused:quote?.focused ?? false};
+    const edge = cap?.edge ?? null;
     return {player, quote, cap, sale, ...gap, edge, inPlan:plan.has(player.id),flex:flex.has(player.id)};
   }).filter(row => visible(row, watched, filters));
   return rows.sort((a,b) => compareRows(a,b,filters.sort) || a.player.id.localeCompare(b.player.id, "en"));

@@ -91,7 +91,7 @@ function render() {
   const current = result();
   el("sourceNotice").hidden = boot.details != null && boot.teams != null;
   el("sourceNotice").textContent = boot.details == null ? "這份資料沒有來源明細，無法確認哪些球員缺當季預測；請重新建置競標資料。" : "這份舊版資料未含球隊名稱與樣本註記；重新建置競標資料可補齊。";
-  renderRoom(desk, players, editors.sale);
+  renderRoom(desk, players, editors.sale, boot.formulas);
   renderTable(desk, players, current, watched, browse, nominate, watch, unavailable(), saving || stale, boot.league.minimum_bid);
   renderPlan(current, players, desk.market.market, nominate, unavailable(), boot.formulas);
   renderNominee(); controls(); renderStreaming();
@@ -295,7 +295,7 @@ async function comparison(event) {
     const price = integer(el("comparePrice").value);
     const value = await api("compare", {state_sha256:state, player_id:player, price, mode});
     if (revision === compareRevision && state === sha() && player === selected && mode === el("mode").value && !saving) {
-      renderComparison(value, players, desk);
+      renderComparison(value, players, desk, boot.formulas);
       requestAnimationFrame(() => requestAnimationFrame(() => {
         if (revision === compareRevision) measure("compare", state, began);
       }));

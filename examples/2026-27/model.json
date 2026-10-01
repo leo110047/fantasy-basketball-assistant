@@ -179,9 +179,11 @@
       "kind": "Assumption",
       "reference": "Auction market constraints: floor-aware cash scaling, bounded quote normalization, exact bid distributions",
       "as_of": "2026-09-27T12:51:24.362612+00:00",
-      "reason": "Independent lognormal bidder willingness with exact discrete bid-distribution expectations, bounded quote anchors, remaining-cash inflation and floor-first nomination. Volatility and wealth response remain uncalibrated assumptions. Planning cost is the nearest legal integer bid to expected acquisition cost, with half increments rounded up; it is a point estimate, not a success guarantee."
+      "reason": "Independent lognormal bidder willingness with exact discrete bid-distribution expectations, bounded quote anchors, remaining-cash inflation and floor-first nomination. Volatility and wealth response remain uncalibrated assumptions. Planning cost is the nearest legal integer bid to expected acquisition cost, with half increments rounded up; it is a point estimate, not a success guarantee. Display focus uses the legacy gap >= 5 and discount >= 0.2 policy; configurable presentation thresholds, not a calibrated value or bid rule."
     },
-    "format_version": 2
+    "format_version": 2,
+    "focus_difference": 5.0,
+    "focus_discount": 0.2
   },
   "solver": {
     "time_limit_seconds": 5.0,

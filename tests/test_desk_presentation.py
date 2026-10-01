@@ -6,7 +6,7 @@ def test_price_table_search_filters_csv_and_comparison_contract():
     module = Path(__file__).parents[1] / "src/fba/apps/static/presentation.js"
     script = r"""
 import assert from 'node:assert/strict';
-const {matches,valueGap,priceRows,priceCSV,rowTags,comparisonLabel,floorBackup,forecastRange} =
+const {matches,priceRows,priceCSV,rowTags,comparisonLabel,floorBackup,forecastRange} =
   await import(process.argv[1]);
 const make = (id,name,fair,positions=['PG']) =>
   ({id,name,fair,positions,positions_confirmed:true,detail:null});
@@ -20,10 +20,6 @@ assert(matches(laker,'los angeles'));
 assert(matches(laker,'Lakers James'));
 assert(!matches(laker,'LAC'));
 assert(!matches(make('1','Nikola Jokić',30),'other'));
-assert.deepEqual(valueGap(null,2),{difference:null,discount:null,focused:false});
-assert.equal(valueGap(25,20).focused,true);
-assert.equal(valueGap(100,95).focused,false);
-assert.equal(valueGap(20,16).focused,false);
 assert(floorBackup({planning_cost:2},{amount:2},false,2));
 assert(!floorBackup({planning_cost:2},{amount:1},false,2));
 assert(!floorBackup({planning_cost:2},undefined,false,2));
@@ -35,13 +31,20 @@ const players = new Map([
 ]);
 const desk={state:{teams:[{id:'one',name:'Team One'}],
   sales:[{player_id:'d',buyer:'one',amount:9}]},market:{state_sha256:'sha',market:{prices:[
-  {player_id:'a',expected:20,anchor:20},{player_id:'b',expected:29,anchor:29},{player_id:'c',expected:null,anchor:null},{player_id:'d',expected:10,anchor:10},
+  {player_id:'a',expected:20,anchor:20,difference:5,discount:0.2,focused:true},{player_id:'b',expected:29,anchor:29,difference:1,discount:1/30,focused:false},{player_id:'c',expected:null,anchor:null},{player_id:'d',expected:10,anchor:10,difference:40,discount:0.8,focused:true},
 ]}}};
-const result={caps:[{player_id:'a',amount:21},{player_id:'b',amount:35}],plan:{purchases:['b']}};
+const result={caps:[{player_id:'a',amount:21,edge:1},{player_id:'b',amount:35,edge:6}],
+ plan:{purchases:['b']}};
 const filters={query:'',scope:'available',position:'',sort:'fair'}, watched=new Set(['a']);
 const ids=rows=>rows.map(r=>r.player.id);
 assert.deepEqual(ids(priceRows(players,desk,result,watched,filters)),['b','a','c']);
 assert.deepEqual(ids(priceRows(players,desk,result,watched,{...filters,scope:'focus'})),['a']);
+// Render/export the backend values; changing display inputs cannot recreate a gap.
+const changedPlayers=new Map([...players].map(([id,p])=>[id,{...p,fair:999}]));
+const serverRows=priceRows(changedPlayers,desk,result,watched,filters);
+assert.equal(serverRows.find(r=>r.player.id==='a').difference,5);
+assert.equal(serverRows.find(r=>r.player.id==='a').discount,0.2);
+assert.equal(serverRows.find(r=>r.player.id==='a').edge,1);
 assert.deepEqual(ids(priceRows(players,desk,result,watched,{...filters,scope:'watch'})),['a']);
 assert.deepEqual(ids(priceRows(players,desk,result,watched,{...filters,sort:'gap'})),['a','b','c']);
 assert.deepEqual(ids(priceRows(players,desk,result,watched,{...filters,sort:'cap'})),['b','a','c']);

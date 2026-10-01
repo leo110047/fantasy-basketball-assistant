@@ -3,7 +3,14 @@ from math import fsum
 import numpy as np
 from numpy.typing import NDArray
 
-from fba.contracts.auction import AuctionPlayer, DraftState, MarketPrice, MarketResult, TeamBudget
+from fba.contracts.auction import (
+    AuctionPlayer,
+    DraftState,
+    MarketPrice,
+    MarketResult,
+    RoomSummary,
+    TeamBudget,
+)
 from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import (
     LeagueRules,
@@ -240,6 +247,48 @@ def market_factors(
     return anchors, remaining, inflation, average_surplus
 
 
+def quoted_gap(
+    player: AuctionPlayer, quote: MarketPrice, parameters: MarketAssumptions
+) -> MarketPrice:
+    if player.fair is None or quote.expected is None:
+        return quote
+    difference = evaluate("difference", after=player.fair, before=quote.expected)
+    discount = (
+        evaluate("ratio", numerator=difference.result, denominator=player.fair, zero_value=0.0)
+        if player.fair > 0
+        else None
+    )
+    return quote.model_copy(
+        update={
+            "difference": difference.result,
+            "discount": discount.result if discount is not None else None,
+            "focused": difference.result >= parameters.focus_difference
+            and discount is not None
+            and discount.result >= parameters.focus_discount,
+            "traces": (*quote.traces, difference, *((discount,) if discount is not None else ())),
+        }
+    )
+
+
+def room_summary(room: tuple[TeamBudget, ...]) -> RoomSummary:
+    cash = evaluate(
+        "linear", values=tuple(float(t.budget) for t in room), weights=tuple(1.0 for _ in room)
+    )
+    active = tuple(t for t in room if t.slots)
+    spendable = evaluate(
+        "linear", values=tuple(float(t.budget) for t in active), weights=tuple(1.0 for _ in active)
+    )
+    slots = evaluate(
+        "linear", values=tuple(float(t.slots) for t in room), weights=tuple(1.0 for _ in room)
+    )
+    return RoomSummary(
+        cash=int(cash.result),
+        spendable=int(spendable.result),
+        slots=int(slots.result),
+        traces=(cash, spendable, slots),
+    )
+
+
 def price_market(
     league: LeagueRules,
     parameters: MarketParameters | SampledMarketParameters,
@@ -282,18 +331,25 @@ def price_market(
     return MarketResult(
         room=room,
         prices=tuple(
-            prices.get(
-                p.id,
-                MarketPrice(
-                    player_id=p.id,
-                    anchor=anchors[p.id],
-                    expected=None,
-                    acquisition=None,
-                    planning_cost=None,
-                    bidders=0,
+            quoted_gap(
+                p,
+                prices.get(
+                    p.id,
+                    MarketPrice(
+                        player_id=p.id,
+                        anchor=anchors[p.id],
+                        expected=None,
+                        acquisition=None,
+                        planning_cost=None,
+                        bidders=0,
+                    ),
                 ),
+                parameters,
             )
             for p in players
         ),
         inflation=inflation,
+        summary=room_summary(room),
+        focus_difference=parameters.focus_difference,
+        focus_discount=parameters.focus_discount,
     )
