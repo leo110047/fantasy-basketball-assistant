@@ -112,3 +112,20 @@ uv run fba serve /path/auction-input-SHA256/auction-input.json \
 CI 比較同機器上 20 個新狀態的並行與單程序結果，要求完全一致，暖機後並行 p95 不得慢超過 10%。選秀前的絕對秒數驗收另以使用的 Mac 重播 140 筆成交與撤銷；驗收報告不放 Git。
 
 若部署環境禁止從暫存目錄載入原生程式，可在安裝套件 `fba/native/<system>-<machine>/season.so` 放入相同原始碼與工具鏈的產物。啟動仍需本機編譯器重新編譯並逐位元核對，一致才載入；編譯產物不放 Git。
+## 季賽合成效能重播
+
+`scripts/benchmark_inseason.py` 使用 14 隊 × 13 人、10 先發、150 自由球員、28 週的合成資料，分開量測冷／熱計算與逾時；不代表真實 NBA 或 Yahoo 驗收。使用既有鎖定環境：
+
+```sh
+.venv/bin/python scripts/benchmark_inseason.py --rounds 3 --output /tmp/inseason-benchmark.json
+```
+
+交易量測走桌面使用的 `TradeWorkers`，以 `--workers auto` 沿用依計算量啟用核心的政策。冷算包含延遲啟動 pool、共同基準與結果傳送；熱算沿用同一份 Simulation 與 pool。排除 API 保存、最後 JSON 序列化及 HTTP/UI；不是持久化結果快取命中。
+
+要量完整交易時間，可明示診斷停止預算；這只修改測試輸入，產品的 1／2／15／30 秒預算保持原值。以下分層公開排名讓各隊有不同價值層級，只改合成排名，不改隊伍實力；`--cold-only` 避免再跑一次熱算：
+
+```sh
+.venv/bin/python scripts/benchmark_inseason.py --operations trade_one trade_many --rounds 1 --workers auto --stratified-ranks --cold-only --diagnostic-budget 1800 --output /tmp/inseason-complete-trades.json
+```
+
+輸出保留來源雜湊、實際核心數、候選／完成計數、結果摘要雜湊與原始／診斷預算。逾時的完成計數只包含已回傳的整批，不代表 worker 已嘗試數；放寬診斷預算完成也不代表產品秒數驗收通過。最新修復與未完成項目見 [驗收更新](design/inseason-remediation-2026-09-30.md)。

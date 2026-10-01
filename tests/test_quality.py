@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import lizard
+import pytest
 
 from fba.contracts.archive import ForecastArchive
 from fba.contracts.auction import DraftState
@@ -63,13 +64,51 @@ def test_non_python_runtime_and_test_assets_have_entrypoint_references():
         assert any(value == asset.name or value.endswith("/" + asset.name) for value in literals), (
             asset
         )
-    assert set(p.name for p in (root() / "scripts").iterdir() if p.is_file()) == {
+    assert_runtime_script_entrypoints(root())
+
+
+def assert_runtime_script_entrypoints(project: Path) -> None:
+    assert set(p.name for p in (project / "scripts").iterdir() if p.is_file()) == {
         "check",
         "verify.py",
+        "benchmark_inseason.py",
     }
-    assert "scripts/check" in (root() / ".github/workflows/check.yml").read_text()
-    assert "scripts/verify.py" in (root() / "scripts/check").read_text()
-    assert "design/contracts.pyi" in (root() / "README.md").read_text()
+    assert "scripts/benchmark_inseason.py" in (project / "README.md").read_text()
+    assert "scripts/check" in (project / ".github/workflows/check.yml").read_text()
+    assert "scripts/verify.py" in (project / "scripts/check").read_text()
+    assert "design/contracts.pyi" in (project / "README.md").read_text()
+
+
+@pytest.mark.parametrize(
+    "change",
+    (None, "extra", "missing", "benchmark-doc", "check-entry", "verify-entry", "contracts-doc"),
+)
+def test_runtime_script_policy_accepts_registered_entries_and_rejects_drift(tmp_path, change):
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / ".github/workflows").mkdir(parents=True)
+    for name in ("check", "verify.py", "benchmark_inseason.py"):
+        (tmp_path / "scripts" / name).write_text("scripts/verify.py")
+    readme = tmp_path / "README.md"
+    workflow = tmp_path / ".github/workflows/check.yml"
+    readme.write_text("scripts/benchmark_inseason.py design/contracts.pyi")
+    workflow.write_text("scripts/check")
+    if change is None:
+        assert_runtime_script_entrypoints(tmp_path)
+        return
+    if change == "extra":
+        (tmp_path / "scripts/unregistered.py").write_text("")
+    elif change == "missing":
+        (tmp_path / "scripts/benchmark_inseason.py").unlink()
+    elif change == "benchmark-doc":
+        readme.write_text("design/contracts.pyi")
+    elif change == "check-entry":
+        workflow.write_text("")
+    elif change == "verify-entry":
+        (tmp_path / "scripts/check").write_text("")
+    else:
+        readme.write_text("scripts/benchmark_inseason.py")
+    with pytest.raises(AssertionError):
+        assert_runtime_script_entrypoints(tmp_path)
 
 
 def test_core_dependency_direction_and_no_io_or_mutable_globals():
