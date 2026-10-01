@@ -296,10 +296,8 @@ def player_flags(
     recent = boxes[-params.role_window.value :]
     recent_trace = evaluate("mean", values=tuple(b.minutes for b in recent)) if recent else None
     mean = recent_trace.result if recent_trace else minutes
-    if (
-        len(recent) >= params.role_window.value
-        and abs(mean - minutes) > params.role_threshold.value
-    ):
+    role_error = evaluate("absolute_error", predicted=minutes, observed=mean)
+    if len(recent) >= params.role_window.value and role_error.result > params.role_threshold.value:
         flags.append(
             ProjectionFlag(
                 id=f"{player.id}:role",
@@ -309,7 +307,7 @@ def player_flags(
                 model=minutes,
                 observed=mean,
                 reason="近期分鐘與模型差距超過設定門檻",
-                traces=(recent_trace,) if recent_trace else (),
+                traces=(*((recent_trace,) if recent_trace else ()), role_error),
             )
         )
     for stat, rate in rates.items():
@@ -322,7 +320,8 @@ def player_flags(
         average = evaluate("exposure_rate", **values)
         se = evaluate("exposure_error", **values, model=rate)
         threshold = evaluate("product", gain=se.result, probability=params.production_sigma.value)
-        if abs(average.result - rate) > threshold.result:
+        production_error = evaluate("absolute_error", predicted=rate, observed=average.result)
+        if production_error.result > threshold.result:
             flags.append(
                 ProjectionFlag(
                     id=f"{player.id}:production:{stat}",
@@ -332,7 +331,7 @@ def player_flags(
                     model=rate,
                     observed=average.result,
                     reason="當季每分鐘產出偏離模型超過抽樣誤差門檻",
-                    traces=(average, se, threshold),
+                    traces=(average, se, threshold, production_error),
                 )
             )
     fields = {f.id: f for f in params.fields}
@@ -354,7 +353,10 @@ def player_flags(
             recent_mean = evaluate(
                 "mean", values=tuple(b.minutes for b in boxes[-params.override_window.value :])
             )
-            if abs(float(entry.value) - recent_mean.result) > params.override_threshold.value:
+            override_error = evaluate(
+                "absolute_error", predicted=float(entry.value), observed=recent_mean.result
+            )
+            if override_error.result > params.override_threshold.value:
                 flags.append(
                     ProjectionFlag(
                         id=f"{player.id}:override:{entry.id}",
@@ -364,7 +366,7 @@ def player_flags(
                         model=float(entry.value),
                         observed=recent_mean.result,
                         reason="手調分鐘與近期實際不符",
-                        traces=(recent_mean,),
+                        traces=(recent_mean, override_error),
                     )
                 )
     result: list[ProjectionFlag] = []

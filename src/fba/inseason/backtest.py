@@ -70,7 +70,9 @@ def checkpoint_errors(
                         ).result,
                     ),
                 ):
-                    errors[name].append(abs(value - actual))
+                    errors[name].append(
+                        evaluate("absolute_error", predicted=value, observed=actual).result
+                    )
             if not errors["blend"]:
                 raise DataError(
                     f"backtest.{season.league.season_id}.{checkpoint}.{stat}: "
@@ -318,7 +320,9 @@ def component_rows(
                 ).result
                 mixed = evaluate("blend", k=k, prior=prior, total=made, sample=attempts).result
             for name, value in (("blend", mixed), ("prior", prior), ("current", raw)):
-                errors[name].append(abs(value - observed))
+                errors[name].append(
+                    evaluate("absolute_error", predicted=value, observed=observed).result
+                )
         if not errors["blend"]:
             raise DataError(f"backtest.{checkpoint}.{field}: no holdout observations")
         rows.append(
@@ -396,7 +400,8 @@ def flag_report(
                     ).result
                 )
                 results.setdefault(flag.kind, []).append(
-                    abs(flag.observed - observed) < abs(flag.model - observed)
+                    evaluate("absolute_error", predicted=flag.observed, observed=observed).result
+                    < evaluate("absolute_error", predicted=flag.model, observed=observed).result
                 )
     return tuple(
         {

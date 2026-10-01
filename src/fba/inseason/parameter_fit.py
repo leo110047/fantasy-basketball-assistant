@@ -121,10 +121,12 @@ def production_trial(
                 ).result
                 flag = flags.get(stat)
                 suggested = flag.observed if flag else model
-                baseline.append(abs(model - actual))
-                errors.append(abs(suggested - actual))
+                baseline.append(evaluate("absolute_error", predicted=model, observed=actual).result)
+                errors.append(
+                    evaluate("absolute_error", predicted=suggested, observed=actual).result
+                )
                 if flag:
-                    hits.append(float(abs(suggested - actual) < abs(model - actual)))
+                    hits.append(float(errors[-1] < baseline[-1]))
     if not errors:
         raise DataError("backtest.production_sigma: no causal future observations")
     return {

@@ -58,7 +58,12 @@ def calibration_bins(
             else None
         )
         uncertainty = margin.result if margin else None
-        difference = abs(p - y) if p is not None and y is not None else None
+        error = (
+            evaluate("absolute_error", predicted=p, observed=y)
+            if p is not None and y is not None
+            else None
+        )
+        difference = error.result if error else None
         rows.append(
             CalibrationBin(
                 lower=index / count,
@@ -70,7 +75,11 @@ def calibration_bins(
                 independent_samples=n,
                 effective_samples=effective_n,
                 uncertainty=uncertainty,
-                traces=(*((effective,) if effective else ()), *((margin,) if margin else ())),
+                traces=(
+                    *((effective,) if effective else ()),
+                    *((margin,) if margin else ()),
+                    *((error,) if error else ()),
+                ),
                 alert=params is not None
                 and effective_n >= params.calibration_minimum.value
                 and difference is not None

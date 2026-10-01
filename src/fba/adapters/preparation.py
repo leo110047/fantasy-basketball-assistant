@@ -27,6 +27,7 @@ from fba.contracts.projection import (
 )
 from fba.core.config import validate_config
 from fba.data.codec import canonical, decode, digest, read_bytes
+from fba.formulas.registry import evaluate
 from fba.formulas.team_minutes import minute_allocations
 from fba.projection.calculation import calculate_with_offense
 from fba.projection.preparation import prepare
@@ -137,7 +138,11 @@ def difference_report(
     changes: list[tuple[str, float | None, float | None, float | None]] = []
     for player in current.valuation.players:
         prior = before.get(player.id)
-        delta = player.fair - prior if player.fair is not None and prior is not None else None
+        delta = (
+            evaluate("difference", after=player.fair, before=prior).result
+            if player.fair is not None and prior is not None
+            else None
+        )
         changes.append((player.id, prior, player.fair, delta))
     changes.sort(key=lambda p: (-abs(p[-1]) if p[-1] is not None else float("inf"), p[0]))
     return (

@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import JsonValue, TypeAdapter
 
+from fba.adapters.inseason_priors import read_priors
 from fba.contracts.base import ConfigError, DataError, Record
 from fba.contracts.inseason import (
     AdjustmentLedger,
@@ -36,7 +37,7 @@ from fba.core.inseason import (
     validate_parameter_values,
 )
 from fba.data.codec import canonical, decode, digest
-from fba.data.inseason_sources import AuthorizedFeed, projection_rules, read_priors
+from fba.data.inseason_sources import AuthorizedFeed, projection_rules
 from fba.data.storage import Store, StoredSnapshot
 from fba.data.yahoo import SyncBundle, YahooSync, discover
 from fba.data.yahoo_auth import CredentialVault, SystemVault, YahooAuth, YahooReader

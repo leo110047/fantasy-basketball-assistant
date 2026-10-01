@@ -209,12 +209,19 @@ class Portfolio:
         without = self.solve(exclude=player) if self.players[player].id in base.purchases else base
         forced = isinstance(without, Infeasible)
         target = None if isinstance(without, Infeasible) else without.utility
-        loss = None if isinstance(without, Infeasible) else max(0.0, base.utility - without.utility)
+        gain = (
+            None
+            if isinstance(without, Infeasible)
+            else evaluate("difference", after=base.utility, before=without.utility)
+        )
+        loss_trace = evaluate("positive_part", value=gain.result) if gain else None
+        loss = loss_trace.result if loss_trace else None
+        traces = (gain, loss_trace) if gain and loss_trace else ()
         if target is not None and self.prune and self.cannot_afford_value(player, target):
-            return CapCalculation(0, loss, forced, ())
+            return CapCalculation(0, loss, forced, traces)
         result = self.solve(force=player, target=target, objective="cost")
         if isinstance(result, Infeasible):
-            return CapCalculation(0, loss, forced, ())
+            return CapCalculation(0, loss, forced, traces)
         maximum = evaluate(
             "affordable_cap",
             budget=float(self.budget),
@@ -223,7 +230,7 @@ class Portfolio:
             completion_cost=float(result.cost),
             increment=float(self.league.bid_increment),
         )
-        return CapCalculation(int(maximum.result), loss, forced, (maximum,))
+        return CapCalculation(int(maximum.result), loss, forced, (*traces, maximum))
 
     def cannot_afford_value(self, player: int, target: float) -> bool:
         slots = self.slots - 1
