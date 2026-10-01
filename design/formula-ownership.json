@@ -168,7 +168,7 @@
       "role": "structure",
       "owner": "fba.adapters.native.compile_kernel",
       "reason": "ABI buffer offsets, integer capacity bounds and library paths.",
-      "signature": "819c2ac824d3b75795f76cf3c8b390fd2513a677d42c23963267eddcbfb52a20"
+      "signature": "d105cb99e671712c6fec50fa5d4a09733d6dc859c182dff205ea31ecc3e6adb8"
     },
     "fba.adapters.native.native_source_digest": {
       "role": "structure",

@@ -36,6 +36,15 @@ def compiler_path() -> str:
     return compiler
 
 
+def compiler_flags() -> tuple[str, ...]:
+    flags = ("-std=c++17", "-O2", "-ffp-contract=off", "-fPIC", "-shared")
+    if sys.platform == "win32":
+        # The POSIX MinGW runtime also imports libwinpthread. Keep the kernel
+        # self-contained instead of depending on the compiler's DLL directory.
+        return (*flags, "-Wl,--no-insert-timestamp", "-static")
+    return flags
+
+
 def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
     compiler = compiler_path()
     build = tempfile.TemporaryDirectory(prefix="fba-season-")
@@ -44,18 +53,9 @@ def compile_kernel() -> tuple[tempfile.TemporaryDirectory[str], Path]:
     (Path(build.name) / "management-formula.h").write_text(management_formula())
     command = (
         compiler,
-        "-std=c++17",
-        "-O2",
-        "-ffp-contract=off",
-        "-fPIC",
-        "-shared",
+        *compiler_flags(),
         "-I",
         build.name,
-        *(
-            ("-Wl,--no-insert-timestamp", "-static-libgcc", "-static-libstdc++")
-            if sys.platform == "win32"
-            else ()
-        ),
         str(source),
         "-o",
         path.name,
