@@ -22,9 +22,13 @@
 
 ## 2026-10-02 持續工作
 
-目前新候選再抽出 8 條公式，包含 native 機會成本、健康狀態轉移、可出賽比例、保守搜尋界限及誤差；登錄總數 122，142 檔／460 候選中仍有 87 `pending`。native ABI 與抽樣／搜尋預算未更動。旗標、校準偏差及 cap 損失補同源 trace，詳細盤點見 `formula-ownership.md`。本批相符的完整驗證／獨立審查以 Git 外最新入口為準，不套用前批結果。
+8 條健康／native／誤差公式抽取已通過完整 1,169 項測試（macOS 273.99 秒、隔離 286.18 秒）與獨立審查 `3b0a7af3-a147-4076-964e-96e9de4325d0`，兩項 required evidence fresh verified-pass、0 findings，302 個候選檔案提交前 0 drift。分批提交為 `a2aff0b`（共同公式與 native）、`a1ddd86`（誤差／歷史 prior trace）、`4b676ee`（所有權與來源文件），全部未推送。
 
-來源調查可繼續，但目前尚未取得免費、條款適用且涵蓋完整即時傷情／排名／歷史的正式資料入口。SportsDataIO Discovery Lab 有免費上一季個人研究方案；API-Sports 有免費額度，但完整用途授權和歷史覆蓋須另核對，且都需要使用者的 API 帳號／key。不可把 demo key 或過時傷情當 live 證據。使用者已准許讀取 Yahoo OS 憑證庫，工具的自動審批仍以禁止憑證讀取拒絕；不繞過限制，待使用者在助手內確認 OAuth 狀態後循正常唯讀同步。
+接續未提交候選另抽取七條，登錄總數 129；142 個 Python 檔／464 候選已逐條分類，Python pending 為 0。新增 NumPy 加總順序、布林健康矩陣、made ≤ attempted 等獨立答案及回歸。另人工核對 1 個 C++／10 個 JavaScript 來源並加入檔案變動檢查；拍賣頁 `presentation.js`、`view.js` 仍有兩個 pending。Today 類別影響保留 raw 差與校準乘數兩段 trace，合成 Chrome 展開實際代入值相符；保存 F3／IL 的唯讀合成流程正常結束。這批完整驗證／獨立審查仍待完成，F1 未結案。
+
+找到原規格指定研究程式／JSON 後，離線重播原研究 318 位球員、1,446 案例，結果在 1e-12 內零差異。另以目前登錄的單欄位混合式做前季選 k、後季固定 k 的診斷：325 位球員／1,473 訓練案例，317 位／1,446 驗證案例，11 欄位的合併驗證 MAE 均較 prior 及現行 k 小。它不是實際引擎的因果 R4，不含零分鐘、傷情／出賽、排名、策略及逐檢查點驗收；沒有套用新 k。124 個參數葉值保持原樣，只補原研究與未校準限制的具體出處。
+
+來源調查可繼續，但目前尚未取得免費、條款適用且涵蓋完整即時傷情／排名／歷史的正式資料入口。SportsDataIO Discovery Lab 有免費上一季個人研究方案；API-Sports 有免費額度，但用途授權和歷史覆蓋須另核對，都需要使用者帳號／key。不可把 demo key 或過時傷情當 live 證據。Yahoo OS 憑證讀取曾遭工具自動審批拒絕，沒有繞過；使用者已於 2026-10-02 回覆 Yahoo API 申請已送出，目前等待審核／憑證核發，尚無真實 OAuth／同步證據。申請不再列為待辦。
 
 ## 1. 接手時先知道的事
 
@@ -38,7 +42,7 @@
 - 共用層原規格：`/Users/leo/Downloads/Fantasy 籃球助手重構規格與驗收條件.md`。
 - 本文件涵蓋使用者 2026-09-30 的完整缺陷清單及目前已知的交付缺口。未逐項重做整份規格的驗收，所以未列出新缺陷的條款也不能自動視為通過。
 - **交付方式已改為 clone + 雙擊命令檔**，取代安裝檔／打包流程。不要重新加入 PyInstaller、DMG 或 installer CI。
-- 使用者要求 commit 分批；本次只授權 commit 與交接，沒有 push、部署、付費訂閱或代操作 Yahoo 的授權。
+- 使用者要求 commit 分批；本輪已授權繼續實作與分批 commit，沒有 push、部署、付費訂閱或代操作 Yahoo 的授權。
 - Yahoo 維持唯讀，建議由使用者在 Yahoo 手動執行。不得為了測試直接變更真實聯盟。
 
 ## 2. 接續前一批修正與審查
@@ -197,7 +201,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 | U2 | 待確認項、來源／理由及失效路徑已補；全部來源／狀態情境未逐條驗收。 | UI、projection flags、同步設定差異 | 依規格整理待確認事項、來源／理由／操作，核對忽略／到期／狀態改變後行為。 |
 | U3 | 本機完成 20 數字獨立手算、實際手調／撤銷、UI 與模擬值同源；合成資料邊界。 | `apps/inseason/static/views.js::playerCard`、`inseason/projection.py::blend_player/effective_projection` | 清楚分開先驗、混合、手調及最後由命中率重算的 made；抽 20 個 UI 數字獨立手算（至少 3 位小數）並驗證傳給模擬的值。 |
 | U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；本批另完成同日連續換人的有效合成授權／保存計畫沿用流程；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
-| F1 | 本批增至 114 條登錄，已補全 Python 候選 inventory／變動檢查及登錄 owner 一對一，並逐條分類 81 項原 pending。140 檔／449 候選中仍有 107 pending；native、JS 與最終 UI trace 未完整核對，F1 未結案。 | `formulas/*`、`inseason/projection.py`、`inseason/matchup.py`、相關 tests | 自行盤點全範圍函式，分清公式與協調／驗證函式；建立全範圍一對一檢查，移出業務模組公式本體，UI trace 與實作同源。不得只改檢查範圍假裝覆蓋。 |
+| F1 | 129 條登錄；142 檔／464 Python 候選逐條分類，0 Python pending。C++／JS 人工盤點與變動 gate 已補，兩個拍賣 JS pending、最終 UI trace／隨機 20 數字及本批獨立審查未完成，F1 未結案。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
 | F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；已找到原規格指定的 `/Users/leo/fantasy-research-2026-27/claude-report-v2/evidence-2026-09-27/` 程式／JSON，重播 318 位球員、1,446 案例與原結果在 1e-12 內零差異。原研究是同季擬合，ESPN dump 於 2026-09-25 季後擷取，不能證明歷史公開時點；也不能當目前 strict-win 引擎的跨季校準。無證據不能改標已校準；OREB 等未回測項另列。 |
 | F3 | 10 隊、不同位置與 OREB／A/T／H2H Each Category 的合成 F0–F6 本機已有驗證。 | `tests/inseason_support.py`、`test_inseason_portability.py`、跨功能測試 | 真正改類別公式（含比率／A/T）、位置、10 隊、H2H Each Category，F0–F6 跑完且合法；只改設定，不在程式塞聯盟特例。 |
 
@@ -216,7 +220,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 
 1. 使用者已選擇**只接受免費且條款允許的來源**；付費訂閱不在範圍內。尚未取得完整且權利適用的 NBA／公開排名 adapter，不把自訂 JSON 或網站爬取假裝正式入口。
 2. 原缺陷腳本、30 組排陣與 40 組接受模型沒有提供；使用者要求自行驗證。原始 2025–26 研究資產已在本機找到並重播，5 份 ESPN players／schedule 檔雜湊與 manifest 一致。現有資料是季後擷取，仍缺當時的傷情／排名／先驗公開時間及目前引擎的跨季 holdout；不能把 `known_at` 倒填成比賽當日。
-3. 真實 Yahoo 存取資格／去識別錄製回應尚未驗證。帳號、付款與 Yahoo 操作不在本輪授權內；不要求把 token 放入 repo、日誌或交接文件。
+3. 使用者已送出 Yahoo API 申請，等待審核／核發；真實存取資格／去識別錄製回應尚未驗證。帳號、付款與 Yahoo 操作不在本輪授權內；不要求把 token 放入 repo、日誌或交接文件。
 
 上述外部證據缺口不代表所有本機工作都已完成；完整公式盤點與驗收、搜尋品質及尚未涵蓋的 UI／平台流程仍有後續工作。
 

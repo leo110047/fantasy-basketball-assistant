@@ -6,99 +6,99 @@
       "value": 200,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     },
     "FGM": {
       "value": 200,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Intermediate made-count k inherits the matching attempted-count k; no independent made-count fit in the recovered study. Final made counts are recomputed from attempts and shooting probability. Not validated."
       }
     },
     "FTA": {
       "value": 300,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     },
     "FTM": {
       "value": 300,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Intermediate made-count k inherits the matching attempted-count k; no independent made-count fit in the recovered study. Final made counts are recomputed from attempts and shooting probability. Not validated."
       }
     },
     "3PM": {
       "value": 300,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     },
     "REB": {
       "value": 400,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     },
     "OREB": {
       "value": 400,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "No OREB backtest is available. Assumed k=400; not a validated value."
+        "reference": "季賽助手規格 section 11; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "No OREB stabilization fit in the recovered study. k=400 is an assumption inherited from REB, not a validated value."
       }
     },
     "AST": {
       "value": 300,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     },
     "TO": {
       "value": 400,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     },
     "STL": {
       "value": 800,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     },
     "BLK": {
       "value": 600,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial value from the reproduced 2025-26 same-season fit/evaluation (318-player cohort, 1446 rate cases). Captured after the season on 2026-09-25; historical publication times of priors are unproven. Not a causal current-engine or cross-season holdout calibration."
       }
     }
   },
@@ -107,18 +107,18 @@
       "value": 300,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial attempt-count k from the reproduced 2025-26 same-season shooting fit/evaluation. Postseason priors have no proven historical publication time; not independently calibrated for the current engine or a causal holdout."
       }
     },
     "FT%": {
       "value": 100,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
-        "as_of": "2026-09-29T16:00:00Z",
-        "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+        "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+        "as_of": "2026-10-01T17:14:02.827314+00:00",
+        "reason": "Initial attempt-count k from the reproduced 2025-26 same-season shooting fit/evaluation. Postseason priors have no proven historical publication time; not independently calibrated for the current engine or a causal holdout."
       }
     }
   },
@@ -273,36 +273,36 @@
     "value": 3,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T17:14:02.827314+00:00",
+      "reason": "Initial k=3 games and half-life=10 games from the reproduced 2025-26 same-season minutes fit. The recovered positive-minute-only cohort differs from the current engine, which retains zero-minute observations; not current-engine holdout calibration."
     }
   },
   "minute_half_life": {
     "value": 10,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T17:14:02.827314+00:00",
+      "reason": "Initial k=3 games and half-life=10 games from the reproduced 2025-26 same-season minutes fit. The recovered positive-minute-only cohort differs from the current engine, which retains zero-minute observations; not current-engine holdout calibration."
     }
   },
   "role_window": {
     "value": 10,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T17:15:04.621126+00:00",
+      "reason": "Recovered 2025-26 role-shift diagnostic: recent 10 games and 6-minute gap; 92 flagged / 60 closer to recent at the 20-game checkpoint. Same-season retrospective evidence, not a verified holdout threshold."
     }
   },
   "role_threshold": {
     "value": 6,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_inseason.json sha256:536f0fc7e83873c613e11dda1df146b83a8f678ab44fdf06f2ee5107b5673483; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T17:15:04.621210+00:00",
+      "reason": "Recovered 2025-26 role-shift diagnostic: recent 10 games and 6-minute gap; 92 flagged / 60 closer to recent at the 20-game checkpoint. Same-season retrospective evidence, not a verified holdout threshold."
     }
   },
   "override_window": {
@@ -363,9 +363,9 @@
     "value": 0.82,
     "evidence": {
       "kind": "Assumption",
-      "reference": "design/inseason-handoff-2026-09-30.md M6; design/inseason-remediation-2026-09-30.md",
-      "as_of": "2026-10-01T07:35:14.320394Z",
-      "reason": "Handoff M6 category initial coefficient 0.82. The readable original specification does not provide its fitted dataset; no independent holdout evidence."
+      "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_matchup_rolesd0.json sha256:6e4a6e7f19b0c54ec19d81cfe0fcce80ed9657c5da56c65479b21a95209f453a; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T17:14:02.827314+00:00",
+      "reason": "Initial category c=0.82 from a 2025-26 pseudo-team study: fit on its first half, evaluate on its second half in the same season. Full-season team-day hindsight and assumed missing statistics limit applicability; not current-engine causal cross-season calibration."
     }
   },
   "safe_probability": {
@@ -629,9 +629,9 @@
     "value": 0.8,
     "evidence": {
       "kind": "Assumption",
-      "reference": "design/inseason-handoff-2026-09-30.md M6; design/inseason-remediation-2026-09-30.md",
-      "as_of": "2026-10-01T07:35:14.320394Z",
-      "reason": "Handoff M6 weekly initial coefficient 0.80; distinct from category calibration. No independent holdout evidence."
+      "reference": "claude-report-v2/evidence-2026-09-27/results/backtest_matchup_rolesd0.json sha256:6e4a6e7f19b0c54ec19d81cfe0fcce80ed9657c5da56c65479b21a95209f453a; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T17:14:02.827314+00:00",
+      "reason": "Initial weekly c=0.80 from the same 2025-26 pseudo-team study. Its weekly metric credits ties as 0.5 standings points, unlike current strict-win probability; no independent current-engine holdout calibration."
     }
   },
   "calibration_minimum": {

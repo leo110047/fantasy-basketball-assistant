@@ -28,12 +28,17 @@
 
 新增 `management_gain`、`availability_probability`、`upper_total`、`health_step`、`subset_bound`、`outward_bound`、`positive_part`、`absolute_error` 共 8 條。保守界限保留 `fsum`、逐步 outward rounding 和無界內部 fallback；沒有建立堆疊上下界的大型中間陣列。角色／產出／手調旗標、校準偏差與競標 cap 損失保留登錄 trace，歷史報告與來源換算重用既有公式。新候選的測試與獨立審查以 Git 外報告為準，沒有沿用前批綠燈。
 
+這批已通過完整 1,169 項測試與獨立審查 `3b0a7af3-a147-4076-964e-96e9de4325d0`，分為 `a2aff0b`、`a1ddd86`、`4b676ee` 三批本機提交，未推送。接續候選另新增 `historical_games`、`average_surplus`、`array_product`、`nonnegative_samples`、`derived_sum`、`nested_count_limit`、`strict_win` 七條，登錄總數 129；完整驗證及審查仍待完成。布林健康矩陣、availability mask、made ≤ attempted、GP 範圍、剩餘現金平均與 strict-win 使用同一 owner。衍生數據保留原 NumPy 加總順序，沒有替換 RNG、樣本數或預算。
+
+Today 的類別影響現在保留「raw 機率差 → 類別校準乘數」兩段 trace；在合成資料的實際 Chrome 展開後，`0.76 − 0.675 = 0.085`、`0.085 × 0.82 = 0.0697` 與顯示的 `PTS Δ 0.07` 相符。這只是新增呈現的整合證據，不替代全產品隨機 20 個畫面數字驗收。
+
 ## 全範圍盤點與自動檢查的界限
 
 `tests/formula_ownership_support.py` 每次掃描全部 `src/fba/**/*.py`，包含 module／class 內容、method、nested function、lambda 內的算術及數值正負號；排除型別註記與位元旗標運算。它只找候選，沒有宣稱能從 AST 自動判斷業務語意。
 
-目前 142 個 Python 檔有 460 個候選 owner：122 `registered`、1 `component`、52 `composition`、17 `validation`、181 `structure`、87 `pending`。數字不是漏登錄公式數。Paths、字串、集合、日期與 solver constraint arithmetic 也會被掃到。
-本輪逐條核對並分類了原先 188 個 pending 中的 81 個；後續抽取及分類另處理 20 個原 pending，剩餘 87 個仍待語意處理。分類理由寫在每一筆 JSON，不將含有健康比例、市場餘額、統計誤差或搜尋上界的混合函式當成單純索引／排序放行。
+目前 142 個 Python 檔有 464 個候選 owner：129 `registered`、1 `component`、129 `composition`、17 `validation`、188 `structure`、0 `pending`。數字不是公式總數。Paths、字串、集合、日期與 solver constraint arithmetic 也會被掃到。本輪讀完剩餘 87 個函式本體，抽取業務算式後逐條記錄具體分類理由。合法名單／現金保留、搜尋順序與停止條件不當成預測公式；使用既有登錄公式的編排保留在引擎。
+
+另逐檔核對 1 個 C++ 與 10 個 JavaScript 來源，保存完整檔案 SHA-256、分類、理由與所用登錄 ID。測試檢查新增／刪除／改寫來源時必須更新這份人工盤點，不能自動判斷語意。`apps/static/presentation.js`、`apps/static/view.js` 仍為 `pending`：前端估值差／折扣與市場房間彙總仍需處理。
 
 盤點也涵蓋目前使用的 NumPy `minimum`、`maximum`、`add`、`logaddexp`、`count_nonzero`；五個不帶算術運算子的案例先重現漏記，再修正檢查。新增六個候選逐條核對，其中五個只是 `set.add` 的保守誤報，一個是 native 日期容量驗證。呼叫名稱檢查會有誤報，且不是型別推導或數值語意證明。
 
@@ -41,14 +46,14 @@
 - CI 檢查新增／刪除／搬移／改寫候選時必須更新盤點，禁止僅更新 signature 而略過語意核對。測試不會自動產生或更新文件。
 - CI 從兩份執行登錄表比對全範圍 `registered` owner，檢查 ID 和 implementation 各自一對一；公式必須在 `fba.formulas`。私有 quadrature integrand 明確歸屬 `market_normalization`。
 - 手算範例測試獨立提供答案，並核對 immutable inputs／重播。不從受測實作產生 expected。
-- **上述檢查通過只證明在所列語法／呼叫名稱範圍內沒有未記錄的變動及已登錄公式的一對一；不代表 87 個 pending 已完成語意分類，也不代表所有產品數字都有完整 UI trace。**
+- **上述檢查通過只證明在所列語法／呼叫名稱範圍內沒有未記錄的變動及已登錄公式的一對一；不代表盤點分類自動正確，也不代表所有產品數字都有完整 UI trace。Python 沒有 pending 不等於 F1 通過。**
 
 ## F1 仍須完成
 
-1. 逐條審閱 JSON 中的 `pending`；業務算式搬到既有公式 owner，協調／搜尋／驗證須寫具體理由。優先看 `auction/managed.py` 的 availability／control composition、`formulas/valuation.py` 的類別影響、`formulas/market.py` 的市場餘額及 `inseason` 的報告／界限／排序計算。
-2. `src/fba/native/season.cpp` 的 `Simulation::choose` 現由 `adapters/native_formula.py` 把唯一登錄的 `management_gain` 表達式轉成 C++ header；候選上界也用同一函式。白名單 AST 遇到未支援語法明確失敗，沒有 eval 或第二份算式。native artifact 雜湊同時綁定 template 與產生的 header；ABI、樣本與日期×球員配置保持原樣。另有實際編譯 C++ 的獨立答案及 provenance 失配測試；每週排序權重亦由同一轉譯器產生既有 `product` 的 C++ 函式；其餘 native 搜尋／排序算術仍需整體核對。
+1. 完成兩個 JavaScript pending 來源的業務算式搬移與呈現追溯；Python 語意分類需經本批獨立審查。
+2. `src/fba/native/season.cpp` 的 `Simulation::choose` 現由 `adapters/native_formula.py` 把唯一登錄的 `management_gain` 表達式轉成 C++ header；候選上界也用同一函式。白名單 AST 遇到未支援語法明確失敗，沒有 eval 或第二份算式。native artifact 雜湊同時綁定 template 與產生的 header；ABI、樣本與日期×球員配置保持原樣。另有實際編譯 C++ 的獨立答案及 provenance 失配測試；每週排序權重亦由同一轉譯器產生既有 `product` 的 C++ 函式；其餘 native 搜尋／排序算術已逐檔核對並記錄具體理由。
 3. `src/fba/apps/**/*.js` 尚需完成各顯示數字／unit conversion／日期算術與後端 trace 的逐項核對；Python gate 不涵蓋 JavaScript。
 4. 已登錄內部公式仍須追到最終 UI 的代入值。保守區間在內部允許無界 `±inf`；公開的 `evaluate_array` 明確拒絕 non-finite evidence，不把無界值裝成可展示的數字。
-5. 重構規格同步及隨機 20 個畫面數字手算仍需逐條原始證據。122 條範例不能替代這項整合驗收。
+5. 重構規格同步及隨機 20 個畫面數字手算仍需逐條原始證據。129 條範例不能替代這項整合驗收。
 
 `playoff_odds` 保留既有 seed tie-break 模型假設；本次抽取不是已核實 Yahoo 最終排名規則、真實晉級機率或歷史校準的證據。效能工作依目前使用者決定暫停，本次不宣稱任何預算達標。
