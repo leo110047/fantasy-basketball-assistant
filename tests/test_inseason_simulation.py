@@ -101,7 +101,12 @@ def test_today_uses_weekly_calibrated_score_and_uncertainty(mode, calibration):
 
     sim = simulation(mode=mode)
     sim.params = sim.params.model_copy(
-        update={"calibration": sim.params.calibration.model_copy(update={"value": calibration})}
+        update={
+            "calibration": sim.params.calibration.model_copy(update={"value": calibration}),
+            "week_calibration": sim.params.week_calibration.model_copy(
+                update={"value": calibration}
+            ),
+        }
     )
     forecast = sim.week("team0", "team1", "2")
     daily = today(sim, sim.as_of.astimezone(sim.zone).date(), "Asia/Taipei")
@@ -141,6 +146,14 @@ def test_started_player_retains_slot_without_counting_recorded_stats_twice():
     )
     sim.games = tuple(started if g.id == game.id else g for g in sim.games)
     sim.players = sim.players.model_copy(update={"games": sim.games})
+    # This case supplies confirmed credited totals; retrieval alone is not coverage.
+    sim.snapshot = sim.snapshot.model_copy(
+        update={
+            "actual": tuple(
+                s.model_copy(update={"complete_through": s.through}) for s in sim.snapshot.actual
+            ),
+        }
+    )
     draws = sim.daily_draws(sim.roster("team0"), on, sim.as_of)
     assert not draws["p0"].any()
     forecast = sim.week("team0", "team1", "2")

@@ -9,8 +9,10 @@ from fba.contracts.inseason import FreeAgent, InseasonPreferences, WeekForecast
 from fba.contracts.inseason_results import AddPlan, RosterMove
 from fba.formulas.categories import category_values
 from fba.formulas.registry import evaluate
-from fba.inseason.matchup import Simulation, category_changes
-from fba.inseason.season import season_value
+from fba.inseason.drop_candidates import prioritized_drops
+from fba.inseason.forecast import category_changes
+from fba.inseason.matchup import Simulation
+from fba.inseason.season import MissingSeasonOpponent, season_value
 
 
 def legal_roster(sim: Simulation, roster: tuple[str, ...], on: date) -> bool:
@@ -42,13 +44,22 @@ def changed_simulation(sim: Simulation, team: str, moves: tuple[RosterMove, ...]
         sim.snapshot,
         sim.as_of,
         sim.samples,
+        untouchable=tuple(sim.untouchable),
     )
     child.projections, child.draws = sim.projections, sim.draws
+    child.projection_profiles = sim.projection_profiles
+    child.priority_cache = sim.priority_cache
+    child.project_injury_returns = sim.project_injury_returns
     child.cancelled = sim.cancelled
     child.deadline = sim.deadline
+    if sim.season_engine is not None:
+        # Reuse the existing ROS pool without mixing it with weekly draws.
+        # Forecast/lineup caches remain private to this transition scenario.
+        child.season().draws = sim.season_engine.draws
     roster = sim.roster(team)
     transitions: list[tuple[date, tuple[str, ...]]] = []
     for move in moves:
+        roster = sim.projected_roster(team, move.effective_on, roster)
         if move.drop not in roster or move.add in roster:
             raise DataError("recommendations: plan reuses an unavailable player")
         roster = tuple(sorted((*tuple(p for p in roster if p != move.drop), move.add)))
@@ -65,9 +76,8 @@ def quick_score(
     for pid, sign in ((add, 1), (drop, -1)):
         p = projection[pid]
         games = sum(
-            p.player.team_id in (g.home, g.away)
-            and on <= g.tipoff.astimezone(sim.zone).date() <= end
-            for g in sim.games
+            len(sim.games_on(p.player.team_id, on + timedelta(days=day)))
+            for day in range((end - on).days + 1)
         )
         for stat, value in p.expected.items():
             deltas[stat] = deltas.get(stat, 0.0) + sign * games * value
@@ -135,9 +145,13 @@ def search_add_plans(
     week = next(w for w in sim.league.matchups if w.id == week_id)
     before = sim.week(team.id, opponent, week_id)
     keys = tuple(c.id for c in before.categories if c.strategy == "key")
-    if not keys:
+    if (before.priority and before.priority.status == "must_win") or not keys:
         keys = tuple(c.id for c in before.categories)
-    future = season_value(sim, team.id, after=week.end + timedelta(days=1))
+    future = (
+        0.0
+        if before.priority and before.priority.status == "must_win"
+        else season_value(sim, team.id, after=week.end + timedelta(days=1))
+    )
     beam: list[tuple[tuple[RosterMove, ...], tuple[str, ...]]] = [((), team.players)]
     results: list[AddPlan] = []
     for depth in range(remaining):
@@ -158,13 +172,14 @@ def search_add_plans(
         evaluated: list[AddPlan] = []
         for index, (_, moves) in enumerate(candidates[: sim.params.shortlist.value]):
             sim.check_limits()
-            evaluated.append(evaluate_plan(sim, preferences, moves, before, future))
+            plan = evaluate_plan(sim, preferences, moves, before, future)
+            evaluated.append(plan)
             progress(
                 (depth + (index + 1) / max(1, min(len(candidates), sim.params.shortlist.value)))
                 / remaining
             )
         evaluated.sort(key=lambda p: (-round(p.score / sim.params.tolerance.value), p.id))
-        results.extend(evaluated)
+        results.extend(p for p in evaluated if admissible_plan(p, sim.params.tolerance.value))
         beam = [
             (p.moves, changed_simulation(sim, team.id, p.moves).transitions[team.id][-1][1])
             for p in evaluated[: sim.params.beam_width.value]
@@ -188,17 +203,41 @@ def evaluate_plan(
     child = changed_simulation(sim, team, moves)
     after = child.week(team, opponent, week_id)
     delta_week = evaluate("difference", after=after.score, before=before.score)
-    delta_season = evaluate(
-        "difference",
-        after=season_value(child, team, after=week.end + timedelta(days=1)),
-        before=future,
-    )
-    score = evaluate(
-        "add_score",
-        delta_week=delta_week.result,
-        delta_season=delta_season.result,
-        weight=preferences.future_weight,
-    )
+    must_win = before.priority is not None and before.priority.status == "must_win"
+    delta_season = delta_strength = None
+    unavailable = None
+    if must_win:
+        score = delta_week
+    else:
+        start = week.end + timedelta(days=1)
+        future_sim, rosters = child, None
+        if (
+            moves
+            and not any(t.injury_players for t in sim.snapshot.teams)
+            and all(m.effective_on < start for m in moves)
+        ):
+            # After every move has taken effect, only the final active roster
+            # matters. The existing ROS engine owns those roster-keyed caches.
+            # IL scenarios and later transitions keep their full timeline.
+            future_sim = sim
+            rosters = {team: child.transitions[team][-1][1]} if moves else None
+        delta_season = evaluate(
+            "difference", after=season_value(future_sim, team, rosters, after=start), before=future
+        )
+        try:
+            delta_strength = evaluate(
+                "difference",
+                after=season_value(future_sim, team, rosters, after=start, include_playoffs=True),
+                before=season_value(sim, team, after=start, include_playoffs=True),
+            )
+        except MissingSeasonOpponent as exc:
+            unavailable = str(exc)
+        score = evaluate(
+            "add_score",
+            delta_week=delta_week.result,
+            delta_season=delta_season.result,
+            weight=preferences.future_weight,
+        )
     traced_moves = tuple(
         m.model_copy(
             update={
@@ -220,15 +259,23 @@ def evaluate_plan(
         str(tuple((m.add, m.drop, m.effective_on) for m in moves)).encode()
     ).hexdigest()
     return AddPlan(
+        priority=before.priority,
         category_changes=category_changes((before,), (after,)),
         id=identifier,
         moves=traced_moves,
         before=before,
         after=after,
         delta_week=delta_week.result,
-        delta_season=delta_season.result,
+        delta_season=delta_season.result if delta_season else None,
+        delta_strength=delta_strength.result if delta_strength else None,
+        strength_unavailable=unavailable,
         score=score.result,
-        traces=(delta_week, delta_season, score),
+        traces=(
+            delta_week,
+            *((delta_season,) if delta_season else ()),
+            *((delta_strength,) if delta_strength else ()),
+            score,
+        ),
     )
 
 
@@ -240,6 +287,8 @@ def candidate_moves(
     on: date,
     end: date,
     keys: tuple[str, ...],
+    *,
+    exhaustive: bool = False,
 ) -> list[tuple[float, tuple[RosterMove, ...]]]:
     sim.check_limits()
     result: list[tuple[float, tuple[RosterMove, ...]]] = []
@@ -256,13 +305,22 @@ def candidate_moves(
             ),
         )
     current = changed_simulation(sim, sim.snapshot.mine, moves) if moves else sim
+    roster = current.projected_roster(sim.snapshot.mine, on, roster)
+    drops = prioritized_drops(
+        current,
+        prefs,
+        roster,
+        tuple(m.add for m in moves if m.effective_on == on),
+        on,
+        exhaustive=exhaustive,
+    )
     for free in available.values():
         if free.player_id in roster:
             continue
         effective = datetime.combine(on, sim.league.cutoff_local_time, sim.zone)
         if free.status == "waiver" and (free.clears_at is None or free.clears_at > effective):
             continue
-        for drop in roster:
+        for drop in drops:
             sim.check_limits()
             if drop in prefs.untouchable:
                 continue
@@ -278,3 +336,13 @@ def candidate_moves(
                     (quick_score(current, free.player_id, drop, on, end, keys), (*moves, move))
                 )
     return result
+
+
+def admissible_plan(plan: AddPlan, tolerance: float) -> bool:
+    if plan.priority is not None and plan.priority.status == "must_win":
+        return plan.delta_week > tolerance
+    return (
+        plan.delta_strength is not None
+        and plan.delta_strength >= -tolerance
+        and plan.score > tolerance
+    )

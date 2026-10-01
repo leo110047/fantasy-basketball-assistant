@@ -1,8 +1,8 @@
+import json
 from datetime import date, datetime, timedelta
+from hashlib import sha256
 from math import fsum
 from zoneinfo import ZoneInfo
-
-import numpy as np
 
 from fba.contracts.base import DataError
 from fba.contracts.formula import FormulaTrace
@@ -23,9 +23,26 @@ from fba.contracts.inseason import (
 )
 from fba.core.config import require_members
 from fba.core.inseason import required_statistics
-from fba.formulas.arrays import evaluate_array
 from fba.formulas.registry import evaluate
 from fba.inseason.adjustments import active_entries
+
+
+class ProjectionIndex:
+    """A simulation owns lookups for its immutable effective-player profiles."""
+
+    def __init__(self) -> None:
+        self.profiles: dict[
+            int, tuple[tuple[EffectivePlayer, ...], dict[str, EffectivePlayer]]
+        ] = {}
+
+    def get(self, projection: EffectiveProjection) -> dict[str, EffectivePlayer]:
+        key = id(projection.players)
+        if key not in self.profiles:
+            self.profiles[key] = (
+                projection.players,
+                {p.player.id: p for p in projection.players},
+            )
+        return self.profiles[key][1]
 
 
 def visible_players(snapshot: PlayerSnapshot, as_of: datetime) -> tuple[SeasonPlayer, ...]:
@@ -46,6 +63,49 @@ def visible_games(snapshot: PlayerSnapshot, as_of: datetime) -> tuple[SeasonGame
             (g for g in latest.values() if g.status not in ("cancelled", "postponed")),
             key=lambda g: (g.tipoff, g.id),
         )
+    )
+
+
+def effective_status(player: SeasonPlayer, today: date, on: date) -> str:
+    return (
+        "healthy"
+        if player.return_on is not None and today < player.return_on <= on
+        else player.status
+    )
+
+
+def back_to_back_teams(games: tuple[SeasonGame, ...], zone: ZoneInfo, on: date) -> set[str]:
+    return {
+        team
+        for game in games
+        if game.tipoff.astimezone(zone).date() == on - timedelta(days=1)
+        for team in (game.home, game.away)
+    }
+
+
+def projection_profile_key(
+    snapshot: PlayerSnapshot,
+    ledger: AdjustmentLedger,
+    params: InseasonParameters,
+    games: tuple[SeasonGame, ...],
+    zone: ZoneInfo,
+    as_of: datetime,
+    on: date,
+) -> tuple[tuple[str, ...], ...]:
+    """Date-dependent inputs at a fixed decision time; never cross an evidence update."""
+    players = visible_players(snapshot, as_of)
+    entries = active_entries(ledger, on, as_of)
+    fields = {f.id: f for f in params.fields}
+    teams = back_to_back_teams(games, zone, on)
+    player_teams = {p.id: p.team_id for p in players}
+    return (
+        tuple(e.id for e in entries),
+        tuple(effective_status(p, as_of.astimezone(zone).date(), on) for p in players),
+        tuple(
+            e.id
+            for e in entries
+            if fields[e.field].only_back_to_back and player_teams.get(e.player_id) in teams
+        ),
     )
 
 
@@ -163,7 +223,9 @@ def blend_player(
             sample=totals[shot.attempted],
         )
         shots[shot.id] = traces[shot.id].result
-        rates[shot.made] = rates[shot.attempted] * shots[shot.id]
+        rates[shot.made] = evaluate(
+            "product", gain=rates[shot.attempted], probability=shots[shot.id]
+        ).result
         traces["weight:" + shot.id] = evaluate(
             "weight", sample=totals[shot.attempted], k=params.shot_k[shot.id].value
         )
@@ -209,7 +271,11 @@ def adjusted_values(
         for target in field.targets:
             if target not in values:
                 continue  # This league does not score the target statistic.
-            values[target] = values[target] * value if field.kind == "multiply" else value
+            values[target] = (
+                evaluate("product", gain=values[target], probability=value).result
+                if field.kind == "multiply"
+                else value
+            )
     return (
         values["minutes"],
         values["q"],
@@ -246,22 +312,15 @@ def player_flags(
                 traces=(recent_trace,) if recent_trace else (),
             )
         )
-    played = tuple(b for b in boxes if b.minutes > 0)
-    samples = (
-        evaluate_array(
-            "row_rates",
-            counts=np.array([[b.stats[s] for s in rates] for b in played]),
-            minutes=np.array([b.minutes for b in played]),
-        ).result
-        if played
-        else None
-    )
-    for index, (stat, rate) in enumerate(rates.items()):
-        if samples is None or len(samples) < max(2, params.role_window.value):
+    for stat, rate in rates.items():
+        if len(boxes) < max(2, params.role_window.value) or fsum(b.minutes for b in boxes) <= 0:
             continue
-        values = tuple(float(v) for v in samples[:, index])
-        average = evaluate("mean", values=values)
-        se = evaluate("empirical_error", values=values)
+        values = {
+            "counts": tuple(b.stats[stat] for b in boxes),
+            "exposure": tuple(b.minutes for b in boxes),
+        }
+        average = evaluate("exposure_rate", **values)
+        se = evaluate("exposure_error", **values, model=rate)
         threshold = evaluate("product", gain=se.result, probability=params.production_sigma.value)
         if abs(average.result - rate) > threshold.result:
             flags.append(
@@ -308,7 +367,28 @@ def player_flags(
                         traces=(recent_mean,),
                     )
                 )
-    return tuple(f.model_copy(update={"suggestions": flag_suggestions(f, params)}) for f in flags)
+    result: list[ProjectionFlag] = []
+    for flag in flags:
+        fingerprint = sha256(
+            json.dumps(
+                {
+                    "flag": flag.model_dump(mode="json"),
+                    "team": player.team_id,
+                    "status": player.status,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()[:16]
+        result.append(
+            flag.model_copy(
+                update={
+                    "id": flag.id + ":" + fingerprint,
+                    "suggestions": flag_suggestions(flag, params),
+                }
+            )
+        )
+    return tuple(result)
 
 
 def flag_suggestions(flag: ProjectionFlag, params: InseasonParameters) -> dict[str, FormulaTrace]:
@@ -355,6 +435,7 @@ def effective_projection(
     by_id = {p.player_id: p for p in priors.players}
     entries = active_entries(ledger, on, as_of)
     games = visible_games(snapshot, as_of)
+    b2b_teams = back_to_back_teams(games, zone, on)
     result: list[EffectivePlayer] = []
     for player in players:
         boxes = history.get(player.id, ())
@@ -365,11 +446,7 @@ def effective_projection(
             prior = prior.model_copy(
                 update={"probabilities": {**peer.probabilities, **prior.probabilities}}
             )
-        status = (
-            "healthy"
-            if player.return_on is not None and today < player.return_on <= on
-            else player.status
-        )
+        status = effective_status(player, today, on)
         if status not in params.availability:
             raise DataError(f"parameters.availability.{status}: missing status probability")
         m, rates, shots, traces, weights, totals = blend_player(
@@ -377,14 +454,7 @@ def effective_projection(
         )
         own = tuple(e for e in entries if e.player_id == player.id)
         flags = player_flags(player, boxes, m, rates, own, params)
-        previous_day = on - timedelta(days=1)
-        b2b = any(
-            g.known_at <= as_of
-            and player.team_id in (g.home, g.away)
-            and g.status not in ("cancelled", "postponed")
-            and g.tipoff.astimezone(zone).date() == previous_day
-            for g in games
-        )
+        b2b = player.team_id in b2b_teams
         m, q, rates, shots = adjusted_values(
             m, params.availability[status].value, rates, shots, own, params, b2b
         )
@@ -395,6 +465,15 @@ def effective_projection(
                 )
                 rates[shot.made] = final_shot.result
                 traces["final:" + shot.made] = final_shot
+        distribution = priors.distribution
+        if distribution is not None and distribution.scoring_stat in rates:
+            trace = evaluate(
+                "linear",
+                values=tuple(rates[t.stat_id] for t in distribution.scoring_terms),
+                weights=tuple(t.coefficient for t in distribution.scoring_terms),
+            )
+            rates[distribution.scoring_stat] = trace.result
+            traces["final:" + distribution.scoring_stat] = trace
         expected: dict[str, float] = {}
         for stat, rate in rates.items():
             trace = evaluate("expectation", q=q, rate=rate, minutes=m)

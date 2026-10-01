@@ -74,9 +74,14 @@ def validate_parameter_values(params: InseasonParameters) -> None:
         "simulations",
         "season_simulations",
         "shortlist",
+        "drop_shortlist",
         "beam_width",
         "max_trade_players",
         "calibration_bins",
+        "calibration_minimum",
+        "weekly_exact_candidates",
+        "lineup_batch",
+        "scenario_cache_entries",
         "role_window",
         "override_window",
         "maximum_requests",
@@ -87,6 +92,7 @@ def validate_parameter_values(params: InseasonParameters) -> None:
     validate_operational_parameters(params)
     probabilities = {
         "calibration": params.calibration,
+        "week_calibration": params.week_calibration,
         "safe_probability": params.safe_probability,
         "abandon_probability": params.abandon_probability,
         **params.availability,
@@ -105,6 +111,7 @@ def validate_operational_parameters(params: InseasonParameters) -> None:
         "override_threshold",
         "production_sigma",
         "calibration_alert",
+        "calibration_confidence_z",
         "rank_scale",
         "rank_exponent",
     ):

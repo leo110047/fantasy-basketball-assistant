@@ -514,6 +514,15 @@
       "title": "Playoff Teams",
       "type": "integer"
     },
+    "playoff_seeding": {
+      "default": "unknown",
+      "enum": [
+        "overall",
+        "unknown"
+      ],
+      "title": "Playoff Seeding",
+      "type": "string"
+    },
     "playoff_weeks": {
       "items": {
         "minLength": 1,

@@ -85,6 +85,7 @@
         "status": {
           "enum": [
             "scheduled",
+            "in_progress",
             "completed",
             "postponed",
             "cancelled"
@@ -107,6 +108,28 @@
     "SeasonPlayer": {
       "additionalProperties": false,
       "properties": {
+        "provider_ids": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "default": {},
+          "title": "Provider Ids",
+          "type": "object"
+        },
+        "team_abbreviation": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Team Abbreviation"
+        },
         "id": {
           "minLength": 1,
           "title": "Id",

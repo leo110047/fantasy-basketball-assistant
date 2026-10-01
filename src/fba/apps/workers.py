@@ -6,8 +6,11 @@ from multiprocessing import get_context
 from multiprocessing.connection import Connection
 from os import process_cpu_count
 from threading import Event
+from time import monotonic
 from types import TracebackType
 from typing import cast
+
+POLL_INTERVAL = 0.05
 
 
 def worker_limit(value: str) -> int:
@@ -32,6 +35,22 @@ def check_cancelled(signal: Connection | None) -> None:
     # The byte is deliberately not consumed: every worker observes the same cancellation.
     if signal is not None and signal.poll():
         raise CancelledError("calculation superseded")
+
+
+def cancellation_check(signal: Connection) -> Callable[[], bool]:
+    """Coalesce hot-loop IPC checks; cancellation latency stays within one poll interval."""
+    next_poll = 0.0
+    stopped = False
+
+    def cancelled() -> bool:
+        nonlocal next_poll, stopped
+        now = monotonic()
+        if not stopped and now >= next_poll:
+            stopped = signal.poll()
+            next_poll = now + POLL_INTERVAL
+        return stopped
+
+    return cancelled
 
 
 def check_current(cancelled: Event) -> None:
@@ -75,7 +94,7 @@ class WorkBatch:
         while True:
             self.check()
             # wait distinguishes a polling timeout from a TimeoutError raised by the task.
-            if wait((future,), timeout=0.05).done:
+            if wait((future,), timeout=POLL_INTERVAL).done:
                 self.check()
                 return future.result()
 

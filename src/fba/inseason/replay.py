@@ -20,6 +20,7 @@ from fba.formulas.registry import evaluate
 from fba.inseason.matchup import Simulation
 from fba.inseason.projection import observed_boxes, visible_games
 from fba.inseason.recommendations import (
+    admissible_plan,
     candidate_moves,
     changed_simulation,
     earliest_move,
@@ -135,6 +136,7 @@ def replay_case(
 ) -> ReplayRow:
     sim = simulation_for(case, params)
     prefs = study.preferences
+    sim.untouchable = frozenset(prefs.untouchable)
     mine = sim.snapshot.mine
     team = next(t for t in sim.snapshot.teams if t.id == mine)
     if team.adds_used is None:
@@ -166,11 +168,14 @@ def replay_case(
     future = season_value(sim, mine, after=week.end + timedelta(days=1))
     if candidates:
         evaluated = [evaluate_plan(sim, prefs, moves, before, future) for _, moves in candidates]
-        maximum = max(round(p.score / params.tolerance.value) for p in evaluated)
-        retained = any(
-            round(p.score / params.tolerance.value) == maximum
-            for p in evaluated[: params.shortlist.value]
-        )
+        eligible = [p for p in evaluated if admissible_plan(p, params.tolerance.value)]
+        if eligible:
+            maximum = max(round(p.score / params.tolerance.value) for p in eligible)
+            retained = any(
+                admissible_plan(p, params.tolerance.value)
+                and round(p.score / params.tolerance.value) == maximum
+                for p in evaluated[: params.shortlist.value]
+            )
     plan_count, search_retained = exhaustive_plans(
         sim,
         prefs,

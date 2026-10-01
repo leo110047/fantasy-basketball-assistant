@@ -1,3 +1,4 @@
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -5,18 +6,27 @@ from uuid import uuid4
 from pydantic import JsonValue
 
 from fba.contracts.base import DataError
-from fba.contracts.inseason import AdjustmentEntry, AdjustmentLedger, LeagueSnapshot, Proposal
+from fba.contracts.inseason import (
+    AdjustmentEntry,
+    AdjustmentLedger,
+    InseasonPreferences,
+    LeagueSnapshot,
+    Proposal,
+)
 from fba.contracts.inseason_app import AdjustmentsRequest, ProposalRequest, RevokeRequest
 from fba.contracts.inseason_backtest import BacktestReport
 from fba.contracts.inseason_results import AddPlan, PredictionRecord, WeekForecast, WeeklyReview
 from fba.core.inseason import validate_inseason, validate_ledger
 from fba.core.proposals import latest_proposals
 from fba.data.codec import canonical, decode, digest
+from fba.data.yahoo import SyncBundle
+from fba.data.yahoo_identity import unresolved_metadata
 from fba.formulas.fitting import fit_acceptance
 from fba.formulas.registry import definitions
 from fba.inseason.adjustments import entry_state, redistribute
+from fba.inseason.forecast_records import recommendation_policy, record_forecast
 from fba.inseason.projection import visible_games
-from fba.inseason.recommendations import search_adds
+from fba.inseason.recommendations import admissible_plan, search_adds
 from fba.inseason.review import calibration_bins, cumulative_review, latest_reviews, weekly_review
 from fba.inseason.session import InseasonSession, json_value, snapshot_record
 from fba.inseason.team_view import team_views
@@ -27,6 +37,13 @@ def bootstrap(session: InseasonSession) -> JsonValue:
     now = datetime.now(UTC)
     result: dict[str, JsonValue] = {
         "preferences": json_value(session.preferences.model_dump(mode="json")),
+        "preference_controls": json_value(
+            {
+                "trade_value_min_ratio": InseasonPreferences.model_json_schema()["properties"][
+                    "trade_value_min_ratio"
+                ]
+            }
+        ),
         "parameters": json_value(session.params.model_dump(mode="json")),
         "selected": session.preferences.selected_league,
         "leagues": json_value([d.model_dump(mode="json") for d in session.discovered]),
@@ -64,9 +81,18 @@ def bootstrap(session: InseasonSession) -> JsonValue:
         if state.normalized_sha256
         else []
     )
+    result["identity_metadata"] = (
+        json_value(
+            unresolved_metadata(
+                snapshot_record(store.load_snapshot(state.bundle_sha256), SyncBundle)
+            )
+        )
+        if state.bundle_sha256
+        else {}
+    )
     result["sync_log"] = [
         {**row.payload, "at": row.as_of.isoformat()}
-        for row in reversed(store.history("sync-log"))
+        for row in reversed(store.history("sync-log", limit=50))
         if isinstance(row.payload, dict)
     ]
     result["differences"] = (
@@ -152,48 +178,7 @@ def calibration_status(session: InseasonSession) -> JsonValue:
 def week_result(
     session: InseasonSession, week_id: str, plans: tuple[AddPlan, ...] = ()
 ) -> WeekForecast:
-    sim = session.simulation()
-    team = sim.snapshot.mine
-    pairing = next(
-        (p for p in sim.snapshot.pairings if p.week_id == week_id and team in (p.home, p.away)),
-        None,
-    )
-    if pairing is None:
-        raise DataError(f"matchup.{week_id}: no actual opponent for this team")
-    opponent = pairing.away if pairing.home == team else pairing.home
-    week = next(w for w in sim.league.matchups if w.id == week_id)
-    if week.end < sim.as_of.astimezone(sim.zone).date():
-        raise DataError(
-            "predictions: completed weeks belong in the review; "
-            "cannot create a retrospective forecast"
-        )
-    result = sim.week(team, opponent, week_id)
-    baseline = session.simulation(
-        ledger=AdjustmentLedger(format_version=1, entries=()), as_of=sim.as_of
-    ).week(team, opponent, week_id)
-    state = session.state()
-    record = PredictionRecord(
-        id=str(uuid4()),
-        created_at=sim.as_of,
-        week_id=week_id,
-        parameter_version=session.params.version,
-        parameter_sha256=digest(canonical(session.params)),
-        input_hashes=tuple(
-            s
-            for s in (state.normalized_sha256, state.players_sha256, state.priors_sha256)
-            if s is not None
-        ),
-        ledger_sha256=digest(canonical(session.ledger())),
-        with_adjustments=result,
-        without_adjustments=baseline,
-        recommendations=plans,
-        proposal_probabilities={},
-        week_score_kind="win_probability",
-    )
-    session.league_store().append_snapshot(
-        "predictions", "inseason forecast", sim.as_of, json_value(record.model_dump(mode="json"))
-    )
-    return result
+    return record_forecast(session, week_id, plans)
 
 
 def recommendations(session: InseasonSession, week_id: str) -> tuple[AddPlan, ...]:
@@ -355,6 +340,8 @@ def record_proposal(session: InseasonSession, request: ProposalRequest) -> Propo
         trade = evaluate_trade(
             sim, sim.snapshot.mine, request.opponent, request.send, request.receive
         )
+        if trade.rank_delta is None or trade.acceptance is None:
+            raise DataError(trade.acceptance_unavailable or "proposal: acceptance is unavailable")
         proposal = Proposal(
             id=str(uuid4()),
             created_at=now,
@@ -446,26 +433,65 @@ def import_validation(session: InseasonSession, path: Path) -> None:
     session.league_store().write("validation.json", report)
 
 
-def recorded_plan(session: InseasonSession, plan_id: str) -> AddPlan:
-    saved = [
-        (snapshot_record(s, PredictionRecord), p)
-        for s in session.league_store().history("predictions")
-        for p in snapshot_record(s, PredictionRecord).recommendations
-        if p.id == plan_id
-    ]
-    if not saved:
-        raise DataError("today.plan_id: unknown recorded F3 plan")
-    record, plan = saved[-1]
+def recorded_plan(
+    session: InseasonSession, plan_id: str, check_limits: Callable[[], None] | None = None
+) -> AddPlan:
+    for record in prediction_history(session, check_limits):
+        plan = next((p for p in record.recommendations if p.id == plan_id), None)
+        if plan is not None:
+            if not plan_context_matches(session, record):
+                raise DataError("today.plan_id: 資料、手調或參數已更新，請重新計算 F3 計畫")
+            return plan
+    raise DataError("today.plan_id: unknown recorded F3 plan")
+
+
+def prediction_history(
+    session: InseasonSession, check_limits: Callable[[], None] | None
+) -> Iterator[PredictionRecord]:
+    store = session.league_store()
+    cursor = None
+    while True:
+        if check_limits is not None:
+            check_limits()
+        rows = store.history("predictions", limit=10, before=cursor)
+        if not rows:
+            return
+        for row in reversed(rows):
+            if check_limits is not None:
+                check_limits()
+            yield snapshot_record(row, PredictionRecord)
+        cursor = digest(canonical(rows[0]))
+
+
+def plan_context_matches(session: InseasonSession, record: PredictionRecord) -> bool:
     state = session.state()
     current_inputs = tuple(
         s
         for s in (state.normalized_sha256, state.players_sha256, state.priors_sha256)
         if s is not None
     )
-    if (
-        record.input_hashes != current_inputs
-        or record.ledger_sha256 != digest(canonical(session.ledger()))
-        or record.parameter_sha256 != digest(canonical(session.params))
-    ):
-        raise DataError("today.plan_id: 資料、手調或參數已更新，請重新計算 F3 計畫")
-    return plan
+    return (
+        record.input_hashes == current_inputs
+        and record.ledger_sha256 == digest(canonical(session.ledger()))
+        and record.parameter_sha256 == digest(canonical(session.params))
+        and (
+            not any(p.moves for p in record.recommendations)
+            or record.recommendation_policy_sha256 == recommendation_policy(session.preferences)
+        )
+    )
+
+
+def latest_plan(
+    session: InseasonSession, week_id: str, check_limits: Callable[[], None] | None = None
+) -> AddPlan | None:
+    for record in prediction_history(session, check_limits):
+        if record.week_id != week_id or not plan_context_matches(session, record):
+            continue
+        plans = tuple(
+            p for p in record.recommendations if admissible_plan(p, session.params.tolerance.value)
+        )
+        if plans:
+            return min(
+                plans, key=lambda p: (-round(p.score / session.params.tolerance.value), p.id)
+            )
+    return None

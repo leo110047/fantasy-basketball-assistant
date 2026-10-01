@@ -88,6 +88,7 @@ def read_priors(
         source_sha256=sha256,
         known_at=known_at,
         players=tuple(rows),
+        distribution=parameters,
     )
 
 

@@ -164,7 +164,7 @@ def test_synchronize_failure_preserves_previous_success_and_explicit_error(tmp_p
     )
     session.save_state(state)
 
-    def failed(*args):
+    def failed(*args, **kwargs):
         raise DataError("Yahoo: rate limit retry budget exhausted")
 
     monkeypatch.setattr("fba.inseason.session.YahooSync.sync", failed)

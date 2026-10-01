@@ -8,6 +8,7 @@ import pytest
 from inseason_support import DEFAULTS, simulation
 from test_inseason_review import final_scores, prediction
 
+from fba.contracts.config import Category, Linear, Ratio, StarterSlot, Term
 from fba.contracts.inseason import InseasonPreferences
 from fba.data.codec import canonical, digest
 from fba.inseason.recommendations import search_adds
@@ -23,6 +24,67 @@ def portable_results():
     results = {}
     for year, teams, mode in ((2025, 2, "h2h_one_win"), (2026, 10, "h2h_each_category")):
         sim = simulation(year=year, teams=teams, mode=mode)
+        if year == 2026:
+            cats = tuple(c for c in sim.league.categories if c.id not in ("TO", "3PM"))
+            sim.league = sim.league.model_copy(
+                update={
+                    "positions": ("G", "W", "B"),
+                    "starter_slots": (
+                        StarterSlot(id="flex", label="Flex", eligible_positions=("G", "B")),
+                        StarterSlot(id="big", label="Big", eligible_positions=("B",)),
+                    ),
+                    "categories": (
+                        *cats,
+                        Category(
+                            id="OREB",
+                            label="Offensive rebounds",
+                            formula=Linear(
+                                kind="linear", terms=(Term(stat_id="OREB", coefficient=1.0),)
+                            ),
+                            direction="higher",
+                            comparison_decimals=0,
+                            tie_value=0.5,
+                        ),
+                        Category(
+                            id="A/T",
+                            label="Assist/turnover",
+                            formula=Ratio(
+                                kind="ratio",
+                                numerator=(Term(stat_id="AST", coefficient=1.0),),
+                                denominator=(Term(stat_id="TO", coefficient=1.0),),
+                                zero_denominator="zero",
+                            ),
+                            direction="higher",
+                            comparison_decimals=3,
+                            tie_value=0.5,
+                        ),
+                    ),
+                }
+            )
+            sim.players = sim.players.model_copy(
+                update={
+                    "players": tuple(
+                        p.model_copy(
+                            update={
+                                "positions": tuple(
+                                    "G" if pos == "PG" else "B" for pos in p.positions
+                                )
+                            }
+                        )
+                        for p in sim.players.players
+                    )
+                }
+            )
+            sim.snapshot = sim.snapshot.model_copy(
+                update={
+                    "teams": tuple(
+                        t.model_copy(
+                            update={"selected_slots": {"flex": t.players[0], "big": t.players[1]}}
+                        )
+                        for t in sim.snapshot.teams
+                    )
+                }
+            )
         projection = sim.projection(sim.as_of.astimezone(sim.zone).date())
         week = sim.week("team0", "team1", "2")
         plans = search_adds(sim, preferences, "2", lambda value: None)

@@ -9,16 +9,15 @@ from fba.contracts.formula import FormulaTrace
 from fba.contracts.inseason import DayLineup
 from fba.contracts.inseason_results import (
     AddPlan,
-    DropAssessment,
     TodayAction,
     TodayPlayer,
     TodayResult,
 )
 from fba.core.lineups import legal_assignment
 from fba.formulas.registry import evaluate
+from fba.inseason.injury_returns import reuse_return_plans
 from fba.inseason.matchup import Simulation
-from fba.inseason.recommendations import legal_roster
-from fba.inseason.season import season_value
+from fba.inseason.recommendations import admissible_plan, changed_simulation, earliest_move
 
 
 def today(
@@ -31,6 +30,13 @@ def today(
     week = next((w for w in sim.league.matchups if w.start <= on <= w.end), None)
     if week is None:
         raise DataError("today.date: no fantasy matchup week")
+    if plan is not None and plan.before.week_id != week.id:
+        raise DataError("today.plan_id: F3 計畫所屬對戰週與選擇日期不同")
+    if plan is not None and any(
+        m.effective_on < earliest_move(sim) or sim.locked(m.drop, m.effective_on)
+        for m in plan.moves
+    ):
+        raise DataError("today.plan_id: 計畫已超過生效或球員鎖定時間，請重新計算 F3")
     team = next(t for t in sim.snapshot.teams if t.id == sim.snapshot.mine)
     pairing = next(
         (p for p in sim.snapshot.pairings if p.week_id == week.id and team.id in (p.home, p.away)),
@@ -39,17 +45,32 @@ def today(
     if pairing is None:
         raise DataError("today.opponent: actual scheduled opponent missing")
     opponent = pairing.away if pairing.home == team.id else pairing.home
+    sim, pending = reuse_return_plans(sim, (team.id, opponent))
+    forecast = sim.week(team.id, opponent, week.id)
+    if plan is not None and plan.moves:
+        current_policy = plan.model_copy(update={"priority": forecast.priority})
+        if not admissible_plan(current_policy, sim.params.tolerance.value):
+            raise DataError("today.plan_id: 計畫不符合目前整季保護規則，請重新計算 F3")
+        if forecast.injury_returns or set(pending).intersection(team.injury_players):
+            raise DataError("today.plan_id: 換人與 IL 回歸的合併時間軸尚未支援；請先完成回歸並同步")
+        child = changed_simulation(sim, team.id, plan.moves)
+        child.injury_plan_cache = sim.injury_plan_cache.copy()
+        sim = child
+        forecast = sim.week(team.id, opponent, week.id).model_copy(
+            update={
+                "no_moves_raw_score": forecast.raw_score,
+                "no_moves_score": forecast.score,
+            }
+        )
     lineup, before, after = sim.optimize_day(team.id, week.id, on, opponent)
     players = {p.player.id: p for p in sim.projection(on).players}
+    active = roster_on(sim, team.id, on)
+    returns = sim.injury_plan_cache.get((team.id, tuple(sorted(team.players))), ())
+    drops = {move.drop for move in returns if move.drop is not None and move.effective_on <= on}
     actions: list[TodayAction] = []
     locks: dict[str, datetime] = {}
-    for pid in (*team.players, *team.injury_players):
-        games = tuple(
-            g
-            for g in sim.games
-            if players[pid].player.team_id in (g.home, g.away)
-            and g.tipoff.astimezone(sim.zone).date() == on
-        )
+    for pid in tuple(dict.fromkeys((*active, *sorted(drops), *team.injury_players))):
+        games = sim.games_on(players[pid].player.team_id, on)
         if games:
             lock = (
                 min(g.tipoff for g in games)
@@ -58,7 +79,21 @@ def today(
             )
             locks[pid] = lock.astimezone(ZoneInfo(timezone))
         slot = next((s for s, p in lineup.slots.items() if p == pid), None)
-        if pid in team.players:
+        if pid in drops:
+            identifier = f"{on}:injury_drop:{pid}"
+            actions.append(
+                TodayAction(
+                    id=identifier,
+                    kind="drop",
+                    player_id=pid,
+                    slot=None,
+                    reason=(
+                        "依 IL 回歸情境釋出，讓回歸球員符合名單容量；請先核對並在 Yahoo 手動操作"
+                    ),
+                    completed=identifier in completed,
+                )
+            )
+        elif pid in active:
             identifier = f"{on}:lineup:{pid}"
             actions.append(
                 TodayAction(
@@ -74,8 +109,10 @@ def today(
             )
     details = today_players(sim, lineup, opponent, week.id, timezone)
     reasons = {p.player_id: p.reason for p in details}
-    actions = [a.model_copy(update={"reason": reasons[a.player_id]}) for a in actions]
-    assessment = drop_assessment(sim, on)
+    actions = [
+        a.model_copy(update={"reason": reasons[a.player_id]}) if a.kind != "drop" else a
+        for a in actions
+    ]
     actions = [
         a.model_copy(
             update={"kind": "locked", "reason": "已超過鎖定時間，依 Yahoo 已鎖定位置；本日無法調整"}
@@ -84,12 +121,13 @@ def today(
         else a
         for a in actions
     ]
-    actions.extend(injury_actions(sim, on, completed, assessment))
+    actions.extend(injury_actions(sim, on, completed, pending))
     if plan is not None:
         for move in plan.moves:
             if move.effective_on == on:
                 identifier = f"{plan.id}:{move.add}:{move.drop}"
-                actions.append(
+                actions.insert(
+                    0,
                     TodayAction(
                         id=identifier,
                         kind="add_drop",
@@ -97,7 +135,7 @@ def today(
                         slot=None,
                         reason=f"F3 計畫：加入 {move.add}，釋出 {move.drop}；請在 Yahoo 手動操作",
                         completed=identifier in completed,
-                    )
+                    ),
                 )
     return TodayResult(
         on=on,
@@ -107,7 +145,10 @@ def today(
         score_before=before,
         score_after=after,
         plan_id=plan.id if plan else None,
-        drop_assessment=assessment,
+        recommendation=plan,
+        injury_pending=pending,
+        week_forecast=forecast,
+        priority=forecast.priority,
         players=details,
         traces=(
             sim.calibrated_score(
@@ -122,8 +163,16 @@ def today(
     )
 
 
+def roster_on(sim: Simulation, team: str, on: date) -> tuple[str, ...]:
+    roster = sim.roster(team)
+    for effective, changed in sim.transitions.get(team, ()):
+        if effective <= on:
+            roster = changed
+    return sim.projected_roster(team, on, roster)
+
+
 def injury_actions(
-    sim: Simulation, on: date, completed: tuple[str, ...], assessment: DropAssessment | None = None
+    sim: Simulation, on: date, completed: tuple[str, ...], pending: tuple[str, ...] = ()
 ) -> tuple[TodayAction, ...]:
     team = next(t for t in sim.snapshot.teams if t.id == sim.snapshot.mine)
     players = {p.player.id: p for p in sim.projection(on).players}
@@ -131,9 +180,15 @@ def injury_actions(
         s.id: sum(v == s.id for v in team.injury_players.values()) for s in sim.league.injury_slots
     }
     result: list[TodayAction] = []
+    returns = {
+        m.player_id: m
+        for m in sim.injury_plan_cache.get((team.id, tuple(sorted(team.players))), ())
+    }
     for pid, slot_id in sorted(team.injury_players.items()):
         slot = next(s for s in sim.league.injury_slots if s.id == slot_id)
-        if players[pid].player.status not in slot.eligible_statuses:
+        planned = returns.get(pid)
+        activating = planned is not None and planned.effective_on <= on
+        if players[pid].player.status not in slot.eligible_statuses or activating:
             identifier = f"{on}:injury_out:{pid}"
             result.append(
                 TodayAction(
@@ -142,12 +197,19 @@ def injury_actions(
                     player_id=pid,
                     slot=slot_id,
                     reason=(
-                        "狀態已不符合傷兵格資格，請移出。"
+                        (
+                            "依預估回歸情境，請於回歸後移出傷兵格；尚需確認實際狀態。"
+                            if activating and planned is not None and planned.estimated
+                            else "狀態已不符合傷兵格資格，請移出。"
+                        )
                         + (
-                            f"名單額滿時可釋出 {assessment.drop}。"
-                            if assessment
+                            f"回歸情境需先釋出 {returns[pid].drop}。"
+                            if pid in returns
+                            and returns[pid].drop is not None
                             and len(team.players)
                             >= len(sim.league.starter_slots) + sim.league.bench_slots
+                            else "名單已滿，需先到本週頁計算可沿用的必要釋出計畫。"
+                            if pid in pending
                             else "目前有空名額。"
                         )
                     ),
@@ -177,56 +239,13 @@ def injury_actions(
     return tuple(result)
 
 
-def drop_assessment(sim: Simulation, on: date) -> DropAssessment | None:
-    team = sim.snapshot.mine
-    roster = sim.roster(team)
-    if not roster:
-        return None
-    base = season_value(sim, team)
-    candidates = [
-        (season_value(sim, team, {team: tuple(p for p in roster if p != drop)}), drop)
-        for drop in roster
-        if legal_roster(sim, tuple(p for p in roster if p != drop), on)
-    ]
-    if not candidates:
-        return None
-    value, drop = min(candidates, key=lambda r: (-round(r[0] / sim.params.tolerance.value), r[1]))
-    available = [
-        (
-            season_value(
-                sim, team, {team: tuple(p for p in roster if p != drop) + (free.player_id,)}
-            ),
-            free.player_id,
-        )
-        for free in sim.snapshot.free_agents
-        if free.status == "free"
-        and legal_roster(sim, tuple(p for p in roster if p != drop) + (free.player_id,), on)
-    ]
-    replacement = (
-        min(available, key=lambda r: (-round(r[0] / sim.params.tolerance.value), r[1]))
-        if available
-        else None
-    )
-    player = next(p.player for p in sim.projection(on).players if p.player.id == drop)
-    lost = evaluate("difference", after=base, before=value)
-    gain = evaluate("difference", after=replacement[0], before=base) if replacement else None
-    return DropAssessment(
-        drop=drop,
-        add=replacement[1] if replacement else None,
-        remaining_value_lost=lost.result,
-        replacement_gain=gain.result if gain else None,
-        ownership=player.ownership,
-        ownership_change=player.ownership_change,
-        traces=(lost, *((gain,) if gain else ())),
-    )
-
-
 def lineup_effects(
     sim: Simulation, lineup: DayLineup, opponent: str, week: str
 ) -> dict[str, tuple[FormulaTrace, dict[str, float]]]:
     own, other, _ = sim.matchup_totals(lineup.team_id, opponent, week)
     _, through = sim.actual(lineup.team_id, week)
-    draws = sim.daily_draws(sim.roster(lineup.team_id), lineup.on, max(sim.as_of, through))
+    roster = roster_on(sim, lineup.team_id, lineup.on)
+    draws = sim.daily_draws(roster, lineup.on, max(sim.as_of, through))
     selected = tuple(lineup.slots.values())
     rest = own - sum((draws[p] for p in selected), start=np.zeros_like(own))
     categories, score = sim.score(own, other)
@@ -278,16 +297,17 @@ def today_players(
     effects = lineup_effects(sim, lineup, opponent, week)
     team = next(t for t in sim.snapshot.teams if t.id == lineup.team_id)
     projections = {p.player.id: p for p in sim.projection(lineup.on).players}
+    active = roster_on(sim, team.id, lineup.on)
     rows: list[TodayPlayer] = []
-    for pid in (*team.players, *team.injury_players):
+    returns = sim.injury_plan_cache.get((team.id, tuple(sorted(team.players))), ())
+    dropped = tuple(m.drop for m in returns if m.drop is not None and m.effective_on <= lineup.on)
+    for pid in tuple(dict.fromkeys((*active, *dropped, *team.injury_players))):
         player = projections[pid].player
-        games = tuple(
-            g
-            for g in sim.games
-            if player.team_id in (g.home, g.away)
-            and g.tipoff.astimezone(sim.zone).date() == lineup.on
+        games = sim.games_on(player.team_id, lineup.on)
+        slot = next(
+            (s for s, p in lineup.slots.items() if p == pid),
+            team.injury_players.get(pid) if pid not in active else None,
         )
-        slot = next((s for s, p in lineup.slots.items() if p == pid), team.injury_players.get(pid))
         effect = effects.get(pid)
         reason = (
             "今日沒有待開賽場次"
@@ -296,8 +316,10 @@ def today_players(
             if sim.locked(pid, lineup.on)
             else "目前可調整的先發格沒有符合此球員的位置"
         )
-        if pid in team.injury_players:
+        if pid in team.injury_players and pid not in active:
             reason = "目前在傷兵格；依最新狀態核對移出提醒"
+        elif pid not in active:
+            reason = "依 IL 回歸情境釋出；需核對名單容量與手動操作"
         elif effect is not None:
             trace, changes = effect
             helpful = [

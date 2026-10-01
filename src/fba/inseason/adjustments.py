@@ -48,8 +48,14 @@ def redistribute(
         and p.player.id != player_id
         and p.probability > 0
     )
-    total = sum(p.minutes for p in teammates)
-    delta = minutes - player.minutes
+    total = sum(
+        evaluate("product", gain=p.minutes, probability=p.probability).result for p in teammates
+    )
+    delta = evaluate(
+        "product",
+        gain=evaluate("difference", before=player.minutes, after=minutes).result,
+        probability=player.probability,
+    ).result
     if total == 0 or delta > total or minutes < 0:
         raise DataError("redistribution.minutes: teammates cannot supply the requested minutes")
     return {

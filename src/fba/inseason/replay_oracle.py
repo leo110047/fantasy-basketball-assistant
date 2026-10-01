@@ -6,6 +6,7 @@ from fba.contracts.inseason import CalculationTimeout, InseasonPreferences, Week
 from fba.contracts.inseason_results import RosterMove
 from fba.inseason.matchup import Simulation
 from fba.inseason.recommendations import (
+    admissible_plan,
     candidate_moves,
     changed_simulation,
     earliest_move,
@@ -38,7 +39,7 @@ def exhaustive_plans(
             while on <= week.end:
                 # No z screening and no beam truncation in the reference search.
                 for _, candidate in candidate_moves(
-                    sim, preferences, roster, moves, on, week.end, ()
+                    sim, preferences, roster, moves, on, week.end, (), exhaustive=True
                 ):
                     count += 1
                     if count > maximum:
@@ -47,7 +48,10 @@ def exhaustive_plans(
                             "no recall result can be certified"
                         )
                     plan = evaluate_plan(sim, preferences, candidate, before, future)
-                    best = max(best, plan.score)
+                    if admissible_plan(plan, sim.params.tolerance.value):
+                        best = max(best, plan.score)
+                    # A legal prefix may become admissible only after a later
+                    # move crosses a category threshold or restores strength.
                     following.append(candidate)
                 on += timedelta(days=1)
         frontier = following

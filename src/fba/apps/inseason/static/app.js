@@ -32,8 +32,8 @@ function render() {
   document.querySelector("#freshness").textContent = data.state?.sync.last_success ? `資料截至 ${new Date(data.state.sync.last_success).toLocaleString("zh-TW", { timeZone: data.preferences.timezone })}` : "尚未同步";
   const notice = document.querySelector("#notice");
   const old = data.state?.sync.last_success && Date.now() - new Date(data.state.sync.last_success) > data.preferences.stale_warning_seconds * 1000;
-  notice.hidden = available && !old && !data.state?.sync.last_error;
-  notice.textContent = available ? data.state?.sync.last_error ?? "資料已久未同步，建議重新同步後再採取行動。" : `${data.availability?.reason ?? "資料未就緒"}。${data.availability?.repair ?? ""}`;
+  notice.hidden = available && !old && !data.state?.sync.last_error && !data.state?.sync.forecast_error;
+  notice.textContent = available ? data.state?.sync.forecast_error ?? data.state?.sync.last_error ?? "資料已久未同步，建議重新同步後再採取行動。" : `${data.availability?.reason ?? "資料未就緒"}。${data.availability?.repair ?? ""}`;
   document.querySelector("#syncButton").disabled = !data.selected;
   document.querySelector("#navigation").replaceChildren(...tabs.map(([id, label]) => el("button", { "aria-current": context.tab === id ? "page" : "false", disabled: !["sync", "teams"].includes(id) && !available, onClick: () => navigate(id) }, label)));
   const selected = tabs.find(([id]) => id === context.tab);
@@ -65,6 +65,7 @@ async function run(action, payload, reload = true) {
       if (job.status === "failed") throw new Error(job.error);
       if (job.status === "completed") {
         if (reload) {
+          if (action === "preferences") context.tradeValueRatio = null;
           if (["sync", "select", "settings", "sources", "mapping", "preferences", "adjustments", "revoke", "refit-acceptance", "validation"].includes(action)) context.results = {};
           await refresh();
         }

@@ -24,6 +24,7 @@ class LeagueDraft(Record):
 
 
 class IdentityMappings(Record):
+    stable_entries: dict[str, Text] = {}
     entries: dict[str, Text]
 
 

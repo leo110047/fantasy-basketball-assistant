@@ -175,6 +175,10 @@ def test_undo_of_replacement_restores_original_adjustment():
 
 def test_registered_formulas_have_hand_calculated_examples():
     expected = {
+        "effective_samples": 1.6,  # (1 + 3)^2 / (1^2 + 3^2)
+        "monitor_margin": 0.098,
+        "exposure_rate": 1.0,
+        "exposure_error": 0.316228,
         "weighted_mean": 2.5,
         "complementarity": 0.125,
         "path_bid": 6,
@@ -213,6 +217,7 @@ def test_registered_formulas_have_hand_calculated_examples():
         "add_score": 0.3,
         "difference": 0.2,
         "rank_value": 10.0,
+        "trade_value_ratio": 0.7,  # min(100, 70) / max(100, 70)
         "acceptance": 0.5,
         "product": 0.2,
         "brier": 0.04,

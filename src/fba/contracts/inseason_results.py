@@ -1,12 +1,12 @@
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, JsonValue
+from pydantic import AwareDatetime, Field, JsonValue
 
 from fba.contracts.base import Finite, Natural, Nonnegative, Record, Text
 from fba.contracts.data import Digest
 from fba.contracts.formula import FormulaTrace
-from fba.contracts.inseason import DayLineup, Probability, WeekForecast
+from fba.contracts.inseason import DayLineup, MatchupPriority, Probability, WeekForecast
 
 
 class RosterMove(Record):
@@ -24,20 +24,22 @@ class TradePartner(Record):
 
 
 class AddPlan(Record):
+    priority: MatchupPriority | None = None
     category_changes: dict[Text, dict[Text, FormulaTrace]] = {}
     id: Text
     moves: tuple[RosterMove, ...]
     before: WeekForecast
     after: WeekForecast
     delta_week: Finite
-    delta_season: Finite
+    delta_season: Finite | None
+    delta_strength: Finite | None = None
+    strength_unavailable: Text | None = None
     score: Finite
     traces: tuple[FormulaTrace, ...]
 
 
-class TradeResult(Record):
-    category_changes: dict[Text, dict[Text, FormulaTrace]] = {}
-    opponent_category_changes: dict[Text, dict[Text, FormulaTrace]] = {}
+class TradeSummary(Record):
+    acceptance_unavailable: Text | None = None
     opponent: Text
     send: tuple[Text, ...]
     receive: tuple[Text, ...]
@@ -48,10 +50,15 @@ class TradeResult(Record):
     opponent_delta: Finite
     playoff_delta: Finite
     playoff_games_delta: Finite
-    rank_delta: Finite
-    acceptance: Probability
-    expected_gain: Finite
+    rank_delta: Finite | None
+    acceptance: Probability | None
+    expected_gain: Finite | None
     calibrated: bool
+
+
+class TradeResult(TradeSummary):
+    category_changes: dict[Text, dict[Text, FormulaTrace]] = {}
+    opponent_category_changes: dict[Text, dict[Text, FormulaTrace]] = {}
     before: tuple[WeekForecast, ...]
     after: tuple[WeekForecast, ...]
     opponent_before: tuple[WeekForecast, ...]
@@ -59,23 +66,19 @@ class TradeResult(Record):
     traces: tuple[FormulaTrace, ...]
 
 
+class TradeSearchResult(Record):
+    trades: tuple[TradeSummary, ...]
+    counts: dict[Text, Natural]
+    minimum_value_ratio: Annotated[float, Field(ge=0.5, le=1.0)]
+
+
 class TodayAction(Record):
     id: Text
-    kind: Literal["start", "bench", "injury_in", "injury_out", "add_drop", "locked"]
+    kind: Literal["start", "bench", "injury_in", "injury_out", "add_drop", "locked", "drop"]
     player_id: Text
     slot: Text | None
     reason: Text
     completed: bool
-
-
-class DropAssessment(Record):
-    drop: Text
-    add: Text | None
-    remaining_value_lost: Finite
-    replacement_gain: Finite | None
-    ownership: Probability | None
-    ownership_change: Finite | None
-    traces: tuple[FormulaTrace, ...]
 
 
 class TodayPlayer(Record):
@@ -90,6 +93,8 @@ class TodayPlayer(Record):
 
 
 class TodayResult(Record):
+    priority: MatchupPriority | None = None
+    week_forecast: WeekForecast | None = None
     on: date
     lineup: DayLineup
     actions: tuple[TodayAction, ...]
@@ -97,7 +102,8 @@ class TodayResult(Record):
     score_before: Nonnegative
     score_after: Nonnegative
     plan_id: Text | None
-    drop_assessment: DropAssessment | None
+    recommendation: AddPlan | None = None
+    injury_pending: tuple[Text, ...] = ()
     players: tuple[TodayPlayer, ...]
     traces: tuple[FormulaTrace, ...]
 
@@ -130,6 +136,7 @@ class PredictionRecord(Record):
     parameter_sha256: Digest
     input_hashes: tuple[Digest, ...]
     ledger_sha256: Digest
+    recommendation_policy_sha256: Digest | None = None
     with_adjustments: WeekForecast
     without_adjustments: WeekForecast
     recommendations: tuple[AddPlan, ...]
@@ -144,6 +151,11 @@ class CalibrationBin(Record):
     predicted: Probability | None
     observed: Probability | None
     difference: Nonnegative | None
+    independent_samples: Natural = 0
+    effective_samples: Nonnegative = 0.0
+    uncertainty: Nonnegative | None = None
+    traces: tuple[FormulaTrace, ...] = ()
+    alert: bool = False
 
 
 class WeeklyReview(Record):
@@ -160,6 +172,7 @@ class WeeklyReview(Record):
     traces: tuple[FormulaTrace, ...]
     week_score_kind: Literal["standings_points", "win_probability"] = "standings_points"
     week_prediction_ids: tuple[Text, ...] = ()
+    week_observations: tuple[dict[str, JsonValue], ...] = ()
 
 
 class CalibrationObservationRecord(Record):
@@ -173,4 +186,5 @@ class CalibrationObservationRecord(Record):
 class CalibrationHistory(Record):
     season_id: Text
     observations: tuple[CalibrationObservationRecord, ...]
+    week_observations: tuple[CalibrationObservationRecord, ...] = ()
     snapshot_hashes: tuple[Digest, ...]

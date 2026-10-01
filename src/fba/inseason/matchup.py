@@ -1,7 +1,7 @@
+from collections import OrderedDict
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
-from hashlib import sha256
 from time import monotonic
 from zoneinfo import ZoneInfo
 
@@ -14,42 +14,39 @@ from fba.contracts.formula import FormulaTrace
 from fba.contracts.inseason import (
     AdjustmentLedger,
     CalculationTimeout,
-    CategoryForecast,
     DayLineup,
     EffectiveProjection,
     FrozenPriors,
+    InjuryReturn,
     InseasonLeague,
     InseasonParameters,
     LeagueSnapshot,
+    MatchupPriority,
     PlayerSnapshot,
     SeasonGame,
     WeekForecast,
 )
 from fba.core.lineups import best_lineup
-from fba.formulas.arrays import evaluate_array
-from fba.formulas.categories import category_values, derive_games, score_samples, total_terms
+from fba.formulas.categories import (
+    category_values,
+    sample_scores,
+    score_samples,
+)
 from fba.formulas.registry import evaluate
-from fba.inseason.projection import effective_projection, observed_boxes, visible_games
+from fba.inseason.forecast import cached_forecast
+from fba.inseason.lineup_bounds import assignment_ceiling
+from fba.inseason.lineup_space import cached_subsets, ordered_row_sums
+from fba.inseason.projection import (
+    ProjectionIndex,
+    effective_projection,
+    observed_boxes,
+    projection_profile_key,
+    visible_games,
+)
+from fba.inseason.sampling import sample_game
+from fba.inseason.weekly_lineups import joint_lineup
 
 type Array = NDArray[np.float64]
-
-
-def category_changes(
-    before: tuple[WeekForecast, ...], after: tuple[WeekForecast, ...]
-) -> dict[str, dict[str, FormulaTrace]]:
-    previous = {(w.week_id, c.id): c.probability for w in before for c in w.categories}
-    changed = {(w.week_id, c.id): c.probability for w in after for c in w.categories}
-    if previous.keys() != changed.keys():
-        raise DataError("forecast.category_changes: before/after weeks or categories differ")
-    return {
-        week.week_id: {
-            category.id: evaluate(
-                "difference", before=previous[week.week_id, category.id], after=category.probability
-            )
-            for category in week.categories
-        }
-        for week in after
-    }
 
 
 class Simulation:
@@ -63,6 +60,8 @@ class Simulation:
         snapshot: LeagueSnapshot,
         as_of: datetime,
         samples: int | None = None,
+        *,
+        untouchable: tuple[str, ...] = (),
     ) -> None:
         if snapshot.as_of > as_of:
             raise DataError("league_snapshot.as_of: roster snapshot is from the future")
@@ -71,23 +70,80 @@ class Simulation:
         self.league, self.params, self.players, self.priors = league, params, players, priors
         self.ledger, self.snapshot, self.as_of = ledger, snapshot, as_of
         self.samples = samples if samples is not None else params.simulations.value
+        self.untouchable = frozenset(untouchable)
         self.axes = (*league.base_stats, *(d.id for d in league.derived))
         self.transitions: dict[str, tuple[tuple[date, tuple[str, ...]], ...]] = {}
         self.projections: dict[date, EffectiveProjection] = {}
+        self.projection_profiles: dict[tuple[tuple[str, ...], ...], EffectiveProjection] = {}
+        self.player_index = ProjectionIndex()
         self.draws: dict[tuple[str, str], Array] = {}
-        self.team_cache: dict[
+        self.team_cache: OrderedDict[
             tuple[str, str, tuple[str, ...]], tuple[Array, tuple[DayLineup, ...]]
-        ] = {}
-        self.matchup_cache: dict[
+        ] = OrderedDict()
+        self.expected_cache: OrderedDict[
+            tuple[
+                tuple[tuple[str, tuple[str, ...]], ...],
+                tuple[tuple[str, tuple[str, ...], bytes], ...],
+                tuple[bytes, ...],
+            ],
+            tuple[tuple[str, str], ...],
+        ] = OrderedDict()
+        self.forecast_cache: OrderedDict[
+            tuple[str, str, str, tuple[str, ...], tuple[str, ...]], WeekForecast
+        ] = OrderedDict()
+        self.matchup_cache: OrderedDict[
             tuple[str, str, str, tuple[str, ...], tuple[str, ...]],
             tuple[Array, Array, tuple[DayLineup, ...]],
-        ] = {}
+        ] = OrderedDict()
         self.acceptance_fit: dict[str, float] | None = None
         self.cancelled: Callable[[], bool] | None = None
         self.deadline: tuple[float, str] | None = None
         self.history = observed_boxes(players, as_of)
         self.zone = ZoneInfo(league.timezone)
         self.games = visible_games(players, as_of)
+        self.indexed_games: tuple[SeasonGame, ...] | None = None
+        self.indexed_zone: ZoneInfo | None = None
+        self.schedule_index: dict[tuple[str, date], tuple[SeasonGame, ...]] = {}
+        self.trade_search_counts: dict[str, int] = {}
+        self.season_score_cache: OrderedDict[
+            tuple[str, tuple[tuple[str, str], ...], tuple[tuple[str, tuple[str, ...]], ...]], float
+        ] = OrderedDict()
+        self.standings_point_cache: OrderedDict[
+            tuple[str, str, str, tuple[str, ...], tuple[str, ...]], tuple[Array, Array]
+        ] = OrderedDict()
+        self.playoff_probabilities: dict[str, float] | None = None
+        self.project_injury_returns = True
+        self.injury_plan_cache: dict[tuple[str, tuple[str, ...]], tuple[InjuryReturn, ...]] = {}
+        self.season_engine: Simulation | None = None
+        self.joint_weeks: set[tuple[str, str, tuple[str, ...]]] = set()
+        self.priority_cache: dict[str, MatchupPriority] = {}
+
+    def season(self) -> "Simulation":
+        """ROS has its own sample contract; never mix arrays of different sizes."""
+        if self.samples == self.params.season_simulations.value:
+            return self
+        if self.season_engine is None:
+            self.season_engine = Simulation(
+                self.league,
+                self.params,
+                self.players,
+                self.priors,
+                self.ledger,
+                self.snapshot,
+                self.as_of,
+                self.params.season_simulations.value,
+                untouchable=tuple(self.untouchable),
+            )
+            self.season_engine.projections = self.projections
+            self.season_engine.projection_profiles = self.projection_profiles
+            self.season_engine.priority_cache = self.priority_cache
+        child = self.season_engine
+        child.project_injury_returns = self.project_injury_returns
+        child.untouchable = self.untouchable
+        child.transitions = self.transitions
+        child.cancelled, child.deadline = self.cancelled, self.deadline
+        child.acceptance_fit = self.acceptance_fit
+        return child
 
     def check_limits(self) -> None:
         if self.cancelled is not None and self.cancelled():
@@ -111,9 +167,14 @@ class Simulation:
     def projection(self, on: date) -> EffectiveProjection:
         self.check_limits()
         if on not in self.projections:
-            self.projections[on] = effective_projection(
-                self.players, self.priors, self.ledger, self.league, self.params, self.as_of, on
+            profile = projection_profile_key(
+                self.players, self.ledger, self.params, self.games, self.zone, self.as_of, on
             )
+            if profile not in self.projection_profiles:
+                self.projection_profiles[profile] = effective_projection(
+                    self.players, self.priors, self.ledger, self.league, self.params, self.as_of, on
+                )
+            self.projections[on] = self.projection_profiles[profile].model_copy(update={"on": on})
         return self.projections[on]
 
     def game_draw(self, player_id: str, game: SeasonGame) -> Array:
@@ -121,43 +182,16 @@ class Simulation:
         if key in self.draws:
             return self.draws[key]
         on = game.tipoff.astimezone(self.zone).date()
-        player = next(p for p in self.projection(on).players if p.player.id == player_id)
-        history = self.history.get(player_id, ())
-        if not history:
-            raise DataError(
-                f"simulation.{player_id}: no historical single-game samples; acquire game logs"
-            )
-        seed = int.from_bytes(
-            sha256(f"{self.params.seed.value}:{player_id}:{game.id}".encode()).digest()[:8],
-            "little",
+        player = self.player_index.get(self.projection(on))[player_id]
+        result = sample_game(
+            player,
+            self.history.get(player_id, ()),
+            self.league,
+            self.params,
+            self.priors,
+            self.samples,
+            game,
         )
-        rng = np.random.default_rng(seed)
-        source = np.array([[b.stats.get(s, 0.0) for s in self.league.base_stats] for b in history])
-        sampled = source[rng.integers(len(source), size=self.samples)].copy()
-        mean = source.mean(axis=0)
-        target = np.array(
-            [player.rates.get(s, 0.0) * player.minutes for s in self.league.base_stats]
-        )
-        # A zero-observation statistic cannot be rescaled. The explicit prior
-        # predictive Poisson component preserves its positive model mean.
-        zero_mean = np.zeros_like(sampled)
-        for i in np.flatnonzero(mean == 0):
-            zero_mean[:, i] = rng.poisson(target[i], size=self.samples)
-        sampled = evaluate_array(
-            "bootstrap_scale",
-            history=source,
-            samples=sampled,
-            target=target,
-            zero_mean_draws=zero_mean,
-        ).result.copy()
-        for shot in self.league.shots:
-            i, j = (
-                self.league.base_stats.index(shot.made),
-                self.league.base_stats.index(shot.attempted),
-            )
-            sampled[:, i] = np.minimum(sampled[:, i], sampled[:, j])
-        sampled *= (rng.random(self.samples) < player.probability)[:, None]
-        result = derive_games(sampled, self.league.base_stats, self.league.derived)
         self.draws[key] = result
         return result
 
@@ -187,24 +221,81 @@ class Simulation:
         missing = needed - score.totals.keys()
         if missing:
             raise DataError(f"actual.{team_id}.{week_id}: missing base totals {sorted(missing)}")
+        self.validate_actual_coverage(
+            team_id, week_id, score.through, score.complete_through, score.final
+        )
         return np.tile(
             np.array([score.totals.get(s, 0.0) for s in self.axes]), (self.samples, 1)
         ), score.through
 
+    def validate_actual_coverage(
+        self,
+        team_id: str,
+        week_id: str,
+        through: datetime,
+        complete_through: datetime | None,
+        final: bool,
+    ) -> None:
+        if complete_through is not None and complete_through > through:
+            raise DataError("actual.complete_through: coverage cannot exceed retrieval time")
+        if final:
+            return
+        week = next(w for w in self.league.matchups if w.id == week_id)
+        team = next(t for t in self.snapshot.teams if t.id == team_id)
+        today = self.as_of.astimezone(self.zone).date()
+        projections = {p.player.id: p.player for p in self.projection(today).players}
+        roster_teams = {projections[pid].team_id for pid in team.players}
+        selected_teams = {projections[pid].team_id for pid in team.selected_slots.values()}
+        for game in self.games:
+            on = game.tipoff.astimezone(self.zone).date()
+            if not week.start <= on <= week.end or game.tipoff > self.as_of:
+                continue
+            if game.status == "completed" and roster_teams.intersection((game.home, game.away)):
+                if game.known_at > through:
+                    raise DataError(
+                        f"actual.{team_id}.{week_id}: completed game {game.id} is newer than "
+                        "Yahoo totals; synchronize confirmed scores before calculating"
+                    )
+                if complete_through is None or game.known_at > complete_through:
+                    raise DataError(
+                        f"actual.{team_id}.{week_id}: completed game {game.id} has no verified "
+                        "Yahoo score coverage. Retrieval time does not prove credited stats; "
+                        "forecast unavailable until complete coverage is confirmed"
+                    )
+            if (
+                on == today
+                and game.status != "completed"
+                and selected_teams.intersection((game.home, game.away))
+            ):
+                raise DataError(
+                    f"actual.{team_id}.{week_id}: game {game.id} has started; Yahoo weekly "
+                    "totals do not identify partial coverage or remaining game statistics. "
+                    "Forecast unavailable until completed-game scores are synchronized"
+                )
+
+    def games_on(self, nba_team: str, on: date) -> tuple[SeasonGame, ...]:
+        if self.indexed_games is not self.games or self.indexed_zone != self.zone:
+            rows: dict[tuple[str, date], list[SeasonGame]] = {}
+            for game in self.games:
+                day = game.tipoff.astimezone(self.zone).date()
+                for team in dict.fromkeys((game.home, game.away)):
+                    rows.setdefault((team, day), []).append(game)
+            self.schedule_index = {key: tuple(games) for key, games in rows.items()}
+            self.indexed_games, self.indexed_zone = self.games, self.zone
+        return self.schedule_index.get((nba_team, on), ())
+
     def daily_draws(self, roster: tuple[str, ...], on: date, after: datetime) -> dict[str, Array]:
-        players = {p.player.id: p for p in self.projection(on).players}
+        players = self.player_index.get(self.projection(on))
         result: dict[str, Array] = {}
         for pid in roster:
             if pid not in players:
                 raise DataError(f"roster.{pid}: no effective projection")
             games = tuple(
-                g
-                for g in self.games
-                if g.tipoff > after
-                and g.tipoff.astimezone(self.zone).date() == on
-                and players[pid].player.team_id in (g.home, g.away)
+                g for g in self.games_on(players[pid].player.team_id, on) if g.tipoff > after
             )
-            if games:
+            if len(games) == 1:
+                result[pid] = np.add(np.float64(0), self.game_draw(pid, games[0]))
+            elif games:
                 result[pid] = sum(
                     (self.game_draw(pid, g) for g in games),
                     start=np.zeros((self.samples, len(self.axes))),
@@ -218,12 +309,29 @@ class Simulation:
     def roster(self, team_id: str) -> tuple[str, ...]:
         return next(t.players for t in self.snapshot.teams if t.id == team_id)
 
+    def projected_roster(self, team: str, on: date, roster: tuple[str, ...]) -> tuple[str, ...]:
+        roster = tuple(sorted(roster))
+        if not self.project_injury_returns:
+            return roster
+        if not next(t.injury_players for t in self.snapshot.teams if t.id == team):
+            return roster
+        from fba.inseason.injury_returns import return_plan
+
+        key = team, tuple(sorted(roster))
+        if key not in self.injury_plan_cache:
+            self.injury_plan_cache[key] = return_plan(self, team, roster)
+        for move in self.injury_plan_cache[key]:
+            if move.effective_on <= on:
+                roster = tuple(p for p in roster if p != move.drop) + (move.player_id,)
+        return tuple(sorted(roster))
+
     def total(
         self, team_id: str, week_id: str, roster: tuple[str, ...] | None = None
     ) -> tuple[Array, tuple[DayLineup, ...]]:
         roster = tuple(sorted(roster if roster is not None else self.roster(team_id)))
         key = team_id, week_id, roster
         if key in self.team_cache:
+            self.team_cache.move_to_end(key)
             return self.team_cache[key]
         week = next(w for w in self.league.matchups if w.id == week_id)
         total, through = self.actual(team_id, week_id)
@@ -234,23 +342,14 @@ class Simulation:
             for effective, changed_roster in self.transitions.get(team_id, ()):
                 if effective <= on:
                     current_roster = changed_roster
+            current_roster = self.projected_roster(team_id, on, current_roster)
             draws = self.daily_draws(current_roster, on, max(through, self.as_of))
             fixed, slots, positions = self.lineup_constraints(team_id, on, draws)
+            means = {pid: draw.mean(axis=0) for pid, draw in draws.items()}
 
-            # Initial plan is a deterministic, legal expected-category lineup.
-            # optimize_day below evaluates the actual whole-week objective.
-            def objective(
-                ids: tuple[str, ...],
-                draws: dict[str, Array] = draws,
-                fixed_ids: tuple[str, ...] = tuple(fixed.values()),
-            ) -> float:
-                box = sum(
-                    (draws[p].mean(axis=0) for p in (*fixed_ids, *ids)),
-                    start=np.zeros(len(self.axes)),
-                )
-                return float(category_values(box, self.league.categories, self.axes).sum())
-
-            assignment, _ = best_lineup(slots, positions, objective, self.params.tolerance.value)
+            # Optimize the whole-week samples below; only the deterministic
+            # expected-stat starting assignment is reused here.
+            assignment = self.expected_assignment(slots, positions, means, tuple(fixed.values()))
             assignment = {**fixed, **assignment}
             total += sum((draws[p] for p in assignment.values()), start=np.zeros_like(total))
             lineups.append(
@@ -264,7 +363,50 @@ class Simulation:
             on += timedelta(days=1)
         result = total, tuple(lineups)
         self.team_cache[key] = result
+        if len(self.team_cache) > self.params.scenario_cache_entries.value:
+            self.team_cache.popitem(last=False)
         return result
+
+    def expected_assignment(
+        self,
+        slots: tuple[StarterSlot, ...],
+        positions: dict[str, tuple[str, ...]],
+        means: dict[str, Array],
+        fixed: tuple[str, ...],
+    ) -> dict[str, str]:
+        self.check_limits()
+        key = (
+            tuple((slot.id, slot.eligible_positions) for slot in slots),
+            tuple((pid, positions[pid], means[pid].tobytes()) for pid in sorted(positions)),
+            tuple(means[pid].tobytes() for pid in fixed),
+        )
+        if key not in self.expected_cache:
+
+            def objective(ids: tuple[str, ...]) -> float:
+                box = sum((means[p] for p in (*fixed, *ids)), start=np.zeros(len(self.axes)))
+                return float(category_values(box, self.league.categories, self.axes).sum())
+
+            def objectives(rows: tuple[tuple[str, ...], ...]) -> tuple[float, ...]:
+                boxes = ordered_row_sums(rows, means, (len(self.axes),), fixed)
+                return tuple(
+                    float(v)
+                    for v in category_values(boxes, self.league.categories, self.axes).sum(axis=-1)
+                )
+
+            assignment, _ = best_lineup(
+                slots,
+                positions,
+                objective,
+                self.params.tolerance.value,
+                batch_objective=objectives,
+                batch_size=self.params.lineup_batch.value,
+                subset_solver=cached_subsets,
+            )
+            self.expected_cache[key] = tuple(assignment.items())
+            if len(self.expected_cache) > self.params.scenario_cache_entries.value:
+                self.expected_cache.popitem(last=False)
+        self.expected_cache.move_to_end(key)
+        return dict(self.expected_cache[key])
 
     def score(self, home: Array, away: Array, *, standings: bool = False) -> tuple[Array, Array]:
         return score_samples(
@@ -288,6 +430,9 @@ class Simulation:
         own = own.copy()
         _, through = self.actual(team, week)
         started = monotonic()
+        joint = joint_lineup(self, team, week, opponent_total, roster, initial, through)
+        if joint is not None:
+            return joint
         current = initial
         while True:
             result: list[DayLineup] = []
@@ -296,6 +441,7 @@ class Simulation:
                 for effective, changed in self.transitions.get(team, ()):
                     if effective <= day.on:
                         active = changed
+                active = self.projected_roster(team, day.on, active)
                 draws = self.daily_draws(active, day.on, max(self.as_of, through))
                 rest = own - sum((draws[p] for p in day.slots.values()), start=np.zeros_like(own))
                 assignment, _ = self.optimize_assignment(
@@ -318,7 +464,7 @@ class Simulation:
     def lineup_constraints(
         self, team: str, on: date, draws: dict[str, Array]
     ) -> tuple[dict[str, str], tuple[StarterSlot, ...], dict[str, tuple[str, ...]]]:
-        players = {p.player.id: p for p in self.projection(on).players}
+        players = self.player_index.get(self.projection(on))
         roster = next(t for t in self.snapshot.teams if t.id == team)
         locked = {pid for pid in draws if self.locked(pid, on)}
         fixed = {slot: pid for slot, pid in roster.selected_slots.items() if pid in locked}
@@ -351,21 +497,42 @@ class Simulation:
         def movable_objective(ids: tuple[str, ...]) -> float:
             return objective((*fixed_ids, *ids))
 
+        def objectives(rows: tuple[tuple[str, ...], ...]) -> tuple[float, ...]:
+            self.check_limits()
+            if monotonic() - started > self.params.budgets["week"].value:
+                raise CalculationTimeout("lineup: exact daily optimization exceeded time budget")
+            totals = rest + ordered_row_sums(rows, draws, rest.shape, fixed_ids)
+            scores = sample_scores(
+                totals,
+                opponent_total,
+                self.league.categories,
+                self.axes,
+                self.league.scoring,
+                self.league.category_ties,
+                0.0,
+            ).mean(axis=-1)
+            return tuple(self.calibrated_score(float(v)).result for v in scores)
+
         assigned, value = best_lineup(
-            slots, free, movable_objective, self.params.tolerance.value, required
+            slots,
+            free,
+            movable_objective,
+            self.params.tolerance.value,
+            required,
+            batch_objective=objectives,
+            batch_size=self.params.lineup_batch.value,
+            subset_solver=cached_subsets,
+            maximum=lambda achieved: assignment_ceiling(
+                self, draws, fixed_ids, tuple(free), rest, opponent_total, achieved=achieved
+            ),
         )
         return {**fixed, **assigned}, value
 
     def locked(self, pid: str, on: date) -> bool:
         if self.league.lineup_lock == "daily":
             return self.as_of >= datetime.combine(on, self.league.lineup_lock_time, self.zone)
-        player = next(p.player for p in self.projection(on).players if p.player.id == pid)
-        return any(
-            g.tipoff <= self.as_of
-            and g.tipoff.astimezone(self.zone).date() == on
-            and player.team_id in (g.home, g.away)
-            for g in self.games
-        )
+        player = self.player_index.get(self.projection(on))[pid].player
+        return any(g.tipoff <= self.as_of for g in self.games_on(player.team_id, on))
 
     def matchup_totals(
         self,
@@ -383,13 +550,16 @@ class Simulation:
             home,
             away,
             week,
-            changed.get(home, self.roster(home)),
-            changed.get(away, self.roster(away)),
+            tuple(sorted(changed.get(home, self.roster(home)))),
+            tuple(sorted(changed.get(away, self.roster(away)))),
         )
         if key not in self.matchup_cache:
             other, opponent_days = self.total(away, week, changed.get(away))
             own, days = self.optimize_total(home, week, other, changed.get(home))
             self.matchup_cache[key] = (own, other, (*days, *opponent_days))
+            if len(self.matchup_cache) > self.params.scenario_cache_entries.value:
+                self.matchup_cache.popitem(last=False)
+        self.matchup_cache.move_to_end(key)
         return self.matchup_cache[key]
 
     def optimize_day(
@@ -414,87 +584,12 @@ class Simulation:
             scale=1.0
             if self.league.scoring == "h2h_one_win"
             else float(len(self.league.categories)),
-            c=self.params.calibration.value,
+            c=self.params.week_calibration.value
+            if self.league.scoring == "h2h_one_win"
+            else self.params.calibration.value,
         )
 
     def week(
         self, home: str, away: str, week_id: str, rosters: dict[str, tuple[str, ...]] | None = None
     ) -> WeekForecast:
-        changed = rosters or {}
-        a, b, lineups = self.matchup_totals(home, away, week_id, changed)
-        points, scores = self.score(a, b)
-        raw = float(scores.mean())
-        trace = self.calibrated_score(raw)
-        error = evaluate("error", variance=float(scores.var()), samples=float(self.samples))
-        scaled_error = evaluate(
-            "product", gain=error.result, probability=self.params.calibration.value
-        )
-        return WeekForecast(
-            week_id=week_id,
-            home=home,
-            away=away,
-            scoring=self.league.scoring,
-            raw_score=raw,
-            score=trace.result,
-            standard_error=scaled_error.result,
-            categories=tuple(
-                category_forecast(a, b, points[:, i], i, self)
-                for i in range(len(self.league.categories))
-            ),
-            lineups=lineups,
-            simulations=self.samples,
-            opponent_policy="fixed_roster",
-            traces=(trace, error, scaled_error),
-        )
-
-
-def category_forecast(
-    a: Array, b: Array, points: Array, index: int, sim: Simulation
-) -> CategoryForecast:
-    category = sim.league.categories[index]
-    means = np.stack((a.mean(axis=0), b.mean(axis=0)))
-    values = category_values(means, (category,), sim.axes, directed=False)[:, 0]
-    distribution_a = category_values(a, (category,), sim.axes)[:, 0]
-    distribution_b = category_values(b, (category,), sim.axes)[:, 0]
-    raw = float(points.mean())
-    calibrated = evaluate("calibration", p=raw, c=sim.params.calibration.value)
-    z = evaluate(
-        "z",
-        home=float(distribution_a.mean()),
-        away=float(distribution_b.mean()),
-        home_variance=float(distribution_a.var()),
-        away_variance=float(distribution_b.var()),
-        limit=1 / sim.params.tolerance.value,
-    )
-    normal = evaluate("normal", z=z.result)
-    error = evaluate("error", variance=float(points.var()), samples=float(sim.samples))
-    scaled_error = evaluate("product", gain=error.result, probability=sim.params.calibration.value)
-    formula = category.formula
-    numerator = total_terms(
-        means, formula.terms if isinstance(formula, Linear) else formula.numerator, sim.axes
-    )
-    denominator = (
-        None if isinstance(formula, Linear) else total_terms(means, formula.denominator, sim.axes)
-    )
-    p = calibrated.result
-    return CategoryForecast(
-        id=category.id,
-        label=category.label,
-        home=float(values[0]),
-        away=float(values[1]),
-        home_numerator=float(numerator[0]),
-        away_numerator=float(numerator[1]),
-        home_denominator=None if denominator is None else float(denominator[0]),
-        away_denominator=None if denominator is None else float(denominator[1]),
-        raw_probability=raw,
-        probability=p,
-        standard_error=scaled_error.result,
-        z=z.result,
-        normal_probability=normal.result,
-        strategy="safe"
-        if p >= sim.params.safe_probability.value
-        else "abandon"
-        if p <= sim.params.abandon_probability.value
-        else "key",
-        traces=(calibrated, z, normal, error, scaled_error),
-    )
+        return cached_forecast(self, home, away, week_id, rosters)

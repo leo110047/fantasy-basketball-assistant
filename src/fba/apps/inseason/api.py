@@ -6,6 +6,7 @@ from time import monotonic
 
 from pydantic import JsonValue
 
+from fba.apps.inseason.trade_workers import TradeWorkers
 from fba.contracts.base import ConfigError, DataError, Record
 from fba.contracts.inseason import InseasonPreferences
 from fba.contracts.inseason_app import (
@@ -25,12 +26,13 @@ from fba.contracts.inseason_app import (
     TradeSearchRequest,
     WeekRequest,
 )
-from fba.contracts.inseason_results import PredictionRecord, WeeklyReview
+from fba.contracts.inseason_results import PredictionRecord, TradeSearchResult, WeeklyReview
 from fba.data.codec import canonical, decode, digest
 from fba.inseason.operations import (
     bootstrap,
     complete_reviews,
     import_validation,
+    latest_plan,
     recommendations,
     record_proposal,
     recorded_plan,
@@ -55,7 +57,9 @@ class FileRequest(Record):
     path: str
 
 
-def basic_action(session: InseasonSession, action: str, data: bytes) -> JsonValue:
+def basic_action(
+    session: InseasonSession, action: str, data: bytes, trade_workers: TradeWorkers | None = None
+) -> JsonValue:
     if action == "connect":
         request = decode(ConnectRequest, data, action)
         return {
@@ -97,11 +101,13 @@ def basic_action(session: InseasonSession, action: str, data: bytes) -> JsonValu
         request = decode(RedistributionRequest, data, action)
         return json_value(redistribution(session, request.player, request.minutes))
     else:
-        return calculation_action(session, action, data)
+        return calculation_action(session, action, data, trade_workers)
     return {"saved": True}
 
 
-def calculation_action(session: InseasonSession, action: str, data: bytes) -> JsonValue:
+def calculation_action(
+    session: InseasonSession, action: str, data: bytes, trade_workers: TradeWorkers | None = None
+) -> JsonValue:
     if action == "sync":
         session.synchronize()
         if session.state().players_sha256 is not None:
@@ -121,9 +127,12 @@ def calculation_action(session: InseasonSession, action: str, data: bytes) -> Js
     if action == "trade":
         request = decode(TradeRequest, data, action)
         sim = session.simulation(season=True)
-        result = evaluate_trade(
-            sim, sim.snapshot.mine, request.opponent, request.send, request.receive
-        )
+        with sim.budget(
+            "trade_one" if max(len(request.send), len(request.receive)) == 1 else "trade_many"
+        ):
+            result = evaluate_trade(
+                sim, sim.snapshot.mine, request.opponent, request.send, request.receive
+            )
         session.league_store().append_snapshot(
             "trade-predictions",
             "trade evaluation",
@@ -137,16 +146,28 @@ def calculation_action(session: InseasonSession, action: str, data: bytes) -> Js
         def progress(value: float) -> None:
             session.progress = value
 
-        rows = search_trades(
-            session.simulation(season=True),
-            session.preferences,
-            request.opponent,
-            request.size,
-            progress,
+        sim = session.simulation(season=True)
+        args = (sim, session.preferences, request.opponent, request.size, progress)
+        rows = (
+            trade_workers.search(*args, session.cancelled)
+            if trade_workers is not None
+            else search_trades(*args)
         )
-        result = json_value([r.model_dump(mode="json") for r in rows])
+        result = json_value(
+            TradeSearchResult(
+                trades=rows,
+                counts=sim.trade_search_counts,
+                minimum_value_ratio=session.preferences.trade_value_min_ratio,
+            ).model_dump(mode="json")
+        )
         session.league_store().append_snapshot(
             "trade-searches", "trade search", datetime.now(UTC), result
+        )
+        session.league_store().append_snapshot(
+            "trade-search-audits",
+            "full simulation and sound bound counts",
+            sim.as_of,
+            json_value(sim.trade_search_counts),
         )
         return result
     if action == "partners":
@@ -157,18 +178,7 @@ def calculation_action(session: InseasonSession, action: str, data: bytes) -> Js
             ]
         )
     if action == "today":
-        request = decode(TodayRequest, data, action)
-        plan = None
-        if request.plan_id is not None:
-            plan = recorded_plan(session, request.plan_id)
-        completed = tuple(k for k, v in session.notes().completed.items() if v)
-        sim = session.simulation()
-        result = today(sim, request.on, session.preferences.timezone, plan, completed)
-        payload = json_value(result.model_dump(mode="json"))
-        session.league_store().append_snapshot(
-            "daily-predictions", "daily lineup and actions", sim.as_of, payload
-        )
-        return payload
+        return today_result(session, decode(TodayRequest, data, action))
 
     if action == "proposal":
         return json_value(
@@ -189,6 +199,38 @@ def calculation_action(session: InseasonSession, action: str, data: bytes) -> Js
     if action == "refit-acceptance":
         return refit_acceptance(session)
     return note_action(session, action, data)
+
+
+def today_result(session: InseasonSession, request: TodayRequest) -> JsonValue:
+    started = monotonic()
+    sim = session.simulation()
+    with sim.budget("today"):
+        sim.deadline = (started + sim.params.budgets["today"].value, "today")
+        sim.check_limits()
+        plan = None
+        if request.plan_id is not None:
+            plan = recorded_plan(session, request.plan_id, sim.check_limits)
+        else:
+            week = next((w for w in sim.league.matchups if w.start <= request.on <= w.end), None)
+            if week is not None:
+                plan = latest_plan(session, week.id, sim.check_limits)
+        completed = tuple(k for k, v in session.notes().completed.items() if v)
+        if plan is not None and any(m.drop in session.preferences.untouchable for m in plan.moves):
+            raise DataError("today.plan_id: 計畫包含目前保護的球員，請重新計算 F3")
+        team = next(t for t in sim.snapshot.teams if t.id == sim.snapshot.mine)
+        if plan is not None and (
+            team.adds_used is None
+            or len(plan.moves)
+            > max(0, sim.league.adds_per_week - team.adds_used - session.preferences.reserve_adds)
+        ):
+            raise DataError("today.plan_id: 計畫超過目前可用加人額度，請重新計算 F3")
+        result = today(sim, request.on, session.preferences.timezone, plan, completed)
+        payload = json_value(result.model_dump(mode="json"))
+        sim.check_limits()
+        session.league_store().append_snapshot(
+            "daily-predictions", "daily lineup and actions", sim.as_of, payload
+        )
+    return payload
 
 
 def note_action(session: InseasonSession, action: str, data: bytes) -> JsonValue:
@@ -227,6 +269,7 @@ class Jobs:
         self.identifier = 0
         self.status = "idle"
         self.accepting = True
+        self.trade_workers = TradeWorkers()
 
     def start(self, action: str, data: bytes) -> int:
         with self.lock:
@@ -257,7 +300,7 @@ class Jobs:
                 if workspace is not None:
                     inputs = [workspace.players_sha256, workspace.priors_sha256]
             inputs.append(digest(canonical(self.session.ledger())))
-            self.result = basic_action(self.session, action, data)
+            self.result = basic_action(self.session, action, data, self.trade_workers)
             status = "completed"
         except Exception as exc:
             self.error = f"{type(exc).__name__}: {exc}"
@@ -305,6 +348,7 @@ class Jobs:
         self.session.cancelled.set()
         if self.thread is not None:
             self.thread.join(timeout=seconds)
+        self.trade_workers.close()
 
 
 def parse_body(data: bytes) -> tuple[str, bytes]:

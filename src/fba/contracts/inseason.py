@@ -6,7 +6,15 @@ from typing import Annotated, Literal
 from pydantic import AwareDatetime, Field
 
 from fba.contracts.base import Finite, Natural, Nonnegative, PositiveInt, Record, Text
-from fba.contracts.config import Category, Evidence, InjurySlot, Matchup, StarterSlot, Term
+from fba.contracts.config import (
+    Category,
+    DistributionParameters,
+    Evidence,
+    InjurySlot,
+    Matchup,
+    StarterSlot,
+    Term,
+)
 from fba.contracts.data import Digest
 from fba.contracts.formula import FormulaTrace
 
@@ -20,6 +28,11 @@ class NumberParameter(Record):
 
 class IntegerParameter(Record):
     value: Natural
+    evidence: Evidence
+
+
+class PriorPredictiveParameter(Record):
+    value: Literal["nested_poisson"]
     evidence: Evidence
 
 
@@ -71,10 +84,16 @@ class InseasonParameters(Record):
     simulations: IntegerParameter
     season_simulations: IntegerParameter
     seed: IntegerParameter
+    prior_predictive: PriorPredictiveParameter
     calibration: NumberParameter
+    week_calibration: NumberParameter
     safe_probability: NumberParameter
     abandon_probability: NumberParameter
     shortlist: IntegerParameter
+    drop_shortlist: IntegerParameter
+    weekly_exact_candidates: IntegerParameter
+    lineup_batch: IntegerParameter
+    scenario_cache_entries: IntegerParameter
     beam_width: IntegerParameter
     max_trade_players: IntegerParameter
     beta_rank: NumberParameter
@@ -86,6 +105,8 @@ class InseasonParameters(Record):
     rank_scale: NumberParameter
     calibration_bins: IntegerParameter
     calibration_alert: NumberParameter
+    calibration_minimum: IntegerParameter
+    calibration_confidence_z: NumberParameter
     tolerance: NumberParameter
     retry_count: IntegerParameter
     retry_seconds: NumberParameter
@@ -132,6 +153,7 @@ class InseasonLeague(ProjectionRules):
     lineup_lock_time: time
     matchups: Annotated[tuple[Matchup, ...], Field(min_length=1)]
     playoff_teams: PositiveInt
+    playoff_seeding: Literal["overall", "unknown"] = "unknown"
     playoff_weeks: tuple[Text, ...]
     trade_deadline: AwareDatetime | None
     yahoo_settings_sha256: Digest
@@ -148,12 +170,15 @@ class InseasonPreferences(Record):
     timezone: Text
     reserve_adds: Natural
     future_weight: Nonnegative
+    trade_value_min_ratio: Annotated[float, Field(ge=0.5, le=1.0)] = 0.7
     untouchable: tuple[Text, ...]
     ignored_opponents: tuple[Text, ...]
     selected_league: Text | None
 
 
 class SeasonPlayer(Record):
+    provider_ids: dict[str, Text] = {}
+    team_abbreviation: Text | None = None
     id: Text
     name: Text
     team_id: Text
@@ -172,7 +197,7 @@ class SeasonGame(Record):
     away: Text
     tipoff: AwareDatetime
     known_at: AwareDatetime
-    status: Literal["scheduled", "completed", "postponed", "cancelled"]
+    status: Literal["scheduled", "in_progress", "completed", "postponed", "cancelled"]
 
 
 class BoxScore(Record):
@@ -199,6 +224,7 @@ class FrozenPriors(Record):
     source_sha256: Digest
     known_at: AwareDatetime
     players: tuple[PlayerPrior, ...]
+    distribution: DistributionParameters | None = None
 
 
 class PlayerSnapshot(Record):
@@ -228,12 +254,14 @@ class SeasonPairing(Record):
     week_id: Text
     home: Text
     away: Text
+    elimination: bool | None = None
 
 
 class ActualScore(Record):
     week_id: Text
     team_id: Text
     through: AwareDatetime
+    complete_through: AwareDatetime | None = None
     totals: dict[str, Nonnegative]
     final: bool
 
@@ -244,7 +272,15 @@ class FreeAgent(Record):
     clears_at: AwareDatetime | None
 
 
+class PlayerOwnership(Record):
+    value: Probability | None
+    change: Finite | None
+    as_of: AwareDatetime
+    coverage_type: Text | None
+
+
 class LeagueSnapshot(Record):
+    ownership: dict[str, PlayerOwnership] = {}
     format_version: Literal[1]
     league_id: Text
     as_of: AwareDatetime
@@ -340,7 +376,30 @@ class DayLineup(Record):
     bench: tuple[Text, ...]
 
 
+class InjuryReturn(Record):
+    player_id: Text
+    effective_on: date
+    drop: Text | None
+    estimated: bool
+
+
+class MatchupPriority(Record):
+    status: Literal["normal", "must_win", "eliminated", "unknown"]
+    reason: Text
+    qualification_if_loss: bool | None = None
+    qualification_if_win: bool | None = None
+
+
 class WeekForecast(Record):
+    priority: MatchupPriority | None = None
+    elapsed_days: Natural = 0
+    remaining_games: dict[str, Natural] = {}
+    adds_remaining: Natural | None = None
+    no_moves_score: Nonnegative | None = None
+    no_moves_raw_score: Nonnegative | None = None
+    injury_returns: tuple[InjuryReturn, ...] = ()
+    lineup_search: Literal["joint_exact", "daily_exact_coordinate"] = "daily_exact_coordinate"
+    prior_players: tuple[Text, ...] = ()
     week_id: Text
     home: Text
     away: Text
@@ -356,6 +415,7 @@ class WeekForecast(Record):
 
 
 class SyncState(Record):
+    forecast_error: Text | None = None
     connected: bool
     authorization_valid: bool
     last_success: AwareDatetime | None

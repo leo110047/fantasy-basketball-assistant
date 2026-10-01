@@ -12,6 +12,7 @@ from fba.contracts.inseason import (
     FreeAgent,
     InseasonLeague,
     LeagueSnapshot,
+    PlayerOwnership,
     SeasonPairing,
 )
 from fba.contracts.yahoo import (
@@ -132,7 +133,15 @@ def settings_draft(
         document=document,
         yahoo_settings=xml_value(settings),
         confirm_fields=tuple(
-            sorted((*catalog.confirmation_defaults, "injury_slots", "categories", "playoff_weeks"))
+            sorted(
+                (
+                    *catalog.confirmation_defaults,
+                    "injury_slots",
+                    "categories",
+                    "playoff_weeks",
+                    "playoff_seeding",
+                )
+            )
         ),
     )
 
@@ -282,6 +291,7 @@ def normalize_league(
         pairings=pairings,
         actual=scores,
         free_agents=free,
+        ownership=ownership(bundle, identities, at),
         unresolved_rostered=tuple(sorted(set(unresolved))),
         unresolved_free=unresolved_free,
     )
@@ -310,7 +320,7 @@ def scoreboards(
                 scores[week, tid] = ActualScore(
                     week_id=week,
                     team_id=tid,
-                    through=at,
+                    through=datetime.fromisoformat(bundle.refreshed_at.get(key, bundle.as_of)),
                     totals=totals(team, mapping),
                     final=status == "postevent",
                 )
@@ -346,3 +356,33 @@ def free_agents(
 
 def league_from_draft(document: dict[str, JsonValue]) -> InseasonLeague:
     return InseasonLeague.model_validate_json(json.dumps(document))
+
+
+def ownership(
+    bundle: SyncBundle,
+    identities: IdentityMappings,
+    at: datetime,
+) -> dict[str, PlayerOwnership]:
+    result: dict[str, PlayerOwnership] = {}
+    for key, raw in bundle.documents.items():
+        if not key.startswith(("players:", "roster:")):
+            continue
+        for player in xml(raw.encode()).findall(".//player"):
+            external = text_at(player, "player_key")
+            pid = identities.entries.get(external)
+            if pid is None:
+                continue
+            node = player.find("percent_owned")
+            value = node.findtext("value") if node is not None else None
+            delta = node.findtext("delta") if node is not None else None
+            try:
+                record = PlayerOwnership(
+                    value=float(value) / 100 if value is not None else None,
+                    change=float(delta) / 100 if delta is not None else None,
+                    as_of=at,
+                    coverage_type=node.findtext("coverage_type") if node is not None else None,
+                )
+            except ValueError:
+                raise DataError(f"Yahoo.percent_owned.{external}: invalid percentage") from None
+            result[pid] = record
+    return result

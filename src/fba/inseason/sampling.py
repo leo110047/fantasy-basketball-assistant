@@ -1,0 +1,103 @@
+"""Sampling from frozen player evidence; RNG streams preserve shared sample prefixes."""
+
+from hashlib import sha256
+
+import numpy as np
+from numpy.typing import NDArray
+
+from fba.contracts.base import DataError
+from fba.contracts.inseason import (
+    BoxScore,
+    EffectivePlayer,
+    FrozenPriors,
+    InseasonLeague,
+    InseasonParameters,
+    SeasonGame,
+)
+from fba.formulas.arrays import evaluate_array
+from fba.formulas.categories import derive_games
+from fba.formulas.registry import evaluate
+
+
+def sample_game(
+    player: EffectivePlayer,
+    history: tuple[BoxScore, ...],
+    league: InseasonLeague,
+    params: InseasonParameters,
+    priors: FrozenPriors,
+    samples: int,
+    game: SeasonGame,
+) -> NDArray[np.float64]:
+    player_id = player.player.id
+
+    def random(stream: str) -> np.random.Generator:
+        seed = int.from_bytes(
+            sha256(f"{params.seed.value}:{player_id}:{game.id}:{stream}".encode()).digest()[:8],
+            "little",
+        )
+        return np.random.default_rng(seed)
+
+    target = np.array([player.rates.get(s, 0.0) * player.minutes for s in league.base_stats])
+    if not history:
+        sampled = np.stack(
+            [random(s).poisson(target[i], size=samples) for i, s in enumerate(league.base_stats)],
+            axis=-1,
+        ).astype(np.float64)
+        distribution = priors.distribution
+        if distribution is None:
+            raise DataError(
+                f"simulation.{player_id}: prior predictive requires frozen preseason "
+                "nested-count rules; reload the preseason source"
+            )
+        pending = {
+            row.child: row.parent
+            for row in distribution.nested_counts
+            if row.child in league.base_stats
+        }
+        while pending:
+            ready = tuple(child for child, parent in pending.items() if parent not in pending)
+            if not ready:
+                raise DataError("prior.distribution.nested_counts: cyclic constraints")
+            for child in ready:
+                parent = pending.pop(child)
+                if parent not in league.base_stats:
+                    raise DataError(f"prior.distribution.{child}: missing parent {parent}")
+                i, j = (league.base_stats.index(s) for s in (child, parent))
+                if target[i] > target[j]:
+                    raise DataError(f"prior.distribution.{child}: mean exceeds parent {parent}")
+                probability = evaluate(
+                    "ratio",
+                    numerator=float(target[i]),
+                    denominator=float(target[j]),
+                    zero_value=0.0,
+                ).result
+                sampled[:, i] = random(child + ":nested").binomial(
+                    sampled[:, j].astype(np.int64), probability
+                )
+        sampled *= (random("availability").random(samples) < player.probability)[:, None]
+        result = derive_games(sampled, league.base_stats, league.derived)
+        return result
+    source = np.array([[b.stats.get(s, 0.0) for s in league.base_stats] for b in history])
+    sampled = source[random("history").integers(len(source), size=samples)].copy()
+    mean = source.mean(axis=0)
+    # A zero-observation statistic cannot be rescaled. The explicit prior
+    # predictive Poisson component preserves its positive model mean.
+    zero_mean = np.zeros_like(sampled)
+    for i in np.flatnonzero(mean == 0):
+        zero_mean[:, i] = random(league.base_stats[int(i)]).poisson(target[i], size=samples)
+    sampled = evaluate_array(
+        "bootstrap_scale",
+        history=source,
+        samples=sampled,
+        target=target,
+        zero_mean_draws=zero_mean,
+    ).result.copy()
+    for shot in league.shots:
+        i, j = (
+            league.base_stats.index(shot.made),
+            league.base_stats.index(shot.attempted),
+        )
+        sampled[:, i] = np.minimum(sampled[:, i], sampled[:, j])
+    sampled *= (random("availability").random(samples) < player.probability)[:, None]
+    result = derive_games(sampled, league.base_stats, league.derived)
+    return result

@@ -360,12 +360,12 @@
     }
   },
   "calibration": {
-    "value": 0.8,
+    "value": 0.82,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "design/inseason-handoff-2026-09-30.md M6; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T07:35:14.320394Z",
+      "reason": "Handoff M6 category initial coefficient 0.82. The readable original specification does not provide its fitted dataset; no independent holdout evidence."
     }
   },
   "safe_probability": {
@@ -489,9 +489,9 @@
     "value": 0.05,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "季賽助手規格 F3 holdout calibration criterion; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T07:35:14.320394Z",
+      "reason": "Runtime monitoring policy uses the 5pp holdout calibration criterion as an initial alert threshold. This is a separate unvalidated policy, not an empirically fitted threshold."
     }
   },
   "tolerance": {
@@ -624,5 +624,77 @@
       "statuses": {},
       "only_back_to_back": false
     }
-  ]
+  ],
+  "week_calibration": {
+    "value": 0.8,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "design/inseason-handoff-2026-09-30.md M6; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-01T07:35:14.320394Z",
+      "reason": "Handoff M6 weekly initial coefficient 0.80; distinct from category calibration. No independent holdout evidence."
+    }
+  },
+  "calibration_minimum": {
+    "value": 8,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 F3/F6; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-09-30T00:00:00Z",
+      "reason": "Require at least eight distinct matchup-week clusters per bin plus a bounded-outcome uncertainty margin; explicit monitoring policy, not a holdout-calibrated threshold."
+    }
+  },
+  "calibration_confidence_z": {
+    "value": 1.96,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "季賽助手規格 F3/F6; design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-09-30T00:00:00Z",
+      "reason": "Two-sided approximate 95% uncertainty margin; monitoring assumption. Category outcomes are clustered by matchup-week."
+    }
+  },
+  "prior_predictive": {
+    "value": "nested_poisson",
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-09-30T00:00:00Z",
+      "reason": "No personal game logs: stochastic Poisson parents, conditional binomial children using frozen preseason count constraints. Other correlations require holdout validation."
+    }
+  },
+  "weekly_exact_candidates": {
+    "value": 64,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-09-30T00:00:00Z",
+      "reason": "Bound exact joint enumeration to 64 legal weekly combinations; larger schedules retain disclosed exact-per-day coordinate search. This is a resource policy, not a calibrated quality guarantee."
+    }
+  },
+  "lineup_batch": {
+    "value": 64,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-09-30T00:00:00Z",
+      "reason": "Bound temporary tensors to 64 exact candidates per batch; no candidates are dropped. This is an uncalibrated resource policy."
+    }
+  },
+  "scenario_cache_entries": {
+    "value": 512,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-09-30T00:00:00Z",
+      "reason": "Bound each team and matchup scenario cache to 512 least-recently-used entries during large exhaustive searches. Eviction only recomputes deterministic results; this is an uncalibrated resource policy."
+    }
+  },
+  "drop_shortlist": {
+    "value": 3,
+    "evidence": {
+      "kind": "Assumption",
+      "reference": "design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-09-30T00:00:00Z",
+      "reason": "Prioritize three low-contribution roster players from the cached team lineup before add/drop screening; configurable resource and quality policy, not a validated recall guarantee."
+    }
+  }
 }

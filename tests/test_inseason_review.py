@@ -132,8 +132,26 @@ def test_old_tie_credit_and_new_win_probabilities_are_not_mixed():
     assert combined.week_score_kind == "win_probability"
     assert combined.week_prediction_ids == ("current",)
     assert combined.week_brier == pytest.approx(0.25**2)
+    assert len(combined.rows) == len(sim.league.categories)
+    assert len({(row["category"], row["prediction"]) for row in combined.rows}) == len(
+        combined.rows
+    )
+    history = calibration_history(sim.league.season_id, (legacy, current), (combined,), ())
+    assert len(history.observations) == len(sim.league.categories)
     cumulative = cumulative_review(
         (old_review.model_copy(update={"week_id": "1"}), combined), sim.params
     )
     assert cumulative["week_brier"] == pytest.approx(0.25**2)
     assert cumulative["excluded_legacy_weeks"] == 1
+
+
+def test_archived_category_axes_cannot_silently_score_different_current_rules():
+    import pytest
+
+    from fba.contracts.base import DataError
+
+    sim = simulation()
+    saved = prediction(sim)
+    changed = sim.league.model_copy(update={"categories": tuple(reversed(sim.league.categories))})
+    with pytest.raises(DataError, match="archived category axes"):
+        weekly_review(changed, sim.params, final_scores(sim), (saved,), "2", {})

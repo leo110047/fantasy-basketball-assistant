@@ -175,6 +175,25 @@
       ],
       "title": "PriorGroup",
       "type": "object"
+    },
+    "PriorPredictiveParameter": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "const": "nested_poisson",
+          "title": "Value",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "value",
+        "evidence"
+      ],
+      "title": "PriorPredictiveParameter",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -240,7 +259,13 @@
     "seed": {
       "$ref": "#/$defs/IntegerParameter"
     },
+    "prior_predictive": {
+      "$ref": "#/$defs/PriorPredictiveParameter"
+    },
     "calibration": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "week_calibration": {
       "$ref": "#/$defs/NumberParameter"
     },
     "safe_probability": {
@@ -250,6 +275,18 @@
       "$ref": "#/$defs/NumberParameter"
     },
     "shortlist": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "drop_shortlist": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "weekly_exact_candidates": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "lineup_batch": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "scenario_cache_entries": {
       "$ref": "#/$defs/IntegerParameter"
     },
     "beam_width": {
@@ -283,6 +320,12 @@
       "$ref": "#/$defs/IntegerParameter"
     },
     "calibration_alert": {
+      "$ref": "#/$defs/NumberParameter"
+    },
+    "calibration_minimum": {
+      "$ref": "#/$defs/IntegerParameter"
+    },
+    "calibration_confidence_z": {
       "$ref": "#/$defs/NumberParameter"
     },
     "tolerance": {
@@ -344,10 +387,16 @@
     "simulations",
     "season_simulations",
     "seed",
+    "prior_predictive",
     "calibration",
+    "week_calibration",
     "safe_probability",
     "abandon_probability",
     "shortlist",
+    "drop_shortlist",
+    "weekly_exact_candidates",
+    "lineup_batch",
+    "scenario_cache_entries",
     "beam_width",
     "max_trade_players",
     "beta_rank",
@@ -359,6 +408,8 @@
     "rank_scale",
     "calibration_bins",
     "calibration_alert",
+    "calibration_minimum",
+    "calibration_confidence_z",
     "tolerance",
     "retry_count",
     "retry_seconds",

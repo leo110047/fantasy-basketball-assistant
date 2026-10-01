@@ -18,6 +18,19 @@
           "title": "Through",
           "type": "string"
         },
+        "complete_through": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Complete Through"
+        },
         "totals": {
           "additionalProperties": {
             "minimum": 0,
@@ -323,6 +336,98 @@
       "title": "DerivedStat",
       "type": "object"
     },
+    "DistributionParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Stat Ids",
+          "type": "array"
+        },
+        "rounding_groups": {
+          "items": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rounding Groups",
+          "type": "array"
+        },
+        "nested_counts": {
+          "items": {
+            "$ref": "#/$defs/NestedCount"
+          },
+          "title": "Nested Counts",
+          "type": "array"
+        },
+        "scoring_stat": {
+          "minLength": 1,
+          "title": "Scoring Stat",
+          "type": "string"
+        },
+        "scoring_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Scoring Terms",
+          "type": "array"
+        },
+        "threshold_stat": {
+          "minLength": 1,
+          "title": "Threshold Stat",
+          "type": "string"
+        },
+        "count_pseudocount": {
+          "minimum": 0,
+          "title": "Count Pseudocount",
+          "type": "number"
+        },
+        "attempt_pseudocount": {
+          "minimum": 0,
+          "title": "Attempt Pseudocount",
+          "type": "number"
+        },
+        "search_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Search Iterations",
+          "type": "integer"
+        },
+        "integration_batch_size": {
+          "exclusiveMinimum": 0,
+          "title": "Integration Batch Size",
+          "type": "integer"
+        },
+        "feasibility_tolerance": {
+          "minimum": 0,
+          "title": "Feasibility Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "stat_ids",
+        "rounding_groups",
+        "nested_counts",
+        "scoring_stat",
+        "scoring_terms",
+        "threshold_stat",
+        "count_pseudocount",
+        "attempt_pseudocount",
+        "search_iterations",
+        "integration_batch_size",
+        "feasibility_tolerance",
+        "evidence"
+      ],
+      "title": "DistributionParameters",
+      "type": "object"
+    },
     "Evidence": {
       "additionalProperties": false,
       "properties": {
@@ -516,6 +621,17 @@
           },
           "title": "Players",
           "type": "array"
+        },
+        "distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DistributionParameters"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -754,6 +870,15 @@
           "title": "Playoff Teams",
           "type": "integer"
         },
+        "playoff_seeding": {
+          "default": "unknown",
+          "enum": [
+            "overall",
+            "unknown"
+          ],
+          "title": "Playoff Seeding",
+          "type": "string"
+        },
         "playoff_weeks": {
           "items": {
             "minLength": 1,
@@ -872,6 +997,13 @@
           "title": "Future Weight",
           "type": "number"
         },
+        "trade_value_min_ratio": {
+          "default": 0.7,
+          "maximum": 1.0,
+          "minimum": 0.5,
+          "title": "Trade Value Min Ratio",
+          "type": "number"
+        },
         "untouchable": {
           "items": {
             "minLength": 1,
@@ -922,6 +1054,14 @@
     "LeagueSnapshot": {
       "additionalProperties": false,
       "properties": {
+        "ownership": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PlayerOwnership"
+          },
+          "default": {},
+          "title": "Ownership",
+          "type": "object"
+        },
         "format_version": {
           "const": 1,
           "title": "Format Version",
@@ -1067,6 +1207,81 @@
         "phase"
       ],
       "title": "Matchup",
+      "type": "object"
+    },
+    "NestedCount": {
+      "additionalProperties": false,
+      "properties": {
+        "child": {
+          "minLength": 1,
+          "title": "Child",
+          "type": "string"
+        },
+        "parent": {
+          "minLength": 1,
+          "title": "Parent",
+          "type": "string"
+        }
+      },
+      "required": [
+        "child",
+        "parent"
+      ],
+      "title": "NestedCount",
+      "type": "object"
+    },
+    "PlayerOwnership": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "change": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Change"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "coverage_type": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Coverage Type"
+        }
+      },
+      "required": [
+        "value",
+        "change",
+        "as_of",
+        "coverage_type"
+      ],
+      "title": "PlayerOwnership",
       "type": "object"
     },
     "PlayerPrior": {
@@ -1289,6 +1504,7 @@
         "status": {
           "enum": [
             "scheduled",
+            "in_progress",
             "completed",
             "postponed",
             "cancelled"
@@ -1325,6 +1541,18 @@
           "minLength": 1,
           "title": "Away",
           "type": "string"
+        },
+        "elimination": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Elimination"
         }
       },
       "required": [
@@ -1338,6 +1566,28 @@
     "SeasonPlayer": {
       "additionalProperties": false,
       "properties": {
+        "provider_ids": {
+          "additionalProperties": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "default": {},
+          "title": "Provider Ids",
+          "type": "object"
+        },
+        "team_abbreviation": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Team Abbreviation"
+        },
         "id": {
           "minLength": 1,
           "title": "Id",

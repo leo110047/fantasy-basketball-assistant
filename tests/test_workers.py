@@ -179,3 +179,28 @@ def test_real_worker_exit_recovers_on_retry_without_restarting_session(monkeypat
     with pytest.raises(SolverError, match="closed"):
         with session.working_pool():
             pytest.fail("closed session allowed more work")
+
+
+def test_hot_cancellation_checks_coalesce_ipc_with_bounded_latency(monkeypatch):
+    from fba.apps import workers
+
+    clock = [1.0]
+    stopped = [False]
+    polls = []
+
+    class Signal:
+        def poll(self):
+            polls.append(clock[0])
+            return stopped[0]
+
+    monkeypatch.setattr(workers, "monotonic", lambda: clock[0])
+    cancelled = workers.cancellation_check(Signal())
+    assert not cancelled()
+    stopped[0] = True
+    for _ in range(1000):
+        assert not cancelled()
+    assert len(polls) == 1
+    clock[0] += workers.POLL_INTERVAL
+    assert cancelled() and len(polls) == 2
+    stopped[0] = False
+    assert cancelled() and len(polls) == 2

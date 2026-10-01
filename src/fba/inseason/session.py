@@ -10,6 +10,7 @@ from fba.contracts.base import ConfigError, DataError, Record
 from fba.contracts.inseason import (
     AdjustmentLedger,
     AuthorizationRequired,
+    CalculationTimeout,
     EffectiveProjection,
     FeatureAvailability,
     FrozenPriors,
@@ -39,14 +40,17 @@ from fba.data.inseason_sources import AuthorizedFeed, projection_rules, read_pri
 from fba.data.storage import Store, StoredSnapshot
 from fba.data.yahoo import SyncBundle, YahooSync, discover
 from fba.data.yahoo_auth import CredentialVault, SystemVault, YahooAuth, YahooReader
+from fba.data.yahoo_identity import resolve_identities
 from fba.data.yahoo_normalize import (
     differences,
     league_from_draft,
     normalize_league,
     settings_draft,
 )
+from fba.inseason.forecast_records import record_current_forecast
 from fba.inseason.matchup import Simulation
 from fba.inseason.projection import effective_projection
+from fba.inseason.simulation_cache import reuse_simulation
 
 
 def json_value(value: object) -> JsonValue:
@@ -72,7 +76,28 @@ class InseasonSession:
                 )
                 self.store.write(f"{name}.json", data)
         self.preferences = self.store.read("preferences.json", InseasonPreferences)
-        self.params = self.store.read("parameters.json", InseasonParameters)
+        parameter_path = root / "parameters.json"
+        raw = json.loads(parameter_path.read_bytes())
+        if not isinstance(raw, dict):
+            raise ConfigError("parameters.json: expected an object")
+        installed = json.loads((defaults / "parameters.json").read_bytes())
+        migrated = False
+        for name in (
+            "week_calibration",
+            "calibration_minimum",
+            "calibration_confidence_z",
+            "prior_predictive",
+            "weekly_exact_candidates",
+            "lineup_batch",
+            "scenario_cache_entries",
+            "drop_shortlist",
+        ):
+            if name not in raw:
+                raw[name] = installed[name]
+                migrated = True
+        self.params = decode(InseasonParameters, json.dumps(raw).encode(), str(parameter_path))
+        if migrated:
+            self.store.write("parameters.json", self.params)
         validate_parameter_values(self.params)
         try:
             ZoneInfo(self.preferences.timezone)
@@ -108,6 +133,7 @@ class InseasonSession:
         self.phase = "idle"
         self.last_error: str | None = None
         self.next_sync_at: datetime | None = None
+        self.simulation_cache: dict[bool, tuple[str, Simulation]] = {}
 
     def league_store(self, key: str | None = None) -> Store:
         selected = key or self.preferences.selected_league
@@ -202,7 +228,23 @@ class InseasonSession:
             state = self.state()
             store = self.league_store()
             try:
-                bundle = YahooSync(self.reader, store, self.params).sync(state.selected)
+                previous = (
+                    snapshot_record(store.load_snapshot(state.bundle_sha256), SyncBundle)
+                    if state.bundle_sha256
+                    else None
+                )
+                timezone = (
+                    state.league.timezone
+                    if state.league
+                    else self.catalog.confirmation_defaults.get("timezone")
+                )
+                if not isinstance(timezone, str):
+                    raise ConfigError("Yahoo timezone: confirmed timezone is required")
+                bundle = YahooSync(self.reader, store, self.params).sync(
+                    state.selected,
+                    previous,
+                    timezone=timezone,
+                )
                 draft = settings_draft(bundle, state.selected, self.catalog)
                 sha = store.snapshot(
                     "Yahoo normalized bundle",
@@ -228,8 +270,29 @@ class InseasonSession:
                     self.publish_normalized(updated, bundle)
                 if updated.sources is not None and updated.league is not None:
                     self.refresh_players()
+                forecast_error = None
+                try:
+                    record_current_forecast(self)
+                except (DataError, CalculationTimeout) as exc:
+                    forecast_error = str(exc)
+                latest = self.state()
+                self.save_state(
+                    latest.model_copy(
+                        update={
+                            "sync": latest.sync.model_copy(
+                                update={"forecast_error": forecast_error}
+                            )
+                        }
+                    )
+                )
                 self.phase, self.progress = "idle", 1.0
-            except (DataError, AuthorizationRequired, TimeoutError, ValueError) as exc:
+            except (
+                DataError,
+                CalculationTimeout,
+                AuthorizationRequired,
+                TimeoutError,
+                ValueError,
+            ) as exc:
                 latest = self.state()
                 self.last_error = str(exc)
                 self.save_state(
@@ -300,7 +363,16 @@ class InseasonSession:
     def publish_normalized(self, state: LeagueState, bundle: SyncBundle) -> None:
         if state.league is None:
             raise DataError("settings: confirmed league settings required")
-        normalized = normalize_league(bundle, state.league, self.identities(), self.catalog)
+        identities = self.identities()
+        if state.players_sha256 is not None:
+            players = snapshot_record(
+                self.league_store().load_snapshot(state.players_sha256), PlayerSnapshot
+            )
+            resolved = resolve_identities(bundle, players, identities)
+            if resolved != identities:
+                self.store.write("identities.json", resolved)
+            identities = resolved
+        normalized = normalize_league(bundle, state.league, identities, self.catalog)
         sha = self.league_store().snapshot(
             "Yahoo league", normalized.as_of, json_value(normalized.model_dump(mode="json"))
         )
@@ -329,7 +401,8 @@ class InseasonSession:
             raise DataError(f"identity.{player}: unknown internal player ID")
         identities = self.identities()
         self.store.write(
-            "identities.json", IdentityMappings(entries={**identities.entries, external: player})
+            "identities.json",
+            identities.model_copy(update={"entries": {**identities.entries, external: player}}),
         )
         if state.bundle_sha256 is not None and state.league is not None:
             self.publish_normalized(
@@ -377,14 +450,21 @@ class InseasonSession:
         )
         workspace = self.load_player_workspace(state.sources, rules)
         self.working_store().write("workspace.json", workspace)
-        self.save_state(
-            state.model_copy(
-                update={
-                    "players_sha256": workspace.players_sha256,
-                    "priors_sha256": workspace.priors_sha256,
-                }
-            )
+        updated = state.model_copy(
+            update={
+                "players_sha256": workspace.players_sha256,
+                "priors_sha256": workspace.priors_sha256,
+            }
         )
+        self.save_state(updated)
+        if updated.bundle_sha256 is not None:
+            self.publish_normalized(
+                updated,
+                snapshot_record(
+                    self.league_store().load_snapshot(updated.bundle_sha256),
+                    SyncBundle,
+                ),
+            )
 
     def player_inputs(self) -> tuple[ProjectionRules, PlayerSnapshot, FrozenPriors]:
         store = self.working_store()
@@ -463,9 +543,10 @@ class InseasonSession:
             league,
             now,
             self.params.season_simulations.value if season else None,
+            untouchable=self.preferences.untouchable,
         )
         simulation.cancelled = self.cancelled.is_set
-        fits = store.history("acceptance-fits")
+        fits = store.history("acceptance-fits", limit=1)
         if fits:
             payload = fits[-1].payload
             if not isinstance(payload, dict):
@@ -477,4 +558,4 @@ class InseasonSession:
                     raise DataError(f"acceptance-fits.{key}: numeric parameter required")
                 values[key] = float(value)
             simulation.acceptance_fit = values
-        return simulation
+        return reuse_simulation(self.simulation_cache, season, simulation, state)

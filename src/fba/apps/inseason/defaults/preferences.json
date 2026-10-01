@@ -9,6 +9,7 @@
   "timezone": "Asia/Taipei",
   "reserve_adds": 1,
   "future_weight": 1.0,
+  "trade_value_min_ratio": 0.7,
   "untouchable": [],
   "ignored_opponents": [],
   "selected_league": null

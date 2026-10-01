@@ -1,7 +1,8 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from time import monotonic
 from xml.etree import ElementTree as ET
+from zoneinfo import ZoneInfo
 
 from pydantic import JsonValue
 
@@ -76,6 +77,8 @@ def discover(reader: YahooReader) -> tuple[DiscoveredLeague, ...]:
 
 
 class SyncBundle(Record):
+    revision: int = 0
+    refreshed_at: dict[str, str] = {}
     league_key: Text
     as_of: str
     documents: dict[str, str]
@@ -89,6 +92,7 @@ class YahooSync:
         self.reader, self.store, self.params = reader, store, params
         self.documents: dict[str, str] = {}
         self.hashes: dict[str, str] = {}
+        self.refreshed: dict[str, str] = {}
         self.started = 0.0
         self.initial_requests = 0
 
@@ -103,6 +107,7 @@ class YahooSync:
         raw = data.decode("utf-8")
         sha = self.store.snapshot("Yahoo:" + resource, at, raw)
         self.documents[label], self.hashes[label] = raw, sha
+        self.refreshed[label] = at.isoformat()
         self.store.append_snapshot(
             "sync-log",
             "Yahoo sync",
@@ -127,11 +132,66 @@ class YahooSync:
                 return
             start += count
 
-    def sync(self, league: DiscoveredLeague) -> SyncBundle:
+    def current_transactions(
+        self,
+        prefix: str,
+        at: datetime,
+        since: date,
+        timezone: str,
+        previous: SyncBundle | None,
+    ) -> None:
+        # Counts need this week, not every historical transaction on every sync.
+        # Validate the provider's newest-first boundary before stopping pagination.
+        known: dict[str, ET.Element] = {}
+        if previous is not None:
+            for key, raw in previous.documents.items():
+                if key.startswith("transactions:"):
+                    for row in xml(raw.encode()).findall(".//transaction"):
+                        known[text_at(row, "transaction_key")] = row
+        start, latest = 0, float("inf")
+        while True:
+            root = self.fetch(
+                f"transactions:{start}", f"{prefix}/transactions;start={start};count=25", at
+            )
+            rows = root.findall(".//transaction")
+            for row in rows:
+                stamp = int(text_at(row, "timestamp"))
+                if stamp > latest:
+                    raise DataError("Yahoo.transactions: newest-first ordering changed")
+                latest = stamp
+                known[text_at(row, "transaction_key")] = row
+            if len(rows) < 25 or (
+                rows
+                and datetime.fromtimestamp(int(latest), UTC).astimezone(ZoneInfo(timezone)).date()
+                < since
+            ):
+                break
+            start += len(rows)
+        combined = ET.Element("transactions")
+        combined.extend(known[key] for key in sorted(known))
+        raw = ET.tostring(combined, encoding="unicode")
+        self.documents["transactions:retained"] = raw
+        self.hashes["transactions:retained"] = self.store.snapshot(
+            "Yahoo transaction history", at, raw
+        )
+        self.refreshed["transactions:retained"] = at.isoformat()
+
+    def sync(
+        self, league: DiscoveredLeague, previous: SyncBundle | None = None, *, timezone: str
+    ) -> SyncBundle:
         self.started, self.initial_requests = monotonic(), self.reader.requests
         self.reader.request_limit = self.initial_requests + self.params.maximum_requests.value
         self.reader.deadline = self.started + self.params.budgets["sync"].value
-        self.documents, self.hashes = {}, {}
+        self.documents, self.hashes, self.refreshed = {}, {}, {}
+        if previous is not None:
+            if previous.league_key != league.key:
+                raise DataError("Yahoo.sync: previous snapshot belongs to another league")
+            for key, raw in previous.documents.items():
+                if key.startswith("scoreboard:"):
+                    self.documents[key] = raw
+                    if key in previous.snapshot_hashes:
+                        self.hashes[key] = previous.snapshot_hashes[key]
+                    self.refreshed[key] = previous.refreshed_at.get(key, previous.as_of)
         now = datetime.now(UTC)
         prefix = "league/" + league.key
         try:
@@ -141,13 +201,58 @@ class YahooSync:
             teams = self.fetch("standings", prefix + "/standings", now)
             for team in teams.findall(".//team"):
                 key = text_at(team, "team_key")
-                self.fetch("roster:" + key, "team/" + key + "/roster/players", now)
-            for week in weeks.findall(".//game_week"):
+                self.fetch(
+                    "roster:" + key,
+                    "team/" + key + "/roster/players;out=metadata,percent_owned",
+                    now,
+                )
+            calendar = weeks.findall(".//game_week")
+            # Refresh the live week and neighboring weeks. Older finished weeks
+            # rotate one per sync for official corrections; immutable raw replies
+            # and their actual retrieval times stay available.
+            settings = xml(self.documents["settings"].encode())
+            on = now.astimezone(ZoneInfo(timezone)).date()
+            live = next(
+                (
+                    i
+                    for i, w in enumerate(calendar)
+                    if date.fromisoformat(text_at(w, "start"))
+                    <= on
+                    <= date.fromisoformat(text_at(w, "end"))
+                ),
+                None,
+            )
+            refresh = (
+                set(range(len(calendar)))
+                if previous is None
+                else {i for i in range(len(calendar)) if live is not None and abs(i - live) <= 1}
+            )
+            old = [
+                i
+                for i, w in enumerate(calendar)
+                if date.fromisoformat(text_at(w, "end")) < on and i not in refresh
+            ]
+            revision = previous.revision + 1 if previous else 0
+            if old:
+                refresh.add(old[revision % len(old)])
+            playoff_start = int(text_at(settings, ".//playoff_start_week"))
+            for i, week in enumerate(calendar):
                 key = text_at(week, "week")
-                self.fetch("scoreboard:" + key, prefix + "/scoreboard;week=" + key, now)
+                if (
+                    i in refresh
+                    or "scoreboard:" + key not in self.documents
+                    or int(key) >= playoff_start
+                ):
+                    self.fetch("scoreboard:" + key, prefix + "/scoreboard;week=" + key, now)
             for status in ("FA", "W"):
-                self.pages("players:" + status, prefix + "/players;status=" + status, "player", now)
-            self.pages("transactions", prefix + "/transactions", "transaction", now)
+                self.pages(
+                    "players:" + status,
+                    prefix + "/players;out=metadata,percent_owned;status=" + status,
+                    "player",
+                    now,
+                )
+            since = date.fromisoformat(text_at(calendar[live], "start")) if live is not None else on
+            self.current_transactions(prefix, now, since, timezone, previous)
         except (DataError, CalculationTimeout, ValueError) as exc:
             self.store.append_snapshot(
                 "sync-log",
@@ -165,6 +270,8 @@ class YahooSync:
             self.reader.request_limit = None
             self.reader.deadline = None
         return SyncBundle(
+            revision=revision,
+            refreshed_at=self.refreshed,
             league_key=league.key,
             as_of=now.isoformat(),
             documents=self.documents,
