@@ -6,6 +6,7 @@ from urllib.request import Request, urlopen
 
 import pytest
 
+from fba.contracts.base import DataError
 from fba.runtime.local import InstanceLock
 
 
@@ -16,6 +17,15 @@ def wait_until(predicate, seconds=10):
             return
         sleep(0.02)
     raise AssertionError("local process did not reach the expected state")
+
+
+def published_pid(path):
+    try:
+        return InstanceLock(path).read().pid
+    except (DataError, FileNotFoundError):
+        # Publishing truncates then writes under the lifetime lock. Production
+        # open_existing already retries within a bounded startup grace period.
+        return None
 
 
 @pytest.mark.parametrize("force", [False, True])
@@ -71,7 +81,7 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
                 assert json.load(response)["stopping"]
         running.communicate(timeout=5)
         restarted = start()
-        wait_until(lambda: InstanceLock(root / "inseason.lock").read().pid == restarted.pid)
+        wait_until(lambda: published_pid(root / "inseason.lock") == restarted.pid)
         new = InstanceLock(root / "inseason.lock").read()
         assert new.port == instance.port
         assert new.token != instance.token
