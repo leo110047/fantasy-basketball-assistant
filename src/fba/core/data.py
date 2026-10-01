@@ -1,11 +1,7 @@
 from collections import Counter
-from fractions import Fraction
-from typing import Literal
 
 from fba.contracts.base import DataError, IdentityError
 from fba.contracts.data import (
-    Calibration,
-    CalibrationPair,
     Game,
     IdentityMap,
     Player,
@@ -87,32 +83,3 @@ def validate_schedule(games: tuple[Game, ...], counts: tuple[ScheduleCount, ...]
             raise DataError(f"schedule.{count.team_id}: announced game count mismatch")
         if (count.pending > 0) != (count.pending_reason is not None):
             raise DataError(f"schedule.{count.team_id}: pending games require a reason")
-
-
-def fit_availability(
-    pairs: tuple[CalibrationPair, ...],
-    season_id: str,
-    inputs: tuple[str, ...],
-    method: Literal["ordinary_least_squares"],
-) -> Calibration:
-    ordered = sorted(pairs, key=lambda p: p.player_id)
-    if len(ordered) < 2 or len({p.player_id for p in ordered}) != len(ordered):
-        raise DataError("calibration: need at least two unique players")
-    # Exact decimal-rational accumulation avoids platform-dependent reductions.
-    x = [Fraction(str(p.projected_games)) for p in ordered]
-    y = [Fraction(p.actual_games) for p in ordered]
-    n = len(x)
-    sx, sy = sum(x), sum(y)
-    denominator = n * sum(v * v for v in x) - sx * sx
-    if denominator == 0:
-        raise DataError("calibration: projected games have zero variance")
-    slope = (n * sum(a * b for a, b in zip(x, y, strict=True)) - sx * sy) / denominator
-    intercept = (sy - slope * sx) / n
-    return Calibration(
-        training_season_id=season_id,
-        method=method,
-        intercept=float(intercept),
-        slope=float(slope),
-        sample_size=n,
-        inputs_sha256=tuple(sorted(inputs)),
-    )

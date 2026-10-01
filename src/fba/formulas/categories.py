@@ -10,6 +10,9 @@ type Array = NDArray[np.float64]
 
 
 def total_terms(box: Array, terms: tuple[Term, ...], axes: tuple[str, ...]) -> Array:
+    if len(terms) == 1:
+        term = terms[0]
+        return np.asarray(box[..., axes.index(term.stat_id)] * term.coefficient + 0.0)
     return sum(
         (box[..., axes.index(t.stat_id)] * t.coefficient for t in terms),
         start=np.zeros(box.shape[:-1]),
@@ -69,19 +72,44 @@ def score_samples(
     category_ties: str,
     week_tie: float,
 ) -> tuple[Array, Array]:
+    differences = scoring_differences(home, away, categories, axes)
+    ties = np.array([c.tie_value if category_ties == "use_tie_value" else 0.0 for c in categories])
+    inputs = {"differences": differences, "ties": ties}
+    points = category_points(inputs)
+    if mode == "h2h_each_category":
+        return points, points.sum(axis=-1)
+    return points, week_points({**inputs, "week_tie": np.asarray(week_tie)})
+
+
+def scoring_differences(
+    home: Array, away: Array, categories: tuple[Category, ...], axes: tuple[str, ...]
+) -> Array:
     a, b = category_values(home, categories, axes), category_values(away, categories, axes)
-    differences = np.stack(
+    return np.stack(
         [
             np.round(a[..., i], c.comparison_decimals) - np.round(b[..., i], c.comparison_decimals)
             for i, c in enumerate(categories)
         ],
         axis=-1,
     )
-    ties = np.array([c.tie_value if category_ties == "use_tie_value" else 0.0 for c in categories])
-    # Compose registered kernels directly inside the formula layer. The public
-    # forecast records scalar traces; search does not serialize every draw.
-    inputs = {"differences": differences, "ties": ties}
-    points = category_points(inputs)
+
+
+def sample_scores(
+    home: Array,
+    away: Array,
+    categories: tuple[Category, ...],
+    axes: tuple[str, ...],
+    mode: str,
+    category_ties: str,
+    week_tie: float,
+) -> Array:
     if mode == "h2h_each_category":
-        return points, points.sum(axis=-1)
-    return points, week_points({**inputs, "week_tie": np.asarray(week_tie)})
+        return score_samples(home, away, categories, axes, mode, category_ties, week_tie)[1]
+    differences = scoring_differences(home, away, categories, axes)
+    return week_points(
+        {
+            "differences": differences,
+            "ties": np.zeros(len(categories)),
+            "week_tie": np.asarray(week_tie),
+        }
+    )

@@ -24,6 +24,17 @@ class ArrayFormula(NamedTuple):
 
 ARRAY_FORMULAS = (
     ArrayFormula(
+        "availability_regression",
+        "出賽場數線性回歸",
+        r"b=\frac{n\sum xy-\sum x\sum y}{n\sum x^2-(\sum x)^2},\quad "
+        r"a=(\sum y-b\sum x)/n",
+        "intercept in games; slope in games/game",
+        (),
+        vector.availability_regression,
+        {"projected": (1.0, 2.0, 3.0), "observed": (4.0, 7.0, 10.0)},
+        {"projected": "projected games", "observed": "observed games"},
+    ),
+    ArrayFormula(
         "row_rates",
         "逐場每分鐘產出",
         r"r_{is}=C_{is}/M_i",

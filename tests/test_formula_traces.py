@@ -8,10 +8,27 @@ import pytest
 from inseason_support import simulation
 
 from fba.contracts.base import DataError
+from fba.contracts.config import Term
 from fba.formulas.arrays import ARRAY_FORMULAS, evaluate_array
+from fba.formulas.categories import total_terms
 from fba.formulas.registry import definitions, evaluate, registry
 from fba.inseason.today import today
 from fba.inseason.trades import complementary_teams, evaluate_trade
+
+
+@pytest.mark.parametrize("shape", ((2,), (3, 2), (2, 3, 2)))
+@pytest.mark.parametrize("coefficient", (-2.0, 0.0, 1.0))
+def test_single_term_totals_preserve_shape_zero_sign_and_input_independence(shape, coefficient):
+    box = np.resize(np.array([9.0, 2.0, 8.0, -1.0, 7.0, -0.0]), shape)
+    saved = box.copy()
+    expected = np.zeros(shape[:-1])
+    expected = expected + box[..., 1] * coefficient
+    actual = total_terms(box, (Term(stat_id="value", coefficient=coefficient),), ("other", "value"))
+    assert isinstance(actual, np.ndarray) and actual.shape == shape[:-1]
+    np.testing.assert_array_equal(actual, expected)
+    np.testing.assert_array_equal(np.signbit(actual), np.signbit(expected))
+    actual[...] = 999.0
+    np.testing.assert_array_equal(box, saved)
 
 
 def test_registered_scalar_implementations_are_one_to_one_and_complete():
@@ -29,8 +46,9 @@ def test_registered_scalar_implementations_are_one_to_one_and_complete():
     assert {r.implementation.__name__ for r in rows} == functions - helpers
 
 
-def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
-    expected = {
+def vector_example_answers():
+    return {
+        "availability_regression": [1, 3],
         "row_rates": [[0.5, 0.2], [0.6, 0.2]],
         "matrix_product": [11],
         "bernoulli_mean": [[1, 2]],
@@ -69,6 +87,10 @@ def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
         "calibrate_distribution": [[1, 2, 3], [2, 4, 6]],
         "rounding_distribution": [[[1, 2, 3, 0.5], [0, 1, 1, 0], [0, 1, 1, 0.5]]],
     }
+
+
+def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
+    expected = vector_example_answers()
     assert len({row.id for row in definitions()}) == len(definitions())
     assert set(expected) == {row.id for row in ARRAY_FORMULAS}
     source = Path(__file__).parents[1] / "src/fba/formulas/vector.py"
@@ -102,6 +124,15 @@ def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
 def test_array_formula_rejects_invalid_evidence(inputs):
     with pytest.raises(DataError, match="formula.covariance_root"):
         evaluate_array("covariance_root", **inputs)
+
+
+@pytest.mark.parametrize(
+    "projected,observed",
+    [([1], [2]), ([1, 2], [[2, 3]]), ([1, 1], [2, 3]), ([1, 2], [2, 3.5]), ([1, 2], [-1, 3])],
+)
+def test_availability_formula_rejects_unpaired_or_invalid_game_counts(projected, observed):
+    with pytest.raises(DataError):
+        evaluate_array("availability_regression", projected=projected, observed=observed)
 
 
 def test_scalar_shaped_array_calculation_is_immutable_and_replayable():

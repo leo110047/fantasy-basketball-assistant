@@ -3,11 +3,12 @@
 from fba.contracts.base import DataError
 from fba.contracts.formula import FormulaDefinition, FormulaTrace, ScalarFormula
 from fba.formulas.arrays import array_definitions
+from fba.formulas.diagnostic_catalog import FORMULAS as DIAGNOSTICS
 from fba.formulas.scalar_catalog import FORMULAS
 
 
 def registry() -> tuple[ScalarFormula, ...]:
-    return FORMULAS
+    return (*FORMULAS, *DIAGNOSTICS)
 
 
 def evaluate(formula_id: str, **inputs: float | tuple[float, ...]) -> FormulaTrace:

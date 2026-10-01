@@ -15,8 +15,9 @@ from fba.contracts.data import (
     PlayerGame,
     Snapshot,
 )
-from fba.core.data import fit_availability, resolve_players, validate_schedule
+from fba.core.data import resolve_players, validate_schedule
 from fba.data.codec import decode
+from fba.formulas.fitting import fit_availability
 
 
 def map_observations(

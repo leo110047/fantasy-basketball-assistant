@@ -1,11 +1,40 @@
+from typing import Literal
+
 import numpy as np
 from scipy.optimize import linprog, root
 
 from fba.contracts.base import DataError
+from fba.contracts.data import Calibration, CalibrationPair
 from fba.contracts.inseason import Proposal
 from fba.core.proposals import latest_proposals
 from fba.formulas.arrays import evaluate_array
 from fba.formulas.registry import evaluate
+from fba.formulas.vector import availability_regression
+
+
+def fit_availability(
+    pairs: tuple[CalibrationPair, ...],
+    season_id: str,
+    inputs: tuple[str, ...],
+    method: Literal["ordinary_least_squares"],
+) -> Calibration:
+    ordered = sorted(pairs, key=lambda p: p.player_id)
+    if len(ordered) < 2 or len({p.player_id for p in ordered}) != len(ordered):
+        raise DataError("calibration: need at least two unique players")
+    fitted = availability_regression(
+        {
+            "projected": np.array([p.projected_games for p in ordered]),
+            "observed": np.array([p.actual_games for p in ordered]),
+        }
+    )
+    return Calibration(
+        training_season_id=season_id,
+        method=method,
+        intercept=float(fitted[0]),
+        slope=float(fitted[1]),
+        sample_size=len(ordered),
+        inputs_sha256=tuple(sorted(inputs)),
+    )
 
 
 def fit_acceptance(

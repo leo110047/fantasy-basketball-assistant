@@ -130,16 +130,6 @@ FORMULAS = (
         {"teams": "bidders", "volatility": "log bid standard deviation"},
     ),
     ScalarFormula(
-        "empirical_error",
-        "觀測樣本平均值標準誤",
-        r"SE=\sqrt{\sum_i(x_i-\bar x)^2/[n(n-1)]}",
-        "observation units",
-        (),
-        scalar.empirical_error,
-        {"values": (2.0, 4.0)},
-        {"values": "observation units"},
-    ),
-    ScalarFormula(
         "blend",
         "先驗與樣本混合",
         r"(k r_0+C)/(k+M)",
@@ -293,6 +283,16 @@ FORMULAS = (
         scalar.rank_value,
         {"scale": 100.0, "rank": 10.0, "exponent": 1.0},
         {"scale": "public value", "rank": "ordinal rank", "exponent": "dimensionless"},
+    ),
+    ScalarFormula(
+        "trade_value_ratio",
+        "雙方交易包價值接近程度",
+        r"\min(V_{home},V_{away})/\max(V_{home},V_{away})",
+        "ratio",
+        (),
+        scalar.trade_value_ratio,
+        {"home": 100.0, "away": 70.0},
+        {"home": "public value", "away": "public value"},
     ),
     ScalarFormula(
         "acceptance",

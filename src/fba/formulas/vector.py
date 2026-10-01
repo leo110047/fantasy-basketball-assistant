@@ -1,5 +1,6 @@
 """Vector equations referenced by the shared executable registry."""
 
+from fractions import Fraction
 from itertools import product
 
 import numpy as np
@@ -10,6 +11,25 @@ from fba.contracts.base import DataError
 
 type Array = NDArray[np.float64]
 type Inputs = dict[str, Array]
+
+
+def availability_regression(inputs: Inputs) -> Array:
+    projected, observed = inputs["projected"], inputs["observed"]
+    if projected.ndim != 1 or observed.shape != projected.shape or len(projected) < 2:
+        raise DataError("calibration: need at least two paired game counts")
+    # Preserve the original exact decimal-rational accumulation.
+    x = [Fraction(str(float(v))) for v in projected]
+    if any(int(v) != v or v < 0 for v in observed):
+        raise DataError("calibration: observed games must be nonnegative integers")
+    y = [Fraction(int(v)) for v in observed]
+    n = len(x)
+    sx, sy = sum(x), sum(y)
+    denominator = n * sum(v * v for v in x) - sx * sx
+    if denominator == 0:
+        raise DataError("calibration: projected games have zero variance")
+    slope = (n * sum(a * b for a, b in zip(x, y, strict=True)) - sx * sy) / denominator
+    intercept = (sy - slope * sx) / n
+    return np.array([float(intercept), float(slope)])
 
 
 def standard_deviation_floor(inputs: Inputs) -> Array:
@@ -327,10 +347,11 @@ def category_points(inputs: Inputs) -> Array:
 
 
 def week_points(inputs: Inputs) -> Array:
-    differences, ties = inputs["differences"], inputs["ties"]
-    own = category_points({"differences": differences, "ties": ties}).sum(axis=-1)
-    opposite = (differences < 0).sum(axis=-1) + ((differences == 0) * ties).sum(axis=-1)
-    return np.asarray((own > opposite).astype(np.float64) + (own == opposite) * inputs["week_tie"])
+    differences = inputs["differences"]
+    # The same tie credits occur on both sides and cancel exactly. Compute
+    # signed category wins once instead of allocating category-point tensors.
+    margin = (differences > 0).sum(axis=-1) - (differences < 0).sum(axis=-1)
+    return np.asarray((margin > 0).astype(np.float64) + (margin == 0) * inputs["week_tie"])
 
 
 def scoring_axes(inputs: Inputs, width: int) -> tuple[int, Array]:

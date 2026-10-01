@@ -15,8 +15,8 @@ from fba.contracts.base import ConfigError, DataError
 from fba.contracts.config import PreparationModel
 from fba.contracts.data import CalibrationPair, ManualAdjustments, Snapshot
 from fba.contracts.projection import CalibratedInput
-from fba.core.data import fit_availability
 from fba.data.codec import canonical, digest
+from fba.formulas.fitting import fit_availability
 
 
 @pytest.fixture

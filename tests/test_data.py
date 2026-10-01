@@ -15,7 +15,8 @@ from fba.contracts.data import (
     RosterRow,
     ScheduleCount,
 )
-from fba.core.data import fit_availability, resolve_players, validate_schedule
+from fba.core.data import resolve_players, validate_schedule
+from fba.formulas.fitting import fit_availability
 
 
 @given(st.permutations(["a", "b", "c"]))
@@ -35,6 +36,15 @@ def test_calibration_cannot_invent_fit_for_constant_x():
     )
     with pytest.raises(DataError, match="variance"):
         fit_availability(pairs, "year", ("0" * 64,), "ordinary_least_squares")
+
+
+def test_calibration_keeps_exact_integer_observations_before_float_output():
+    pairs = tuple(
+        CalibrationPair(player_id=str(i), projected_games=float(i), actual_games=2**53 - 1 + 2 * i)
+        for i in (1, 2, 3)
+    )
+    result = fit_availability(pairs, "year", ("0" * 64,), "ordinary_least_squares")
+    assert (result.intercept, result.slope) == (float(2**53 - 1), 2.0)
 
 
 def test_matching_never_guesses_even_unique_equal_name():

@@ -87,6 +87,37 @@ def empirical_error(values: ScalarInputs) -> float:
     return sqrt(fsum((v - center) ** 2 for v in rows) / (len(rows) - 1) / len(rows))
 
 
+def exposure_rate(values: ScalarInputs) -> float:
+    counts, exposure = vector(values, "counts"), vector(values, "exposure")
+    if len(counts) != len(exposure) or not exposure or fsum(exposure) <= 0:
+        raise DataError("formula.exposure_rate: positive total exposure is required")
+    return fsum(counts) / fsum(exposure)
+
+
+def exposure_error(values: ScalarInputs) -> float:
+    counts, exposure = vector(values, "counts"), vector(values, "exposure")
+    if len(counts) < 2 or len(counts) != len(exposure) or fsum(exposure) <= 0:
+        raise DataError("formula.exposure_error: two games and positive exposure are required")
+    rate = exposure_rate(values)
+    total = fsum(exposure)
+    # Cluster-by-game error handles varying minutes and overdispersion. The
+    # Poisson model floor retains uncertainty with all-zero or identical logs.
+    residual = fsum((c - rate * m) ** 2 for c, m in zip(counts, exposure, strict=True))
+    robust = len(counts) / (len(counts) - 1) * residual / total**2
+    return sqrt(max(robust, max(rate, number(values, "model")) / total))
+
+
+def monitor_margin(values: ScalarInputs) -> float:
+    return number(values, "z") / (2 * sqrt(number(values, "samples")))
+
+
+def effective_samples(values: ScalarInputs) -> float:
+    weights = vector(values, "weights")
+    if not weights or any(w <= 0 for w in weights):
+        raise DataError("formula.effective_samples: positive cluster weights are required")
+    return fsum(weights) ** 2 / fsum(w * w for w in weights)
+
+
 def probability(values: ScalarInputs) -> float:
     return (number(values, "wins") + number(values, "ties") * number(values, "tie")) / number(
         values, "samples"
@@ -103,6 +134,13 @@ def difference(values: ScalarInputs) -> float:
 
 def rank_value(values: ScalarInputs) -> float:
     return number(values, "scale") / number(values, "rank") ** number(values, "exponent")
+
+
+def trade_value_ratio(values: ScalarInputs) -> float:
+    home, away = number(values, "home"), number(values, "away")
+    if min(home, away) <= 0:
+        raise DataError("formula.trade_value_ratio: both bundle values must be positive")
+    return min(home, away) / max(home, away)
 
 
 def acceptance(values: ScalarInputs) -> float:

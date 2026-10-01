@@ -80,7 +80,9 @@ def prior_weights(ids: tuple[str, ...], parameters: ProjectionParameters) -> tup
     total = fsum(weights)
     if total <= 0:
         raise DataError("projection: available priors have zero total weight")
-    return tuple(w / total for w in weights)
+    return tuple(
+        evaluate("ratio", numerator=w, denominator=total, zero_value=0.0).result for w in weights
+    )
 
 
 def calibrated_games(
@@ -97,7 +99,12 @@ def calibrated_games(
         if anchor > season_games or at_anchor <= 0:
             raise DataError("availability_tail: anchor exceeds season or has nonpositive fitted GP")
         if games < anchor:
-            return round(games * at_anchor / anchor, decimals)
+            return round(
+                evaluate(
+                    "historical_share", parent=games, numerator=at_anchor, denominator=anchor
+                ).result,
+                decimals,
+            )
     return round(
         evaluate(
             "clipped_affine",
