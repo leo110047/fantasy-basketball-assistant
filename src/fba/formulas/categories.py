@@ -4,18 +4,19 @@ from numpy.typing import NDArray
 from fba.contracts.base import DataError
 from fba.contracts.config import Category, Linear, Term
 from fba.contracts.inseason import DerivedStat
+from fba.formulas.simulation import category_ratio, comparison_margin, game_threshold, linear_totals
 from fba.formulas.vector import category_points, week_points
 
 type Array = NDArray[np.float64]
 
 
 def total_terms(box: Array, terms: tuple[Term, ...], axes: tuple[str, ...]) -> Array:
-    if len(terms) == 1:
-        term = terms[0]
-        return np.asarray(box[..., axes.index(term.stat_id)] * term.coefficient + 0.0)
-    return sum(
-        (box[..., axes.index(t.stat_id)] * t.coefficient for t in terms),
-        start=np.zeros(box.shape[:-1]),
+    return linear_totals(
+        {
+            "values": box,
+            "indices": np.asarray([axes.index(t.stat_id) for t in terms], dtype=np.float64),
+            "weights": np.asarray([t.coefficient for t in terms]),
+        }
     )
 
 
@@ -34,13 +35,14 @@ def category_values(
             denominator = total_terms(positive, formula.denominator, axes)
             if formula.zero_denominator == "error" and np.any(denominator <= 0):
                 raise DataError(f"category.{category.id}: zero denominator")
-            value = np.divide(
-                numerator,
-                denominator,
-                out=numerator.copy()
-                if formula.zero_denominator == "numerator"
-                else np.zeros_like(numerator),
-                where=denominator > 0,
+            value = category_ratio(
+                {
+                    "numerator": numerator,
+                    "denominator": denominator,
+                    "zero_value": numerator
+                    if formula.zero_denominator == "numerator"
+                    else np.zeros_like(numerator),
+                }
             )
         result.append(value * (-1 if directed and category.direction == "lower" else 1))
     return np.stack(result, axis=-1)
@@ -55,9 +57,13 @@ def derive_games(box: Array, base: tuple[str, ...], definitions: tuple[DerivedSt
         if definition.kind == "linear":
             value = values.sum(axis=-1)
         else:
-            value = (
-                (values >= definition.threshold).sum(axis=-1) >= definition.minimum_hits
-            ).astype(np.float64)
+            value = game_threshold(
+                {
+                    "values": values,
+                    "threshold": np.asarray(definition.threshold),
+                    "minimum_hits": np.asarray(definition.minimum_hits),
+                }
+            )
         axes.append(definition.id)
         columns.append(value)
     return np.stack(columns, axis=-1)
@@ -87,7 +93,13 @@ def scoring_differences(
     a, b = category_values(home, categories, axes), category_values(away, categories, axes)
     return np.stack(
         [
-            np.round(a[..., i], c.comparison_decimals) - np.round(b[..., i], c.comparison_decimals)
+            comparison_margin(
+                {
+                    "home": a[..., i],
+                    "away": b[..., i],
+                    "decimals": np.asarray(c.comparison_decimals),
+                }
+            )
             for i, c in enumerate(categories)
         ],
         axis=-1,

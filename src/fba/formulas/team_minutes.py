@@ -34,8 +34,12 @@ def member_minutes(
         if not member.estimates:
             return None
         weights = prior_weights(tuple(p.prior_id for p in member.estimates), model.projection)
-        gp = fsum(p.expected_games * w for p, w in zip(member.estimates, weights, strict=True))
-        minutes = fsum(p.minutes * w for p, w in zip(member.estimates, weights, strict=True))
+        gp = evaluate(
+            "linear", values=tuple(p.expected_games for p in member.estimates), weights=weights
+        ).result
+        minutes = evaluate(
+            "linear", values=tuple(p.minutes for p in member.estimates), weights=weights
+        ).result
         expected = None
     if (
         minutes
@@ -89,9 +93,12 @@ def allocate_team(
         not isinstance(model, TeamConstraintModel) or model.team_constraints.minutes == "enforce"
     )
     full = next(t.full_season_games for t in inputs.teams if t.id == team_id)
-    budget = parameters.players_on_court * (
-        parameters.regulation_minutes + parameters.overtime_minutes_per_game
-    )
+    budget = evaluate(
+        "minute_budget",
+        players=float(parameters.players_on_court),
+        regulation=parameters.regulation_minutes,
+        overtime=parameters.overtime_minutes_per_game,
+    ).result
     rows = tuple(
         sorted((m for m in inputs.team_members if m.team_id == team_id), key=lambda m: m.id)
     )
@@ -117,7 +124,10 @@ def allocate_team(
     allocated: list[PlayerMinuteAllocation] = []
     for pinned, coverage in sorted(groups, reverse=True):
         group = groups[pinned, coverage]
-        usage = fsum(gp * minutes / full for _, gp, minutes in group)
+        usage = fsum(
+            evaluate("season_rate", games=gp, value=minutes, season_games=float(full)).result
+            for _, gp, minutes in group
+        )
         if enforce and pinned and usage > remaining:
             raise DataError(f"team_minutes.{team_id}: manual expected games exceed team budget")
         factor = (
@@ -131,15 +141,23 @@ def allocate_team(
                     member_id=member.id,
                     catalog_id=member.catalog_id,
                     expected_games_before=gp,
-                    expected_games_after=gp * factor,
+                    expected_games_after=evaluate("product", gain=gp, probability=factor).result,
                     minutes=minutes,
                     prior_coverage=coverage,
                 )
             )
         remaining = max(0.0, remaining - usage)
     allocations = tuple(sorted(allocated, key=lambda a: a.member_id))
-    before = fsum(gp * minutes / full for gp, minutes in demands)
-    after = fsum(a.expected_games_after * a.minutes / full for a in allocations)
+    before = fsum(
+        evaluate("season_rate", games=gp, value=minutes, season_games=float(full)).result
+        for gp, minutes in demands
+    )
+    after = fsum(
+        evaluate(
+            "season_rate", games=a.expected_games_after, value=a.minutes, season_games=float(full)
+        ).result
+        for a in allocations
+    )
     return TeamMinuteAllocation(
         team_id=team_id,
         members=len(rows),
@@ -168,7 +186,13 @@ def validate_minutes(
     for allocation in allocations:
         rows = tuple(p for p in projections if memberships[p.id] == allocation.team_id)
         total = fsum(
-            p.expected_games * p.minutes / teams[allocation.team_id].full_season_games for p in rows
+            evaluate(
+                "season_rate",
+                games=p.expected_games,
+                value=p.minutes,
+                season_games=float(teams[allocation.team_id].full_season_games),
+            ).result
+            for p in rows
         )
         rounding_bound = precision * fsum(
             (p.minutes + p.expected_games + precision) / teams[allocation.team_id].full_season_games

@@ -46,8 +46,34 @@ def test_registered_scalar_implementations_are_one_to_one_and_complete():
     assert {r.implementation.__name__ for r in rows} == functions - helpers
 
 
+def simulation_example_answers():
+    return {
+        "sample_mean": [2, 5],
+        "sample_variance": [1, 4],
+        "sample_deviation": [1, 2],
+        "linear_totals": [1, 9],
+        "category_ratio": [3, 3],
+        "game_threshold": [1, 0],
+        "comparison_margin": [0, 2],
+        "linear_interval": [[-2], [4]],
+        "ratio_interval": [[0.5], [3]],
+        "standings_credit": [4, 4.5],
+        "playoff_odds": [0.5, 0.5],
+        "lognormal_taste": [1, np.e],
+        "health_decay": [[1], [0.5], [0.25]],
+        "control_covariance": [[1]],
+        "normal_quantile": [0, 1],
+        "scheduled_health": [1, 0.5],
+        "ranked_health_value": [4, -2],
+        "portfolio_cost_floor": [4],
+        "highest_bid_survival": [0.75, 0],
+        "median_bid": [4],
+    }
+
+
 def vector_example_answers():
     return {
+        **simulation_example_answers(),
         "availability_regression": [1, 3],
         "row_rates": [[0.5, 0.2], [0.6, 0.2]],
         "matrix_product": [11],
@@ -100,7 +126,27 @@ def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
         if isinstance(node, ast.FunctionDef)
     }
     # Schema validation is not an equation.
-    assert {r.implementation.__name__ for r in ARRAY_FORMULAS} == functions - {"scoring_axes"}
+    assert {
+        r.implementation.__name__
+        for r in ARRAY_FORMULAS
+        if r.implementation.__module__ == "fba.formulas.vector"
+    } == functions - {"scoring_axes"}
+    simulation_source = source.with_name("simulation.py")
+    simulation_functions = {
+        node.name
+        for node in ast.parse(simulation_source.read_text()).body
+        if isinstance(node, ast.FunctionDef)
+    }
+    assert {
+        r.implementation.__name__
+        for r in ARRAY_FORMULAS
+        if r.implementation.__module__ == "fba.formulas.simulation"
+    } == simulation_functions - {
+        "reduction_axes",
+        "mean_array",
+        "variance_array",
+        "deviation_array",
+    }
     for row in ARRAY_FORMULAS:
         inputs = {k: np.asarray(v, dtype=float) for k, v in row.example.items()}
         actual = evaluate_array(row.id, **inputs)
@@ -247,3 +293,65 @@ console.log(JSON.stringify(rows.map(row => formula(row.example, rows))));
         )
     assert 'from "/formulas.js"' in (root / "src/fba/apps/static/app.js").read_text()
     assert 'from "/formulas.js"' in (root / "src/fba/apps/inseason/static/forms.js").read_text()
+
+
+@pytest.mark.parametrize(
+    "formula,changed",
+    (
+        ("playoff_odds", {"places": 0.5}),
+        ("playoff_odds", {"tolerance": 0.0}),
+        ("normal_quantile", {"epsilon": 0.0}),
+        ("normal_quantile", {"uniform": [-0.1, 0.5]}),
+        ("portfolio_cost_floor", {"values": [1.0, 1.0]}),
+        ("portfolio_cost_floor", {"slots": 2.0}),
+        ("portfolio_cost_floor", {"multipliers": [-1.0]}),
+        ("median_bid", {"increment": 0.0}),
+    ),
+)
+def test_simulation_equations_reject_invalid_numeric_domains(formula, changed):
+    row = next(r for r in ARRAY_FORMULAS if r.id == formula)
+    inputs = {k: np.asarray(v, dtype=float) for k, v in {**row.example, **changed}.items()}
+    with pytest.raises(DataError, match="formula." + formula):
+        evaluate_array(formula, **inputs)
+
+
+@pytest.mark.parametrize("dtype", (np.bool_, np.int32, np.float64))
+def test_sample_mean_reuses_input_storage_for_boolean_integer_and_float_samples(dtype):
+    from fba.formulas.simulation import mean_array
+
+    class Samples(np.ndarray):
+        def mean(self, *args, **kwargs):
+            assert np.shares_memory(self, original)
+            calls.append(True)
+            return super().mean(*args, **kwargs)
+
+    original = np.array([[0, 2], [2, 4]], dtype=dtype)
+    values = original.view(Samples)
+    calls = []
+    actual = mean_array(values, axis=0)
+    expected = [0.5, 1.0] if dtype == np.bool_ else [1.0, 3.0]
+    np.testing.assert_array_equal(actual, expected)
+    assert calls == [True]  # No full-array float conversion before reducing.
+
+
+def test_health_equations_accept_boolean_evidence_without_changing_inputs():
+    from fba.formulas.simulation import ranked_health_value, scheduled_health
+
+    health = np.array([True, False])
+    values = ranked_health_value(
+        {
+            "health": health,
+            "healthy": np.array([2.0, 3.0]),
+            "unhealthy": np.array([0.0, -1.0]),
+            "value": np.array([2.0, 2.0]),
+        }
+    )
+    games = scheduled_health(
+        {
+            "scheduled": np.array([[True, False], [True, True]]),
+            "probabilities": np.full((2, 2), 0.5),
+        }
+    )
+    np.testing.assert_array_equal(values, [4.0, -2.0])
+    np.testing.assert_array_equal(games, [1.0, 0.5])
+    np.testing.assert_array_equal(health, [True, False])

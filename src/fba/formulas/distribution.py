@@ -5,6 +5,7 @@ from fba.contracts.base import DataError
 from fba.contracts.config import DistributionParameters, ThresholdCount
 from fba.contracts.projection import Projected, ProjectionPlayer
 from fba.formulas.arrays import evaluate_array
+from fba.formulas.simulation import game_threshold
 
 Floats = NDArray[np.float64]
 
@@ -88,8 +89,14 @@ def moments(
     for offset in range(0, len(values), settings.integration_batch_size):
         batch = values[offset : offset + settings.integration_batch_size]
         states, probability = discrete_states(batch, settings)
-        hits = (states[:, :, axes] >= threshold.threshold).sum(axis=2)
-        combined = np.concatenate((states, (hits >= threshold.minimum_hits)[:, :, None]), axis=2)
+        counted = game_threshold(
+            {
+                "values": states[:, :, axes],
+                "threshold": np.asarray(threshold.threshold),
+                "minimum_hits": np.asarray(threshold.minimum_hits),
+            }
+        )
+        combined = np.concatenate((states, counted[:, :, None]), axis=2)
         flat = combined.reshape((-1, combined.shape[-1]))
         weights = probability.reshape(-1) * (len(batch) / len(values))
         mean += evaluate_array("weighted_rows", values=flat, weights=weights).result

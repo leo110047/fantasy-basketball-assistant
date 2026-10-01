@@ -1,5 +1,4 @@
 from collections import Counter, defaultdict
-from math import fsum
 from pathlib import Path
 
 from fba.adapters.acquisition import Acquired
@@ -9,6 +8,7 @@ from fba.contracts.config import PreparationModel, ValidatedConfig
 from fba.contracts.data import Forecast, PlayerGame, Snapshot
 from fba.contracts.projection import MinuteEstimate, TeamMember
 from fba.data.codec import read_bytes
+from fba.formulas.registry import evaluate
 
 
 def minute_estimates(
@@ -36,7 +36,7 @@ def minute_estimates(
                         p.historical_games_upper,
                         max(p.historical_games_lower, len(played)),
                     ),
-                    minutes=fsum(played) / len(played),
+                    minutes=evaluate("mean", values=tuple(played)).result,
                     source_ids=tuple(sorted({g.source_id for g in history})),
                 )
             )
@@ -47,7 +47,12 @@ def minute_estimates(
                 MinuteEstimate(
                     prior_id=p.forecast_prior_id,
                     expected_games=forecast.expected_games,
-                    minutes=total / forecast.expected_games,
+                    minutes=evaluate(
+                        "ratio",
+                        numerator=total,
+                        denominator=forecast.expected_games,
+                        zero_value=0.0,
+                    ).result,
                     source_ids=(forecast.source_id,),
                 )
             )

@@ -7,6 +7,7 @@ import numpy as np
 
 from fba.contracts.inseason import InseasonPreferences
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import mean_array
 from fba.inseason.matchup import Simulation
 from fba.inseason.priority import matchup_priority
 from fba.inseason.season import season_forecasts
@@ -56,11 +57,11 @@ def prioritized_drops(
             )
             for p in set(movable).intersection(day.slots.values()):
                 contributions[p] += draws[p]
-        before = engine.calibrated_score(float(engine.score(own, other)[1].mean())).result
+        before = engine.calibrated_score(float(mean_array(engine.score(own, other)[1]))).result
         for p in movable:
             engine.check_limits()
             without = engine.calibrated_score(
-                float(engine.score(np.maximum(own - contributions[p], 0.0), other)[1].mean())
+                float(mean_array(engine.score(np.maximum(own - contributions[p], 0.0), other)[1]))
             ).result
             values[p].append(evaluate("difference", after=before, before=without).result)
     return tuple(

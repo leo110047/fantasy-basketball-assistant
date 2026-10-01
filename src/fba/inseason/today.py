@@ -15,6 +15,7 @@ from fba.contracts.inseason_results import (
 )
 from fba.core.lineups import legal_assignment
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import mean_array
 from fba.inseason.injury_returns import cache_saved_returns, reuse_return_plans
 from fba.inseason.matchup import Simulation
 from fba.inseason.recommendations import admissible_plan, changed_simulation, earliest_move
@@ -156,9 +157,11 @@ def today(
         traces=(
             sim.calibrated_score(
                 float(
-                    sim.score(sim.total(team.id, week.id)[0], sim.total(opponent, week.id)[0])[
-                        1
-                    ].mean()
+                    mean_array(
+                        sim.score(sim.total(team.id, week.id)[0], sim.total(opponent, week.id)[0])[
+                            1
+                        ]
+                    )
                 )
             ),
             sim.week(team.id, opponent, week.id).traces[0],
@@ -271,7 +274,7 @@ def lineup_effects(
     selected = tuple(lineup.slots.values())
     rest = own - sum((draws[p] for p in selected), start=np.zeros_like(own))
     categories, score = sim.score(own, other)
-    selected_score = sim.calibrated_score(float(score.mean())).result
+    selected_score = sim.calibrated_score(float(mean_array(score))).result
     team = next(t for t in sim.snapshot.teams if t.id == lineup.team_id)
     locked_slots = {slot for slot, pid in team.selected_slots.items() if sim.locked(pid, lineup.on)}
     movable_slots = tuple(s for s in sim.league.starter_slots if s.id not in locked_slots)
@@ -304,7 +307,7 @@ def lineup_effects(
             {
                 c.label or c.id: evaluate(
                     "product",
-                    gain=float(categories[:, i].mean() - changed_categories[:, i].mean()),
+                    gain=float(mean_array(categories[:, i]) - mean_array(changed_categories[:, i])),
                     probability=sim.params.calibration.value,
                 ).result
                 for i, c in enumerate(sim.league.categories)

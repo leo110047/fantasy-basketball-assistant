@@ -11,6 +11,7 @@ from numpy.typing import NDArray
 
 from fba.contracts.inseason import DayLineup
 from fba.formulas.categories import sample_scores
+from fba.formulas.simulation import mean_array
 from fba.inseason.lineup_space import cached_subsets
 
 if TYPE_CHECKING:
@@ -71,7 +72,7 @@ def joint_lineup(
             sim.league.category_ties,
             0.0,
         )
-        value = sim.calibrated_score(float(raw.mean())).result
+        value = sim.calibrated_score(float(mean_array(raw))).result
         key = (
             -sum(len(row) for row in assignments),
             tuple(tuple(sorted(row.values())) for row in assignments),

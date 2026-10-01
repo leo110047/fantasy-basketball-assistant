@@ -33,6 +33,7 @@ from fba.formulas.categories import (
     score_samples,
 )
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import mean_array
 from fba.inseason.forecast import cached_forecast
 from fba.inseason.lineup_bounds import assignment_ceiling
 from fba.inseason.lineup_space import cached_subsets, ordered_row_sums
@@ -340,7 +341,7 @@ class Simulation:
             current_roster = self.projected_roster(team_id, on, roster)
             draws = self.daily_draws(current_roster, on, max(through, self.as_of))
             fixed, slots, positions = self.lineup_constraints(team_id, on, draws)
-            means = {pid: draw.mean(axis=0) for pid, draw in draws.items()}
+            means = {pid: mean_array(draw, axis=0) for pid, draw in draws.items()}
 
             # Optimize the whole-week samples below; only the deterministic
             # expected-stat starting assignment is reused here.
@@ -480,7 +481,9 @@ class Simulation:
             if monotonic() - started > self.params.budgets["week"].value:
                 raise CalculationTimeout("lineup: exact daily optimization exceeded time budget")
             total = rest + sum((draws[p] for p in ids), start=np.zeros_like(rest))
-            return self.calibrated_score(float(self.score(total, opponent_total)[1].mean())).result
+            return self.calibrated_score(
+                float(mean_array(self.score(total, opponent_total)[1]))
+            ).result
 
         fixed, slots, free = self.lineup_constraints(team, on, draws)
         fixed_ids = tuple(fixed.values())
@@ -494,15 +497,18 @@ class Simulation:
             if monotonic() - started > self.params.budgets["week"].value:
                 raise CalculationTimeout("lineup: exact daily optimization exceeded time budget")
             totals = rest + ordered_row_sums(rows, draws, rest.shape, fixed_ids)
-            scores = sample_scores(
-                totals,
-                opponent_total,
-                self.league.categories,
-                self.axes,
-                self.league.scoring,
-                self.league.category_ties,
-                0.0,
-            ).mean(axis=-1)
+            scores = mean_array(
+                sample_scores(
+                    totals,
+                    opponent_total,
+                    self.league.categories,
+                    self.axes,
+                    self.league.scoring,
+                    self.league.category_ties,
+                    0.0,
+                ),
+                axis=-1,
+            )
             return tuple(self.calibrated_score(float(v)).result for v in scores)
 
         assigned, value = best_lineup(
@@ -565,8 +571,8 @@ class Simulation:
         initial, _ = self.total(team, week, roster)
         return (
             lineup,
-            self.calibrated_score(float(self.score(initial, other)[1].mean())).result,
-            self.calibrated_score(float(self.score(own, other)[1].mean())).result,
+            self.calibrated_score(float(mean_array(self.score(initial, other)[1]))).result,
+            self.calibrated_score(float(mean_array(self.score(own, other)[1]))).result,
         )
 
     def calibrated_score(self, raw: float) -> FormulaTrace:

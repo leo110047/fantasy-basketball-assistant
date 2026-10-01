@@ -5,6 +5,7 @@ import numpy as np
 
 from fba.contracts.base import DataError
 from fba.contracts.inseason import WeekForecast
+from fba.formulas.simulation import playoff_odds, standings_credit
 from fba.inseason.forecast import cached_matchup_points, forecast_score
 from fba.inseason.matchup import Simulation
 
@@ -91,7 +92,17 @@ def playoff_probability(
         return sim.playoff_probabilities.copy()
     teams = tuple(sorted(sim.snapshot.teams, key=lambda t: t.id))
     scores = {
-        t.id: np.full(sim.samples, t.wins + sim.league.week_tie_value * t.ties) for t in teams
+        t.id: np.full(
+            sim.samples,
+            standings_credit(
+                {
+                    "wins": np.asarray(t.wins),
+                    "ties": np.asarray(t.ties),
+                    "tie_value": np.asarray(sim.league.week_tie_value),
+                }
+            ),
+        )
+        for t in teams
     }
     weeks = set(remaining_weeks(sim))
     covered: set[tuple[str, str]] = set()
@@ -109,15 +120,15 @@ def playoff_probability(
     # Existing seed is the explicit final tie breaker. No platform-dependent
     # unstable ordering or tiny floating point differences determine a seed.
     values = np.stack([scores[t.id] for t in teams])
-    quantized = np.rint(values / sim.params.tolerance.value)
-    indices = np.broadcast_to(np.arange(len(teams))[:, None], values.shape)
-    seeds = np.broadcast_to(np.array([t.seed for t in teams])[:, None], values.shape)
-    order = np.lexsort((indices, seeds, -quantized), axis=0)
-    ranks = np.empty_like(order)
-    np.put_along_axis(ranks, order, indices, axis=0)
-    result = {
-        t.id: float((ranks[i] < sim.league.playoff_teams).mean()) for i, t in enumerate(teams)
-    }
+    probabilities = playoff_odds(
+        {
+            "scores": values,
+            "seeds": np.array([t.seed for t in teams], dtype=np.float64),
+            "tolerance": np.asarray(sim.params.tolerance.value),
+            "places": np.asarray(sim.league.playoff_teams),
+        }
+    )
+    result = {t.id: float(probabilities[i]) for i, t in enumerate(teams)}
     if not changed:
         sim.playoff_probabilities = result.copy()
     return result

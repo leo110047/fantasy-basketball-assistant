@@ -16,6 +16,7 @@ from fba.contracts.auction import (
 from fba.contracts.config import LeagueRules, SolverParameters
 from fba.core.roster import assign, capacity, hall_constraints
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import portfolio_cost_floor
 
 
 class Portfolio:
@@ -233,21 +234,19 @@ class Portfolio:
         if spread <= self.parameters.value_tolerance:
             return False
         costs = np.array([self.costs[i] for i in available], dtype=float)
-        scale = max(1.0, float(np.ptp(costs))) / spread
-        multipliers = np.array(self.parameters.bound_multipliers) * scale
-        scores = np.nextafter(
-            np.nextafter(multipliers[:, None] * self.values[available], np.inf) - costs, np.inf
+        lower = portfolio_cost_floor(
+            {
+                "values": self.values[available],
+                "costs": costs,
+                "multipliers": np.array(self.parameters.bound_multipliers),
+                "slots": np.asarray(slots),
+                "player": np.asarray(player),
+                "indices": np.asarray(available, dtype=np.float64),
+                "target": np.asarray(target),
+                "player_value": np.asarray(self.values[player]),
+                "tolerance": np.asarray(self.parameters.value_tolerance),
+            }
         )
-        scores[:, available == player] = -np.inf
-        top = np.sort(scores, axis=1)[:, ::-1][:, :slots]
-        total = np.zeros(len(multipliers))
-        for column in range(slots):
-            total = np.nextafter(total + top[:, column], np.inf)
-        required = np.nextafter(
-            np.nextafter(target - self.values[player], -np.inf) - self.parameters.value_tolerance,
-            -np.inf,
-        )
-        lower = np.nextafter(np.nextafter(multipliers * required, -np.inf) - total, -np.inf)
         return bool(
             np.isfinite(lower).any()
             and np.max(lower) > self.budget - self.league.minimum_bid + 1e-5 * max(1, self.budget)

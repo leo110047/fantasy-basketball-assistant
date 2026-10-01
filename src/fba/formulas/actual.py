@@ -5,6 +5,7 @@ from fba.contracts.base import DataError
 from fba.contracts.config import PreparationModel, ThresholdCount, ValidatedConfig
 from fba.contracts.data import ActualSeason, PlayerGame
 from fba.contracts.projection import Projected
+from fba.formulas.registry import evaluate
 
 
 def observed_players(
@@ -32,10 +33,13 @@ def observed_players(
         if any(stats.get(s) is None for s in required):
             raise DataError(f"annual.actual.{key}: missing observed statistic")
         values = tuple(float(value) for s in required if (value := stats[s]) is not None)
-        hits = sum(values[required.index(s)] >= threshold.threshold for s in threshold.stat_ids)
-        grouped[game.player_id].append(
-            (*values[:-1], float(hits >= threshold.minimum_hits), values[-1])
-        )
+        counted = evaluate(
+            "threshold",
+            values=tuple(values[required.index(s)] for s in threshold.stat_ids),
+            threshold=threshold.threshold,
+            minimum_hits=float(threshold.minimum_hits),
+        ).result
+        grouped[game.player_id].append((*values[:-1], counted, values[-1]))
     result: list[Projected] = []
     for pid, total in sorted(counts.items()):
         rows = grouped[pid]
@@ -80,4 +84,7 @@ def observed_means(
     if len(rows) < total.games and possible_hits >= threshold.minimum_hits:
         raise DataError(f"{path}: incomplete game logs leave threshold count undetermined")
     totals = (*observed[:-1], fsum(r[-2] for r in rows), observed[-1])
-    return tuple(v / total.games if total.games else 0.0 for v in totals)
+    return tuple(
+        evaluate("ratio", numerator=v, denominator=float(total.games), zero_value=0.0).result
+        for v in totals
+    )

@@ -14,6 +14,7 @@ from fba.contracts.projection import (
     TeamMember,
     TeamOffenseBaseline,
 )
+from fba.formulas.registry import evaluate
 from fba.projection.preparation import complete_forecast, game_samples
 
 
@@ -36,7 +37,7 @@ def outside_prior(
                     expected_games=estimate.expected_games,
                     minutes=estimate.minutes,
                     stats=tuple(
-                        fsum(r[i] for r in history) / len(history)
+                        evaluate("mean", values=tuple(r[i] for r in history)).result
                         for i in range(len(model.projection.stat_ids))
                     ),
                 )
@@ -113,7 +114,20 @@ def offense_baselines(data: SourceData, model: TeamOffenseModel) -> tuple[TeamOf
         ):
             excluded[team].append(game)
             continue
-        accepted[team].append((game, tuple(v * regulation / minutes for v in totals[:-1])))
+        accepted[team].append(
+            (
+                game,
+                tuple(
+                    evaluate(
+                        "ratio",
+                        numerator=evaluate("product", gain=v, probability=regulation).result,
+                        denominator=minutes,
+                        zero_value=0.0,
+                    ).result
+                    for v in totals[:-1]
+                ),
+            )
+        )
     result: list[TeamOffenseBaseline] = []
     for team in sorted({p.team_id for p in data.players if p.team_id is not None}):
         rows = accepted[team]
@@ -123,7 +137,7 @@ def offense_baselines(data: SourceData, model: TeamOffenseModel) -> tuple[TeamOf
             TeamOffenseBaseline(
                 team_id=team,
                 stats=tuple(
-                    fsum(r[i] for _, r in rows) / len(rows)
+                    evaluate("mean", values=tuple(r[i] for _, r in rows)).result
                     for i in range(len(model.projection.stat_ids))
                 ),
                 game_ids=tuple(g for g, _ in rows),

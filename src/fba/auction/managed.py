@@ -17,6 +17,13 @@ from fba.contracts.season import (
 )
 from fba.core.roster import capacity, match_slots
 from fba.formulas.arrays import evaluate_array
+from fba.formulas.simulation import (
+    control_covariance,
+    health_decay,
+    mean_array,
+    ranked_health_value,
+    scheduled_health,
+)
 
 type FloatArray = NDArray[np.float64]
 
@@ -146,10 +153,8 @@ class ManagedSeason:
             None if known_health is None else np.logical_or.accumulate(known_health[0], axis=0)
         )
         back, hurt = self.rates()
-        decay = np.broadcast_to(1 - back - hurt, (self.d + 1, self.n)).copy()
-        decay[0] = 1.0
         # Integer game-clock powers use ordered products, avoiding platform libm pow rounding.
-        self.decay = np.cumprod(decay, axis=0, dtype=np.float64)
+        self.decay = health_decay({"back": back, "hurt": hurt, "steps": np.asarray(self.d)})
         self.health = self.health_paths() if known_health is None else known_health.copy()
         if len(league.positions) > np.iinfo(np.uint64).bits:
             raise DataError("league.positions: exceeds native position mask width")
@@ -164,8 +169,13 @@ class ManagedSeason:
         forecasts = np.array(
             [[self.forecast(d, status) for status in (False, True)] for d in range(self.d)]
         )
-        ranked = (
-            np.where(self.health, forecasts[None, :, 1, :], forecasts[None, :, 0, :]) * self.value
+        ranked = ranked_health_value(
+            {
+                "health": self.health,
+                "healthy": forecasts[None, :, 1, :],
+                "unhealthy": forecasts[None, :, 0, :],
+                "value": self.value,
+            }
         )
         self.orders = np.argsort(-ranked, axis=-1, kind="stable").astype(np.int32)
         self.pool: tuple[int, ...] = ()
@@ -247,7 +257,7 @@ class ManagedSeason:
             probabilities[j, after] = self.availability[after]
         if eligible_from > day:
             probabilities[: eligible_from - day] = 0
-        return (scheduled * probabilities).sum(axis=0)
+        return scheduled_health({"scheduled": scheduled, "probabilities": probabilities})
 
     def tactics(self, policy: ManagementPolicy, parameters: ManagementParameters) -> TacticalArrays:
         days = np.arange(self.d)
@@ -276,8 +286,14 @@ class ManagedSeason:
                     ]
                 )
                 values.append(
-                    np.where(self.health, forecasts[None, :, 1, :], forecasts[None, :, 0, :])
-                    * self.value
+                    ranked_health_value(
+                        {
+                            "health": self.health,
+                            "healthy": forecasts[None, :, 1, :],
+                            "unhealthy": forecasts[None, :, 0, :],
+                            "value": self.value,
+                        }
+                    )
                 )
         short_held, short_acquired, long_held, long_acquired = values
         return TacticalArrays(
@@ -337,8 +353,12 @@ class ManagedSeason:
             w = int(self.week[d])
             ids = list(use)
             health = self.health[:, d][:, ids]
-            correction[w] += np.einsum(
-                "n,nij->ij", self.availability[ids] - health.mean(axis=0), self.cov[ids]
+            correction[w] += control_covariance(
+                {
+                    "availability": self.availability[ids],
+                    "health": health,
+                    "covariance": self.cov[ids],
+                }
             )
             for p in ids:
                 dates.setdefault((w, p), []).append(d)
@@ -499,7 +519,7 @@ class ManagedSeason:
         physical = evaluate_array("matrix_product", left=counts, right=self.raw).result
         controls = [self.control(r) for r in rosters]
         boxes = physical - np.stack([c[0] for c in controls], axis=1)
-        mean = boxes.mean(axis=0)
+        mean = mean_array(boxes, axis=0)
         covariance = evaluate_array(
             "managed_covariance",
             counts=counts,

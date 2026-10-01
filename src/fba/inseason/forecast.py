@@ -10,6 +10,7 @@ from fba.contracts.formula import FormulaTrace
 from fba.contracts.inseason import CategoryForecast, WeekForecast
 from fba.formulas.categories import category_values, total_terms
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import mean_array, variance_array
 from fba.inseason.lineup_bounds import certified_loss
 from fba.inseason.priority import matchup_priority
 
@@ -66,7 +67,7 @@ def forecast_score(
         return sim.forecast_cache[key].score
     own, other = cached_matchup_points(sim, home, away, week, rosters)
     raw = own if sim.league.scoring == "h2h_each_category" else ((own == 1) & (other < 1))
-    return sim.calibrated_score(float(raw.mean())).result
+    return sim.calibrated_score(float(mean_array(raw))).result
 
 
 def cached_matchup_points(
@@ -120,9 +121,9 @@ def forecast(
     priority = matchup_priority(sim, week_id)
     a, b, lineups = sim.matchup_totals(home, away, week_id, changed)
     points, scores = sim.score(a, b)
-    raw = float(scores.mean())
+    raw = float(mean_array(scores))
     trace = sim.calibrated_score(raw)
-    error = evaluate("error", variance=float(scores.var()), samples=float(sim.samples))
+    error = evaluate("error", variance=float(variance_array(scores)), samples=float(sim.samples))
     scaled_error = evaluate(
         "product",
         gain=error.result,
@@ -147,7 +148,7 @@ def forecast(
     no_moves_raw = raw
     if changed:
         baseline_a, baseline_b, _ = sim.matchup_totals(home, away, week_id)
-        no_moves_raw = float(sim.score(baseline_a, baseline_b)[1].mean())
+        no_moves_raw = float(mean_array(sim.score(baseline_a, baseline_b)[1]))
     return WeekForecast(
         priority=priority,
         elapsed_days=max(0, min((today - week.start).days, (week.end - week.start).days + 1)),
@@ -192,22 +193,22 @@ def category_forecast(
     a: Array, b: Array, points: Array, index: int, sim: Simulation
 ) -> CategoryForecast:
     category = sim.league.categories[index]
-    means = np.stack((a.mean(axis=0), b.mean(axis=0)))
+    means = np.stack((mean_array(a, axis=0), mean_array(b, axis=0)))
     values = category_values(means, (category,), sim.axes, directed=False)[:, 0]
     distribution_a = category_values(a, (category,), sim.axes)[:, 0]
     distribution_b = category_values(b, (category,), sim.axes)[:, 0]
-    raw = float(points.mean())
+    raw = float(mean_array(points))
     calibrated = evaluate("calibration", p=raw, c=sim.params.calibration.value)
     z = evaluate(
         "z",
-        home=float(distribution_a.mean()),
-        away=float(distribution_b.mean()),
-        home_variance=float(distribution_a.var()),
-        away_variance=float(distribution_b.var()),
+        home=float(mean_array(distribution_a)),
+        away=float(mean_array(distribution_b)),
+        home_variance=float(variance_array(distribution_a)),
+        away_variance=float(variance_array(distribution_b)),
         limit=1 / sim.params.tolerance.value,
     )
     normal = evaluate("normal", z=z.result)
-    error = evaluate("error", variance=float(points.var()), samples=float(sim.samples))
+    error = evaluate("error", variance=float(variance_array(points)), samples=float(sim.samples))
     scaled_error = evaluate("product", gain=error.result, probability=sim.params.calibration.value)
     formula = category.formula
     numerator = total_terms(

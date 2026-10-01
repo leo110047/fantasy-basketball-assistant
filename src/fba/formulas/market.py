@@ -1,4 +1,4 @@
-from math import exp, fsum
+from math import fsum
 
 import numpy as np
 from numpy.typing import NDArray
@@ -14,6 +14,7 @@ from fba.contracts.config import (
 from fba.core.roster import capacity, completable
 from fba.formulas.arrays import evaluate_array
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import highest_bid_survival, median_bid
 
 type FloatArray = NDArray[np.float64]
 
@@ -50,23 +51,13 @@ def bidders_by_position(
 
 
 def anchor_scale(quotes: tuple[float, ...], cash: int, minimum: int, maximum: int) -> float:
-    total = float(len(quotes) * minimum)
-    target = min(cash, sum(maximum if q > 0 else minimum for q in quotes))
-    if target <= total:
-        return 0.0
-    events: dict[float, list[float]] = {}
-    for quote in quotes:
-        if quote > 0:
-            events.setdefault(minimum / quote, []).append(quote)
-            events.setdefault(maximum / quote, []).append(-quote)
-    previous = slope = 0.0
-    for point, changes in sorted(events.items()):
-        upper = total + (point - previous) * slope
-        if slope > 0 and upper >= target:
-            return previous + (target - total) / slope
-        total, previous = upper, point
-        slope = fsum((slope, *changes))
-    return previous
+    return evaluate(
+        "anchor_scale",
+        quotes=quotes,
+        cash=float(cash),
+        minimum=float(minimum),
+        maximum=float(maximum),
+    ).result
 
 
 def opening_anchors(
@@ -159,7 +150,7 @@ def distribution_price(
         survival=tuple(float(x) for x in sale_survival(cdf, previous)),
     )
     foes = np.array([room[j].id != mine for j, _ in participants])
-    high_survival = 1 - np.prod(cdf[foes], axis=0)
+    high_survival = highest_bid_survival({"cdf": cdf[foes]})
     # Floor ties assume our nomination; every higher foe bid must be beaten.
     acquisition = evaluate(
         "winning_cost",
@@ -173,7 +164,15 @@ def distribution_price(
         increment=float(increment),
         acquisition=acquisition.result,
     )
-    median = np.floor(np.minimum(maximum, minimum + premium * exp(-shift)) / increment) * increment
+    median = median_bid(
+        {
+            "maximum": maximum,
+            "minimum": np.asarray(minimum, dtype=float),
+            "premium": premium,
+            "shift": np.asarray(shift),
+            "increment": np.asarray(increment, dtype=float),
+        }
+    )
     bidders = int(np.count_nonzero(foes & (median >= parameters.competition_bid)))
     return MarketPrice(
         player_id=player_id,

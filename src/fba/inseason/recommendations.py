@@ -9,6 +9,7 @@ from fba.contracts.inseason import FreeAgent, InseasonPreferences, WeekForecast
 from fba.contracts.inseason_results import AddPlan, RosterMove
 from fba.formulas.categories import category_values
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import mean_array, variance_array
 from fba.inseason.drop_candidates import prioritized_drops
 from fba.inseason.forecast import category_changes
 from fba.inseason.matchup import Simulation
@@ -76,7 +77,8 @@ def quick_score(
             for day in range((end - on).days + 1)
         )
         for stat, value in p.expected.items():
-            deltas[stat] = deltas.get(stat, 0.0) + sign * games * value
+            contribution = evaluate("product", gain=value, probability=float(sign * games)).result
+            deltas[stat] = deltas.get(stat, 0.0) + contribution
     week = next(w for w in sim.league.matchups if w.start <= on <= w.end)
     pair = next(
         p
@@ -86,7 +88,7 @@ def quick_score(
     opponent = pair.away if pair.home == sim.snapshot.mine else pair.home
     a, _ = sim.total(sim.snapshot.mine, week.id)
     b, _ = sim.total(opponent, week.id)
-    shifted = a.mean(axis=0) + np.array([deltas.get(s, 0.0) for s in sim.axes])
+    shifted = mean_array(a, axis=0) + np.array([deltas.get(s, 0.0) for s in sim.axes])
     shifted = np.maximum(shifted, 0.0)
     total = 0.0
     for category in sim.league.categories:
@@ -96,17 +98,18 @@ def quick_score(
         rival = category_values(b, (category,), sim.axes)[:, 0]
         mean_after = float(category_values(shifted, (category,), sim.axes)[0])
         common = dict(
-            away=float(rival.mean()),
-            home_variance=float(own.var()),
-            away_variance=float(rival.var()),
+            away=float(mean_array(rival)),
+            home_variance=float(variance_array(own)),
+            away_variance=float(variance_array(rival)),
             limit=1 / sim.params.tolerance.value,
         )
-        before_z = evaluate("z", home=float(own.mean()), **common)
+        before_z = evaluate("z", home=float(mean_array(own)), **common)
         after_z = evaluate("z", home=mean_after, **common)
-        total += (
-            evaluate("normal", z=after_z.result).result
-            - evaluate("normal", z=before_z.result).result
-        )
+        total += evaluate(
+            "difference",
+            after=evaluate("normal", z=after_z.result).result,
+            before=evaluate("normal", z=before_z.result).result,
+        ).result
     return total
 
 

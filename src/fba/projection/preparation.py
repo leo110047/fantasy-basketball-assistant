@@ -119,13 +119,19 @@ def complete_forecast(
     missing = [t for t in p.scoring_terms if values.get(t.stat_id) is None]
     if scoring is not None and len(missing) == 1 and missing[0].coefficient != 0:
         term = missing[0]
-        known = fsum(
-            t.coefficient * known_values[t.stat_id]
-            for t in p.scoring_terms
-            if t != term and values[t.stat_id] is not None
+        known_terms = tuple(
+            t for t in p.scoring_terms if t != term and values[t.stat_id] is not None
         )
+        known = evaluate(
+            "linear",
+            values=tuple(known_values[t.stat_id] for t in known_terms),
+            weights=tuple(t.coefficient for t in known_terms),
+        ).result
         inferred = evaluate(
-            "ratio", numerator=scoring - known, denominator=term.coefficient, zero_value=0.0
+            "ratio",
+            numerator=evaluate("difference", before=known, after=scoring).result,
+            denominator=term.coefficient,
+            zero_value=0.0,
         ).result
         if inferred < -p.feasibility_tolerance:
             raise DataError(
@@ -207,8 +213,13 @@ def adjust_player(
                 priors = tuple(
                     p.model_copy(
                         update={
-                            "minutes": p.minutes * operation.factor,
-                            "stats": tuple(v * operation.factor for v in p.stats),
+                            "minutes": evaluate(
+                                "product", gain=p.minutes, probability=operation.factor
+                            ).result,
+                            "stats": tuple(
+                                evaluate("product", gain=v, probability=operation.factor).result
+                                for v in p.stats
+                            ),
                         }
                     )
                     for p in priors
@@ -222,7 +233,9 @@ def adjust_player(
                     p.model_copy(
                         update={
                             "stats": tuple(
-                                v * operation.factor if i == index else v
+                                evaluate("product", gain=v, probability=operation.factor).result
+                                if i == index
+                                else v
                                 for i, v in enumerate(p.stats)
                             )
                         }

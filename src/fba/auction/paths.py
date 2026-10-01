@@ -28,6 +28,7 @@ from fba.formulas.market import (
     require_distribution,
 )
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import lognormal_taste
 
 
 def clearing(
@@ -41,7 +42,14 @@ def clearing(
         return None, 0
     buyer = order[0]
     amount = (
-        min(bids[buyer], bids[order[1]] + league.bid_increment)
+        int(
+            evaluate(
+                "second_price",
+                winner=float(bids[buyer]),
+                runner_up=float(bids[order[1]]),
+                increment=float(league.bid_increment),
+            ).result
+        )
         if len(order) > 1
         else league.minimum_bid
     )
@@ -197,9 +205,12 @@ class AuctionPaths:
         self, player: int, ceiling: int, regime: Regime, order: Order, seed: int, participate: bool
     ) -> AuctionPath:
         rng = np.random.default_rng(seed)
-        taste = np.exp(
-            self.parameters.volatility * rng.standard_normal((len(self.players), len(self.room)))
-            - self.shift
+        taste = lognormal_taste(
+            {
+                "normal_draws": rng.standard_normal((len(self.players), len(self.room))),
+                "volatility": np.asarray(self.parameters.volatility),
+                "shift": np.asarray(self.shift),
+            }
         )
         ties, mixed = rng.random(taste.shape), rng.random(len(self.players))
         queue = sorted(

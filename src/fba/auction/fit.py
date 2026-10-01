@@ -2,7 +2,7 @@ from math import log2
 from typing import Protocol
 
 import numpy as np
-from scipy.stats import norm, qmc
+from scipy.stats import qmc
 
 from fba.auction.managed import FloatArray, ManagedMoments, ManagedSeason
 from fba.auction.portfolio import Portfolio
@@ -32,6 +32,7 @@ from fba.formulas.auction_fit import (
 )
 from fba.formulas.registry import evaluate
 from fba.formulas.scoring import categories
+from fba.formulas.simulation import deviation_array, mean_array, normal_quantile
 
 type CompletionCache = dict[tuple[tuple[str, ...], ...], bool]
 
@@ -61,9 +62,9 @@ def marginal_batch(
         features.append(
             MarginalFeature(
                 index=task.index,
-                values=tuple(float(v) for v in difference.mean(axis=(0, 1))),
+                values=tuple(float(v) for v in mean_array(difference, axis=(0, 1))),
                 blocks=tuple(
-                    tuple(float(v) for v in part.mean(axis=(0, 1)))
+                    tuple(float(v) for v in mean_array(part, axis=(0, 1)))
                     for part in np.array_split(difference, manager.parameters.health_blocks)
                 ),
             )
@@ -160,16 +161,15 @@ class FittedUtility:
             raise DataError("fit.samples: must be a power of two")
         # Pair coordinates from one joint design; independently scrambled Sobol
         # sequences are not independent when their rows are paired.
-        draws = norm.ppf(
-            np.clip(
-                qmc.Sobol(
+        draws = normal_quantile(
+            {
+                "uniform": qmc.Sobol(
                     self.manager.k * 2,
                     scramble=True,
                     seed=np.random.default_rng([parameters.seed, parameters.opponent_seed]),
                 ).random_base2(samples),
-                1e-12,
-                1 - 1e-12,
-            )
+                "epsilon": np.asarray(1e-12),
+            }
         )
         self.draws = draws[:, : self.manager.k]
         self.opponent_draws = draws[:, self.manager.k :]
@@ -234,7 +234,7 @@ class FittedUtility:
         self.opponent = categories(means[index] + noise, self.league, self.manager.stat_ids)
         blocks = np.array(
             [
-                part.mean(axis=0).reshape(-1, self.manager.k)
+                mean_array(part, axis=0).reshape(-1, self.manager.k)
                 for part in np.array_split(projected.boxes, self.parameters.health_blocks)
             ]
         )
@@ -271,7 +271,7 @@ class FittedUtility:
 
     def context(self, roster: tuple[int, ...]) -> tuple[FloatArray, FloatArray]:
         result = self.project(roster)
-        mean = result.mean.mean(axis=0)
+        mean = mean_array(result.mean, axis=0)
         covariance = evaluate_array(
             "sampling_covariance", means=result.mean, covariances=result.covariance
         ).result
@@ -300,7 +300,7 @@ class FittedUtility:
         boxes = self.project(roster).boxes
         means = np.array(
             [
-                part.mean(axis=(0, 1))
+                mean_array(part, axis=(0, 1))
                 for part in np.array_split(boxes, self.parameters.health_blocks)
             ]
         )
@@ -310,7 +310,7 @@ class FittedUtility:
             opponent=self.opponent_blocks,
             scale=self.scale,
         ).result
-        return margin_score(difference, self.parameters.bandwidth).mean(axis=1)
+        return mean_array(margin_score(difference, self.parameters.bandwidth), axis=1)
 
     def gradient(self, mean: FloatArray, noise: FloatArray) -> FloatArray:
         step = evaluate_array(
@@ -343,7 +343,9 @@ class FittedUtility:
                     p,
                     float(
                         evaluate_array(
-                            "matrix_product", left=mean - rest.mean.mean(axis=0), right=gradient
+                            "matrix_product",
+                            left=mean - mean_array(rest.mean, axis=0),
+                            right=gradient,
                         ).result
                     ),
                 )
@@ -436,7 +438,7 @@ class FittedUtility:
         block_scores = self.block_scores(self.anchor, noise)
         feature = self.marginals(base, gradient, mean, runner)
         utility = evaluate_array("matrix_product", left=feature, right=gradient).result
-        scale = float(np.std(utility))
+        scale = float(deviation_array(utility))
         if scale < 1e-12:
             raise DataError("fit: managed marginal utility has no variation")
         managed = evaluate_array(

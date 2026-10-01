@@ -15,6 +15,7 @@ from fba.contracts.streaming import (
 )
 from fba.core.roster import effective_players
 from fba.formulas.arrays import evaluate_array
+from fba.formulas.simulation import mean_array
 
 
 def select_streaming(
@@ -24,13 +25,15 @@ def select_streaming(
     comparisons: list[StreamingComparison] = []
     for index in range(1, len(slots)):
         delta = values[index] - values[selected]
-        blocks = np.array([part.mean() for part in np.array_split(delta, parameters.health_blocks)])
+        blocks = np.array(
+            [mean_array(part) for part in np.array_split(delta, parameters.health_blocks)]
+        )
         accepted = bool(np.all(blocks > parameters.improvement_tolerance))
         comparisons.append(
             StreamingComparison(
                 slots=slots[index],
                 versus=slots[selected],
-                paired_gain=float(delta.mean()),
+                paired_gain=float(mean_array(delta)),
                 block_minimum=float(blocks.min()),
                 block_maximum=float(blocks.max()),
                 accepted=accepted,
@@ -73,9 +76,12 @@ def flex_candidates(
         )
         realized, expected = manager.control_mean(rest)
         physical = evaluate_array("matrix_product", left=run.counts[:, 0], right=manager.raw).result
-        removed = evaluate_array(
-            "control_variate", physical=physical, realized=realized, expected=expected
-        ).result.mean(axis=(0, 1))
+        removed = mean_array(
+            evaluate_array(
+                "control_variate", physical=physical, realized=realized, expected=expected
+            ).result,
+            axis=(0, 1),
+        )
         loss = float(evaluate_array("matrix_product", left=mean - removed, right=gradient).result)
         losses.append(FlexPlayer(player_id=manager.ids[player], removal_loss=loss))
     return tuple(sorted(losses, key=lambda p: (p.removal_loss, p.player_id))[:count])
@@ -129,19 +135,19 @@ def analyze_streaming(
         boxes = evaluate_array(
             "control_variate", physical=physical, realized=realized, expected=expected
         ).result
-        means[slots] = boxes.mean(axis=(0, 1))
+        means[slots] = mean_array(boxes, axis=(0, 1))
         values.append(
-            evaluate_array("matrix_product", left=boxes.mean(axis=1), right=gradient).result
+            evaluate_array("matrix_product", left=mean_array(boxes, axis=1), right=gradient).result
         )
-        injury, upgrade, stream = run.adds[:, 0].mean(axis=(0, 1))
+        injury, upgrade, stream = mean_array(run.adds[:, 0], axis=(0, 1))
         rows.append(
             StreamingScenario(
                 slots=slots,
-                started=float(run.counts[:, 0].sum(axis=-1).mean()),
+                started=float(mean_array(run.counts[:, 0].sum(axis=-1))),
                 injury_adds=float(injury),
                 upgrade_adds=float(upgrade),
                 stream_adds=float(stream),
-                gain=float((values[-1] - values[0]).mean()),
+                gain=float(mean_array(values[-1] - values[0])),
             )
         )
     recommended, comparisons = select_streaming(

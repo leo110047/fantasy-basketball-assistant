@@ -3,8 +3,11 @@
 from time import monotonic
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from fba.contracts.inseason import MatchupPriority
 from fba.core.qualification import qualification_possible
+from fba.formulas.simulation import standings_credit
 
 if TYPE_CHECKING:
     from fba.inseason.matchup import Simulation
@@ -68,7 +71,16 @@ def classify_matchup(sim: "Simulation", week_id: str) -> MatchupPriority:
         monotonic() + sim.params.budgets["week"].value,
         sim.deadline[0] if sim.deadline else float("inf"),
     )
-    points = tuple(t.wins + sim.league.week_tie_value * t.ties for t in teams)
+    points = tuple(
+        float(v)
+        for v in standings_credit(
+            {
+                "wins": np.asarray([t.wins for t in teams]),
+                "ties": np.asarray([t.ties for t in teams]),
+                "tie_value": np.asarray(sim.league.week_tie_value),
+            }
+        )
+    )
     ties = (
         (sim.league.week_tie_value,)
         if sim.league.scoring == "h2h_one_win"

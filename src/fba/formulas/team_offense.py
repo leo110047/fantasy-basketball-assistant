@@ -21,10 +21,13 @@ from fba.formulas.registry import evaluate
 
 
 def used(stats: tuple[float, ...], model: TeamOffenseModel) -> float:
-    return fsum(
-        t.coefficient * stats[model.projection.stat_ids.index(t.stat_id)]
-        for t in model.team_offense.used_terms
-    )
+    return evaluate(
+        "linear",
+        values=tuple(
+            stats[model.projection.stat_ids.index(t.stat_id)] for t in model.team_offense.used_terms
+        ),
+        weights=tuple(t.coefficient for t in model.team_offense.used_terms),
+    ).result
 
 
 def supported_row(
@@ -111,28 +114,48 @@ def allocate_usage(
         return tuple(sorted(rows, key=lambda r: r.member_id))
     result: list[PlayerOffenseAllocation] = []
     axes = model.projection.stat_ids
-    demand = fsum(r.expected_games * used(r.before, model) / full for r in rows)
+    demand = fsum(
+        evaluate(
+            "season_rate",
+            games=r.expected_games,
+            value=used(r.before, model),
+            season_games=float(full),
+        ).result
+        for r in rows
+    )
     factor = evaluate("budget_fraction", budget=budget, demand=demand).result
     # Source coverage measures evidence, not a player's right to the remaining possessions.
     for row in rows:
         stats = [
-            v * factor if s in model.team_offense.scaled_stats else v
+            evaluate("product", gain=v, probability=factor).result
+            if s in model.team_offense.scaled_stats
+            else v
             for s, v in zip(axes, row.before, strict=True)
         ]
-        stats[axes.index(model.projection.scoring_stat)] = fsum(
-            t.coefficient * stats[axes.index(t.stat_id)] for t in model.projection.scoring_terms
-        )
+        stats[axes.index(model.projection.scoring_stat)] = evaluate(
+            "linear",
+            values=tuple(stats[axes.index(t.stat_id)] for t in model.projection.scoring_terms),
+            weights=tuple(t.coefficient for t in model.projection.scoring_terms),
+        ).result
         result.append(row.model_copy(update={"after": tuple(stats), "usage_factor": factor}))
     assist, made = (
         axes.index(s) for s in (model.team_offense.assist_stat, model.team_offense.made_stat)
     )
-    assists = fsum(r.expected_games * r.after[assist] for r in result)
-    makes = fsum(r.expected_games * r.after[made] for r in result)
+    assists = fsum(
+        evaluate("product", gain=r.expected_games, probability=r.after[assist]).result
+        for r in result
+    )
+    makes = fsum(
+        evaluate("product", gain=r.expected_games, probability=r.after[made]).result for r in result
+    )
     factor = evaluate("budget_fraction", budget=makes, demand=assists).result
     return tuple(
         r.model_copy(
             update={
-                "after": tuple(v * factor if i == assist else v for i, v in enumerate(r.after)),
+                "after": tuple(
+                    evaluate("product", gain=v, probability=factor).result if i == assist else v
+                    for i, v in enumerate(r.after)
+                ),
                 "assist_factor": factor,
             }
         )
@@ -155,16 +178,42 @@ def allocate_team_offense(
     )
     full = next(t.full_season_games for t in inputs.teams if t.id == minutes.team_id)
     second = model.projection.stat_ids.index(model.team_offense.second_chance_stat)
-    budget = used(baseline.stats, model) - baseline.stats[second]
+    budget = evaluate(
+        "difference", after=used(baseline.stats, model), before=baseline.stats[second]
+    ).result
     if budget <= 0:
         raise DataError(f"team_offense.{minutes.team_id}: nonpositive historical possession proxy")
-    regulation = model.team_minutes.regulation_minutes * model.team_minutes.players_on_court
+    regulation = evaluate(
+        "product",
+        gain=model.team_minutes.regulation_minutes,
+        probability=float(model.team_minutes.players_on_court),
+    ).result
     # Assumption: carry forward regulation-normalized usage, including configured expected OT.
     capacity = minutes.budget
-    budget *= capacity / regulation
-    residual = max(0.0, capacity - fsum(r.expected_games * r.minutes / full for r in rows))
-    reserve = budget * residual / capacity
-    second_chances = fsum(r.expected_games * r.before[second] / full for r in rows)
+    budget = evaluate(
+        "product",
+        gain=budget,
+        probability=evaluate(
+            "ratio", numerator=capacity, denominator=regulation, zero_value=0.0
+        ).result,
+    ).result
+    residual = max(
+        0.0,
+        capacity
+        - fsum(
+            evaluate(
+                "season_rate", games=r.expected_games, value=r.minutes, season_games=float(full)
+            ).result
+            for r in rows
+        ),
+    )
+    reserve = evaluate("season_rate", games=budget, value=residual, season_games=capacity).result
+    second_chances = fsum(
+        evaluate(
+            "season_rate", games=r.expected_games, value=r.before[second], season_games=float(full)
+        ).result
+        for r in rows
+    )
     allocated = allocate_usage(rows, budget - reserve + second_chances, full, model)
     modeled = {r.member_id for r in rows}
     return TeamOffenseAllocation(
@@ -180,8 +229,25 @@ def allocate_team_offense(
         residual_minutes=residual,
         possession_budget=budget,
         reserved_possessions=reserve,
-        before=fsum(r.expected_games * used(r.before, model) / full for r in rows) - second_chances,
-        after=fsum(r.expected_games * used(r.after, model) / full for r in allocated)
+        before=fsum(
+            evaluate(
+                "season_rate",
+                games=r.expected_games,
+                value=used(r.before, model),
+                season_games=float(full),
+            ).result
+            for r in rows
+        )
+        - second_chances,
+        after=fsum(
+            evaluate(
+                "season_rate",
+                games=r.expected_games,
+                value=used(r.after, model),
+                season_games=float(full),
+            ).result
+            for r in allocated
+        )
         - second_chances,
         allocations=allocated,
     )

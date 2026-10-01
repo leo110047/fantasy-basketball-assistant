@@ -17,6 +17,7 @@ from fba.contracts.inseason import (
 from fba.formulas.arrays import evaluate_array
 from fba.formulas.categories import derive_games
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import mean_array
 
 
 def sample_game(
@@ -37,7 +38,12 @@ def sample_game(
         )
         return np.random.default_rng(seed)
 
-    target = np.array([player.rates.get(s, 0.0) * player.minutes for s in league.base_stats])
+    target = np.array(
+        [
+            evaluate("product", gain=player.rates.get(s, 0.0), probability=player.minutes).result
+            for s in league.base_stats
+        ]
+    )
     if not history:
         sampled = np.stack(
             [random(s).poisson(target[i], size=samples) for i, s in enumerate(league.base_stats)],
@@ -79,7 +85,7 @@ def sample_game(
         return result
     source = np.array([[b.stats.get(s, 0.0) for s in league.base_stats] for b in history])
     sampled = source[random("history").integers(len(source), size=samples)].copy()
-    mean = source.mean(axis=0)
+    mean = mean_array(source, axis=0)
     # A zero-observation statistic cannot be rescaled. The explicit prior
     # predictive Poisson component preserves its positive model mean.
     zero_mean = np.zeros_like(sampled)

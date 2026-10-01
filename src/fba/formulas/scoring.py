@@ -8,6 +8,8 @@ from fba.contracts.backtest import CategoryOutcome, Pairing, ReplayTeam, Standin
 from fba.contracts.base import DataError
 from fba.contracts.config import LeagueRules
 from fba.formulas.categories import category_values
+from fba.formulas.simulation import standings_credit
+from fba.formulas.vector import category_points
 
 type FloatArray = NDArray[np.float64]
 
@@ -48,8 +50,8 @@ def matchup(
         winner = "home" if delta > 0 else "away" if delta < 0 else "tie"
         outcomes.append(CategoryOutcome(id=c.id, home=a, away=b, winner=winner))
         tie = c.tie_value if league.scoring.category_ties == "use_tie_value" else 0.0
-        hp += 1 if delta > 0 else tie if delta == 0 else 0
-        ap += 1 if delta < 0 else tie if delta == 0 else 0
+        hp += float(category_points({"differences": np.asarray(delta), "ties": np.asarray(tie)}))
+        ap += float(category_points({"differences": np.asarray(-delta), "ties": np.asarray(tie)}))
     return WeekOutcome(
         week_id=pairing.week_id,
         home=pairing.home,
@@ -72,7 +74,15 @@ def standings(
         ties = sum(o.winner is None for o in games)
         losses = len(games) - int(wins) - ties
         if league.scoring.week_tie == "half_win":
-            wins += ties / 2
+            wins = float(
+                standings_credit(
+                    {
+                        "wins": np.asarray(wins),
+                        "ties": np.asarray(ties, dtype=float),
+                        "tie_value": np.asarray(0.5),
+                    }
+                )
+            )
         if league.scoring.week_tie == "loss":
             losses += ties
             ties = 0
@@ -97,7 +107,17 @@ def standings(
             scores: dict[float, list[Standing]] = {}
             for row in group:
                 if rule == "record":
-                    score = row.wins + (row.ties / 2 if league.scoring.week_tie == "tie" else 0)
+                    score = float(
+                        standings_credit(
+                            {
+                                "wins": np.asarray(row.wins),
+                                "ties": np.asarray(row.ties, dtype=float),
+                                "tie_value": np.asarray(
+                                    0.5 if league.scoring.week_tie == "tie" else 0.0
+                                ),
+                            }
+                        )
+                    )
                 elif rule == "head_to_head":
                     score = fsum(
                         1.0

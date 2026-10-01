@@ -385,3 +385,37 @@ def median(inputs: ScalarInputs) -> float:
     ordered = sorted(values)
     middle = len(ordered) // 2
     return ordered[middle] if len(ordered) % 2 else (ordered[middle - 1] + ordered[middle]) / 2
+
+
+def second_price(inputs: ScalarInputs) -> float:
+    return min(number(inputs, "winner"), number(inputs, "runner_up") + number(inputs, "increment"))
+
+
+def minute_budget(inputs: ScalarInputs) -> float:
+    return number(inputs, "players") * (number(inputs, "regulation") + number(inputs, "overtime"))
+
+
+def season_rate(inputs: ScalarInputs) -> float:
+    return number(inputs, "games") * number(inputs, "value") / number(inputs, "season_games")
+
+
+def anchor_scale(inputs: ScalarInputs) -> float:
+    quotes = vector(inputs, "quotes")
+    cash, minimum, maximum = (number(inputs, key) for key in ("cash", "minimum", "maximum"))
+    total = float(len(quotes) * minimum)
+    target = min(cash, sum(maximum if q > 0 else minimum for q in quotes))
+    if target <= total:
+        return 0.0
+    events: dict[float, list[float]] = {}
+    for quote in quotes:
+        if quote > 0:
+            events.setdefault(minimum / quote, []).append(quote)
+            events.setdefault(maximum / quote, []).append(-quote)
+    previous = slope = 0.0
+    for point, changes in sorted(events.items()):
+        upper = total + (point - previous) * slope
+        if slope > 0 and upper >= target:
+            return previous + (target - total) / slope
+        total, previous = upper, point
+        slope = fsum((slope, *changes))
+    return previous

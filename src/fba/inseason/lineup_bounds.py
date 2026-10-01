@@ -9,6 +9,7 @@ import numpy as np
 
 from fba.contracts.config import Linear, Term
 from fba.formulas.categories import category_values
+from fba.formulas.simulation import comparison_margin, linear_interval, mean_array, ratio_interval
 from fba.formulas.vector import category_points, week_points
 
 if TYPE_CHECKING:
@@ -18,18 +19,16 @@ if TYPE_CHECKING:
 def term_interval(
     lower: Array, upper: Array, terms: tuple[Term, ...], axes: tuple[str, ...]
 ) -> tuple[Array, Array]:
-    if len(terms) == 1 and abs(terms[0].coefficient) == 1:
-        axis = axes.index(terms[0].stat_id)
-        if terms[0].coefficient == 1:
-            return lower[..., axis], upper[..., axis]
-        return -upper[..., axis], -lower[..., axis]
-    low, high = np.zeros(lower.shape[:-1]), np.zeros(lower.shape[:-1])
-    for term in terms:
-        axis, coefficient = axes.index(term.stat_id), term.coefficient
-        a, b = (lower, upper) if coefficient >= 0 else (upper, lower)
-        low = np.nextafter(low + np.nextafter(a[..., axis] * coefficient, -np.inf), -np.inf)
-        high = np.nextafter(high + np.nextafter(b[..., axis] * coefficient, np.inf), np.inf)
-    return low, high
+    indices = [axes.index(t.stat_id) for t in terms]
+    result = linear_interval(
+        {
+            "lower": lower,
+            "upper": upper,
+            "indices": np.asarray(indices, dtype=np.float64),
+            "weights": np.asarray([t.coefficient for t in terms]),
+        }
+    )
+    return result[0], result[1]
 
 
 def score_ceiling(
@@ -55,16 +54,17 @@ def score_ceilings(
         )
         if not isinstance(formula, Linear):
             dlow, dhigh = term_interval(lower, upper, formula.denominator, sim.axes)
-            safe = dlow > 0
-            dlow = np.where(safe, dlow, 1.0)
-            dhigh = np.where(safe, dhigh, 1.0)
-            corners = np.stack((low / dlow, low / dhigh, high / dlow, high / dhigh))
-            low = np.where(safe, np.nextafter(corners.min(axis=0), -np.inf), -np.inf)
-            high = np.where(safe, np.nextafter(corners.max(axis=0), np.inf), np.inf)
+            bounds = ratio_interval({"lower": low, "upper": high, "dlower": dlow, "dupper": dhigh})
+            low, high = bounds[0], bounds[1]
         ceiling = high if category.direction == "higher" else -low
         differences.append(
-            np.round(ceiling, category.comparison_decimals)
-            - np.round(away[..., i], category.comparison_decimals)
+            comparison_margin(
+                {
+                    "home": ceiling,
+                    "away": away[..., i],
+                    "decimals": np.asarray(category.comparison_decimals),
+                }
+            )
         )
     margins = np.stack(differences, axis=-1)
     if sim.league.scoring == "h2h_each_category":
@@ -77,7 +77,7 @@ def score_ceilings(
         scores = category_points({"differences": margins, "ties": ties}).sum(axis=-1)
     else:
         scores = week_points({"differences": margins, "week_tie": np.asarray(week_tie)})
-    raw = scores.mean(axis=-1)
+    raw = mean_array(scores, axis=-1)
     return np.array([sim.calibrated_score(float(v)).result for v in raw.flat]).reshape(raw.shape)
 
 
