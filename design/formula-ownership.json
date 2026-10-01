@@ -519,10 +519,10 @@
       "signature": "e29b9d4263a534da5472faf992b6c2353e8926a7d1f9adae58d083e79184bf01"
     },
     "fba.auction.auction.caps_for": {
-      "role": "structure",
+      "role": "composition",
       "owner": "fba.auction.auction.caps_for",
-      "reason": "Solver-call counter delta/addition; cap arithmetic remains in Portfolio.cap.",
-      "signature": "d1f6da1693ad9f1a131ac5f547f950174ce2e9acc9ab5d783ae5b93cce325488"
+      "reason": "Solver-call counter delta/addition; cap arithmetic remains in Portfolio.cap. Cap-to-market edge now retains the registered difference trace alongside existing cap evidence.",
+      "signature": "923522ec3f8f7ae547a6b63bf9a4b1930b278fc6e1eca7184b095b7ebf7be8b5"
     },
     "fba.auction.auction.nominations": {
       "role": "structure",
@@ -539,8 +539,8 @@
     "fba.auction.auction.compare": {
       "role": "composition",
       "owner": "fba.auction.auction.compare",
-      "reason": "Registered difference owns buy-minus-skip utility; sums assemble fixed purchases while cash/modulo validate bid and roster rules.",
-      "signature": "cded13e6ebd05f112ebfe457881ae22f5f2befa5f7dde0341dff21186b4daf83"
+      "reason": "Registered difference owns buy-minus-skip utility; sums assemble fixed purchases while cash/modulo validate bid and roster rules. Comparison delta and branch cash remainders now retain registered difference traces; rounding and budget legality stay unchanged.",
+      "signature": "5e36fcb9e2895b390efaa93c7d2674ef0f4eba179daa8d33e0d7db1779049ba2"
     },
     "fba.auction.fit.marginal_batch": {
       "role": "composition",
@@ -2840,22 +2840,26 @@
       "formula_ids": []
     },
     "src/fba/apps/static/app.js": {
-      "sha256": "2c74415634ac52883d63aa883a4877ee89e846712de874d730c22e4903a556ec",
+      "sha256": "399a66a2b3c13e26c2ec7063aee75c3a71b0d48c646749c59d152111e5b02953",
       "role": "composition",
-      "reason": "Displays server model replies, converts elapsed ns to seconds, increments local revisions/sale indices and validates bid entry against backend limits; detailed final trace coverage remains separately unverified.",
+      "reason": "Displays server model replies, converts elapsed ns to seconds, increments local revisions/sale indices and validates bid entry against backend limits; detailed final trace coverage remains separately unverified. Supplies shared formula definitions to room/comparison renderers; no second formula text or implementation.",
       "formula_ids": []
     },
     "src/fba/apps/static/presentation.js": {
-      "sha256": "7e26fea7683e8e102692e40814d42f74316fe1f376f246c82ec5ab2ee74fd201",
-      "role": "pending",
-      "reason": "Remaining business calculations: fair-minus-expected, proportional discount and cap-minus-expected need registered backend owners and trace; focused thresholds and scenario envelope require contract audit.",
+      "sha256": "391b960f25b933c1b488c6267eadffe6cd9fc48aafd373abce07120026442d6d",
+      "role": "composition",
+      "reason": "Search, filters, sorting, CSV quoting and source status only. Gap, discount, focused selection and cap edge come from current backend result fields without frontend equations. Scenario envelope chooses extrema among explicitly supplied prices; it is neither a forecast nor uncertainty estimate.",
       "formula_ids": []
     },
     "src/fba/apps/static/view.js": {
-      "sha256": "5bdb6d074de5ebd00861384646200483a19aa69ce906206a17976cc08236d44d",
-      "role": "pending",
-      "reason": "Remaining UI cash/available-cash/slot aggregation and comparison remaining budget need backend result/registered trace; final displayed forecast/cap values require integration audit.",
-      "formula_ids": []
+      "sha256": "e099b5c987cfce2e142d64d360a8453d136f3d07c01fe5b8f5d87a84c4c4f7d9",
+      "role": "composition",
+      "reason": "DOM rendering of backend room cash/slots, gap/discount, cap edge and comparison remainders with shared formula traces. Percent/currency formatting, top-strength/scenario extrema, list indices and ordering are presentation structure. No market or remaining-cash equation remains in JavaScript; missing current room summary fails explicitly.",
+      "formula_ids": [
+        "linear",
+        "difference",
+        "ratio"
+      ]
     }
   }
 }

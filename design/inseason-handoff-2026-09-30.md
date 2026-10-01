@@ -24,7 +24,9 @@
 
 8 條健康／native／誤差公式抽取已通過完整 1,169 項測試（macOS 273.99 秒、隔離 286.18 秒）與獨立審查 `3b0a7af3-a147-4076-964e-96e9de4325d0`，兩項 required evidence fresh verified-pass、0 findings，302 個候選檔案提交前 0 drift。分批提交為 `a2aff0b`（共同公式與 native）、`a1ddd86`（誤差／歷史 prior trace）、`4b676ee`（所有權與來源文件），全部未推送。
 
-接續未提交候選另抽取七條，登錄總數 129；142 個 Python 檔／464 候選已逐條分類，Python pending 為 0。新增 NumPy 加總順序、布林健康矩陣、made ≤ attempted 等獨立答案及回歸。另人工核對 1 個 C++／10 個 JavaScript 來源並加入檔案變動檢查；拍賣頁 `presentation.js`、`view.js` 仍有兩個 pending。Today 類別影響保留 raw 差與校準乘數兩段 trace，合成 Chrome 展開實際代入值相符；保存 F3／IL 的唯讀合成流程正常結束。這批完整驗證／獨立審查仍待完成，F1 未結案。
+接續未提交候選另抽取七條，登錄總數 129；142 個 Python 檔／464 候選已逐條分類，Python pending 為 0。新增 NumPy 加總順序、布林健康矩陣、made ≤ attempted 等獨立答案及回歸。另人工核對 1 個 C++／10 個 JavaScript 來源並加入檔案變動檢查；拍賣頁 `presentation.js`、`view.js` 仍有兩個 pending。Today 類別影響保留 raw 差與校準乘數兩段 trace，合成 Chrome 展開實際代入值相符；保存 F3／IL 的唯讀合成流程正常結束。這批已通過完整 1,176 項測試／303.82 秒與獨立審查 `b967c110-58f5-43ce-8c59-da5a33aadb6e`（0 findings、兩項 required verified-pass），303 檔提交前 0 drift。分批提交 `f2dfbc8`、`818633e`、`86a32fc`，全部未推送；F1 仍未結案。
+
+後續拍賣未提交候選已消除兩個 JS pending，前端價差／折扣／出價空間與房間／分支餘額均由後端共同公式和 trace 提供；人工盤點 pending 為 0。重點價差門檻沿用舊值並放入市場設定，相關 schema 同步。實際 Chrome 完成跨兩應用隨機 20 個 scalar trace 獨立手算／逐一展開，誤差 ≤1e-12；買／不買及房間摘要也讀回。新候選的完整驗證／獨立審查尚待完成，沒有套用前批綠燈；詳細範圍與限制見 `formula-ownership.md`。
 
 找到原規格指定研究程式／JSON 後，離線重播原研究 318 位球員、1,446 案例，結果在 1e-12 內零差異。另以目前登錄的單欄位混合式做前季選 k、後季固定 k 的診斷：325 位球員／1,473 訓練案例，317 位／1,446 驗證案例，11 欄位的合併驗證 MAE 均較 prior 及現行 k 小。它不是實際引擎的因果 R4，不含零分鐘、傷情／出賽、排名、策略及逐檢查點驗收；沒有套用新 k。124 個參數葉值保持原樣，只補原研究與未校準限制的具體出處。
 
@@ -201,7 +203,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 | U2 | 待確認項、來源／理由及失效路徑已補；全部來源／狀態情境未逐條驗收。 | UI、projection flags、同步設定差異 | 依規格整理待確認事項、來源／理由／操作，核對忽略／到期／狀態改變後行為。 |
 | U3 | 本機完成 20 數字獨立手算、實際手調／撤銷、UI 與模擬值同源；合成資料邊界。 | `apps/inseason/static/views.js::playerCard`、`inseason/projection.py::blend_player/effective_projection` | 清楚分開先驗、混合、手調及最後由命中率重算的 made；抽 20 個 UI 數字獨立手算（至少 3 位小數）並驗證傳給模擬的值。 |
 | U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；本批另完成同日連續換人的有效合成授權／保存計畫沿用流程；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
-| F1 | 129 條登錄；142 檔／464 Python 候選逐條分類，0 Python pending。C++／JS 人工盤點與變動 gate 已補，兩個拍賣 JS pending、最終 UI trace／隨機 20 數字及本批獨立審查未完成，F1 未結案。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
+| F1 | 129 條登錄；142 檔／464 Python 候選及 C++／JS 人工盤點 pending 均為 0。兩應用隨機 20 個實際 scalar trace 已手算／展開核對；拍賣最新候選審查與全功能最終 UI trace 核對未完成，F1 未結案。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
 | F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；已找到原規格指定的 `/Users/leo/fantasy-research-2026-27/claude-report-v2/evidence-2026-09-27/` 程式／JSON，重播 318 位球員、1,446 案例與原結果在 1e-12 內零差異。原研究是同季擬合，ESPN dump 於 2026-09-25 季後擷取，不能證明歷史公開時點；也不能當目前 strict-win 引擎的跨季校準。無證據不能改標已校準；OREB 等未回測項另列。 |
 | F3 | 10 隊、不同位置與 OREB／A/T／H2H Each Category 的合成 F0–F6 本機已有驗證。 | `tests/inseason_support.py`、`test_inseason_portability.py`、跨功能測試 | 真正改類別公式（含比率／A/T）、位置、10 隊、H2H Each Category，F0–F6 跑完且合法；只改設定，不在程式塞聯盟特例。 |
 
