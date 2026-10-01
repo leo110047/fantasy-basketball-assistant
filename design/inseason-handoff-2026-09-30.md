@@ -152,6 +152,8 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 
 ## 4. 尚未完成的工作清單
 
+2026-10-02 實際 main CI：`Check` 36912989004 的 Linux／macOS 完整檢查均成功；`Inseason source` 36912989052 的 Windows 有 33 failed／926 passed／232 errors，另外兩個 job 被矩陣取消，V5 未通過。已確認測試 fixture 的 artifact 路徑誤用平台分隔符，以及 Windows checkout 的 CRLF 使 C++／JS 原始 SHA 改變（本機 LF→CRLF 的 SHA 與 CI 完全相符）。修正 fixture 使用既有 POSIX 契約，新增 LF checkout 規則，保留 raw-byte SHA 檢查。另停止矩陣失敗連帶取消，暫加 Windows 原生 DLL imports／venv launcher PID 診斷；沒有跳過任何完整檢查。DLL 載入、PID 測試與開啟中編輯器的檔案替換仍待 Windows 證據與修正，不能算平台結案。
+
 狀態用語：「本機已修」涵蓋程式與合成驗證；「未驗」保留尚未取得的實際來源、平台或品質證據，不將合成結果外推。
 下表追蹤完整驗收條件；「本機已修」不等於真實來源或整份規格結案。現況已更新至本輪，效能項目暫停。原始案例未提供，已自行建立合成驗證，不再等待不存在的原始資產。
 
