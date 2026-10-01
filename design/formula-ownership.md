@@ -38,7 +38,7 @@ Today 的類別影響現在保留「raw 機率差 → 類別校準乘數」兩�
 
 目前 142 個 Python 檔有 464 個候選 owner：129 `registered`、1 `component`、130 `composition`、17 `validation`、187 `structure`、0 `pending`。數字不是公式總數。Paths、字串、集合、日期與 solver constraint arithmetic 也會被掃到。本輪讀完剩餘 87 個函式本體，抽取業務算式後逐條記錄具體分類理由。合法名單／現金保留、搜尋順序與停止條件不當成預測公式；使用既有登錄公式的編排保留在引擎。
 
-另逐檔核對 1 個 C++ 與 10 個 JavaScript 來源，保存完整檔案 SHA-256、分類、理由與所用登錄 ID。測試檢查新增／刪除／改寫來源時必須更新這份人工盤點，不能自動判斷語意。拍賣頁的價差／折扣、cap 對市場價的空間、全場現金／名額與買／不買餘額已移回後端，使用既有 `difference`、`ratio`、`linear`。重點價差門檻沿用 5／0.2，改由 `model.market.focus_difference`／`focus_discount` 設定；舊模型保持相同行為，範例與受影響 schema 同步。Python／C++／JavaScript 的 pending 均為 0；這批新候選仍需完整測試／獨立審查。
+另逐檔核對 1 個 C++ 與 10 個 JavaScript 來源，保存完整檔案 SHA-256、分類、理由與所用登錄 ID。測試檢查新增／刪除／改寫來源時必須更新這份人工盤點，不能自動判斷語意。拍賣頁的價差／折扣、cap 對市場價的空間、全場現金／名額與買／不買餘額已移回後端，使用既有 `difference`、`ratio`、`linear`。重點價差門檻沿用 5／0.2，改由 `model.market.focus_difference`／`focus_discount` 設定；舊模型保持相同行為，範例與受影響 schema 同步。Python／C++／JavaScript 的 pending 均為 0。拍賣候選完整通過 1,185 項測試（292.59 秒）與獨立審查 `2ad24675-08fc-48f9-92ec-73935d864e2a`，0 findings、兩項 required verified-pass；304 檔提交前 0 drift，分批提交 `ad00944`、`3980741`，未推送。
 
 盤點也涵蓋目前使用的 NumPy `minimum`、`maximum`、`add`、`logaddexp`、`count_nonzero`；五個不帶算術運算子的案例先重現漏記，再修正檢查。新增六個候選逐條核對，其中五個只是 `set.add` 的保守誤報，一個是 native 日期容量驗證。呼叫名稱檢查會有誤報，且不是型別推導或數值語意證明。
 
@@ -50,7 +50,7 @@ Today 的類別影響現在保留「raw 機率差 → 類別校準乘數」兩�
 
 ## F1 仍須完成
 
-1. 拍賣呈現搬移需經本批完整驗證與獨立審查；沒有 pending 只代表人工盤點完成，不取代語意審查。
+1. 拍賣呈現搬移已完成相符的完整驗證與獨立審查；本節後續季賽呈現候選仍待新的完整驗證與獨立審查。沒有 pending 不取代語意審查。
 2. `src/fba/native/season.cpp` 的 `Simulation::choose` 現由 `adapters/native_formula.py` 把唯一登錄的 `management_gain` 表達式轉成 C++ header；候選上界也用同一函式。白名單 AST 遇到未支援語法明確失敗，沒有 eval 或第二份算式。native artifact 雜湊同時綁定 template 與產生的 header；ABI、樣本與日期×球員配置保持原樣。另有實際編譯 C++ 的獨立答案及 provenance 失配測試；每週排序權重亦由同一轉譯器產生既有 `product` 的 C++ 函式；其餘 native 搜尋／排序算術已逐檔核對並記錄具體理由。
 3. C++／JS 人工盤點與檔案變動 gate 已補；百分比／貨幣格式、日期／計時與索引是呈現或結構運算，預測／市場算式由後端 owner 提供。仍需確認所有最終功能的數字都有足夠 trace，不能把逐檔分類當成 UI 全面驗收。
 4. 已登錄內部公式仍須追到最終 UI 的代入值。保守區間在內部允許無界 `±inf`；公開的 `evaluate_array` 明確拒絕 non-finite evidence，不把無界值裝成可展示的數字。
@@ -65,3 +65,23 @@ Today 的類別影響現在保留「raw 機率差 → 類別校準乘數」兩�
 新增市場呈現結果包含 gap／discount／focus、cap edge、房間 cash／spendable／slots 與買／不買餘額；來源缺值維持空值。舊執行紀錄可讀，不補造當時 trace；新計算的房間摘要缺失時畫面明確失敗。既有比較效用的發布四捨五入與最佳化未改，trace 保留未四捨五入的實際代入值。
 
 Git 外 `random-20-handcheck.json` 保存 seed 20261002、拍賣 66／Today 111 筆實際 DOM scalar trace 母體、各抽 10 筆、獨立 Decimal／標準數學函式的答案與誤差。未 import 產品公式產生 expected。20 筆結果誤差均 ≤1e-12，保存三位小數答案，且在 Chrome 實際展開後保存文字／截圖。另核對 `50−4=46`、`50−2=48`、`15−13=2` 與全場 `[50,50] → 100`、`[2,2] → 4`。這是合成 fixture 的正式程式／API／共同 renderer 證據，不是 live provider、隨機模型校準或三平台驗收。
+
+## 最終功能數字追溯核對
+
+本輪逐功能閱讀實際 renderer 與結果契約，確認來源事實、設定、計數、日期／格式不當成預測公式。發現每週我方／對手總量、分箱平均、手調乘數、接受模型 Log loss 四組已計算但缺乏展開證據；本候選補上同一 owner 的 trace，不新增公式 ID。尚待本候選完整驗證與獨立審查，不因此宣稱全部 UI 狀態或完整規格通過。
+
+| 最終呈現 | 公式與傳遞路徑 | 本機證據邊界 |
+| --- | --- | --- |
+| 球員卡混合／權重／最終數據 | `blend`, `minutes`, `weight`, `product`, `linear`, `expectation` → `EffectivePlayer.traces` → `playerCard` | 既有 20 數字、手調／撤銷整合證據；新增乘數保留逐筆 entry／target 的原值及係數 |
+| 球隊分鐘與旗標 | `linear`, `minute_budget`, `difference`, `mean`, `exposure_rate`, `exposure_error`, `absolute_error` → team view／flag traces | 既有獨立公式答案；門檻仍未實證校準 |
+| 每週／Today 類別總量與比率 | `nonnegative_samples`, `linear_totals`, `category_ratio` → `CategoryForecast.value_traces` → `forecastCard` | 新增只含我方／對手兩列平均值，與原計算共用 terms 及零分母政策；不保存完整抽樣陣列 |
+| 每週機率／誤差與 Today 影響 | `calibration`, `z`, `normal`, `error`, `product`, `difference` → forecast／Today traces | 隨機 DOM 手算及實際展開；strict-win 語義保持原樣 |
+| 換人與交易 | `difference`, `management_gain`, `rank_value`, `acceptance`, `product`, `playoff_odds` → plan／trade traces | 小型完整枚舉與既有合成 UI；大型 coordinate／shortlist 品質及真實 recall 仍未驗 |
+| 交易接受模型報告 | `log_loss`, `mean`, `absolute_error` → `refit_acceptance`／bins → 共同 renderer | 新候選加入 Log loss 和分箱 trace；係數是數值求解結果，不能冒充樣本外機率 |
+| 每週／累積回顧 | `brier`, `mae`, `mean`, `effective_samples`, `monitor_margin`, `absolute_error` → review traces | 新候選保留實際分箱成員平均及每週展開欄；舊紀錄不補造 trace |
+| 拍賣公允價／成交／停損 | `standardize`, `dollar_value`, `market_*`, `affordable_cap`, `difference`, `ratio` → detail／market／cap traces | 已審查提交及隨機手算；來源欄位缺失維持未知 |
+| 拍賣管理調整／組隊比較 | `management_gain`, `sample_mean`, `product`, `difference`, `linear` → diagnostics／comparison／room traces | native 由唯一 owner 產生；各領域保留原 reduction 順序與發布 precision |
+
+手調覆寫與狀態是使用者／參數提供的值，保留原始紀錄；只有乘數計算產生新的數值 trace。分鐘線、校準圖直接繪製同一結果資料。前端不重做混合、市場、分箱或交易算式。
+
+合成 Chrome 已逐一展開讀回：PTS 的 `[133.3668, 136.514]`、FG 比率 `[47.631,48.755]/[95.262,97.51]=[0.5,0.5]`、分箱六筆平均預測 `0.4672` 與實際 `0.5`、FGA 手調 `0.333333…×1.5=0.5`、36 筆均為 `p=0.5` 的提案 Log loss `ln(2)=0.6931471805599453`。原始文字／截圖在 Git 外 `category-evidence-*.txt`／`.jpg`。兩個驗收服務皆經畫面「結束助手」正常關閉；沒有呼叫供應商、讀 OS 憑證庫或執行 Yahoo 交易。此為正式程式的合成資料整合證據，不是 live 或歷史校準。

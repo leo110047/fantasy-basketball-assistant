@@ -26,11 +26,13 @@
 
 接續未提交候選另抽取七條，登錄總數 129；142 個 Python 檔／464 候選已逐條分類，Python pending 為 0。新增 NumPy 加總順序、布林健康矩陣、made ≤ attempted 等獨立答案及回歸。另人工核對 1 個 C++／10 個 JavaScript 來源並加入檔案變動檢查；拍賣頁 `presentation.js`、`view.js` 仍有兩個 pending。Today 類別影響保留 raw 差與校準乘數兩段 trace，合成 Chrome 展開實際代入值相符；保存 F3／IL 的唯讀合成流程正常結束。這批已通過完整 1,176 項測試／303.82 秒與獨立審查 `b967c110-58f5-43ce-8c59-da5a33aadb6e`（0 findings、兩項 required verified-pass），303 檔提交前 0 drift。分批提交 `f2dfbc8`、`818633e`、`86a32fc`，全部未推送；F1 仍未結案。
 
-後續拍賣未提交候選已消除兩個 JS pending，前端價差／折扣／出價空間與房間／分支餘額均由後端共同公式和 trace 提供；人工盤點 pending 為 0。重點價差門檻沿用舊值並放入市場設定，相關 schema 同步。實際 Chrome 完成跨兩應用隨機 20 個 scalar trace 獨立手算／逐一展開，誤差 ≤1e-12；買／不買及房間摘要也讀回。新候選的完整驗證／獨立審查尚待完成，沒有套用前批綠燈；詳細範圍與限制見 `formula-ownership.md`。
+後續拍賣未提交候選已消除兩個 JS pending，前端價差／折扣／出價空間與房間／分支餘額均由後端共同公式和 trace 提供；人工盤點 pending 為 0。重點價差門檻沿用舊值並放入市場設定，相關 schema 同步。實際 Chrome 完成跨兩應用隨機 20 個 scalar trace 獨立手算／逐一展開，誤差 ≤1e-12；買／不買及房間摘要也讀回。拍賣候選完整通過 1,185 項測試／292.59 秒，獨立審查 `2ad24675-08fc-48f9-92ec-73935d864e2a` 為 0 findings、兩項 required verified-pass。304 檔提交前 0 drift；分批提交 `ad00944`、`3980741`，未推送。詳細範圍與限制見 `formula-ownership.md`。
+
+接續季賽候選補每週我方／對手總量與比率、每週／累積分箱平均、手調乘數、接受模型 Log loss 的共同公式 trace；舊紀錄維持可讀，不補造證據。每週 trace 僅保存兩隊平均數據，不保存 sample × day × player draws。相關 81 項測試、38 項所有權／品質／獨立答案檢查通過，型別 0 errors。合成 Chrome 已讀回四組實際代入值與結果，服務皆正常結束；初次完整檢查為 1,192 passed／1 failed（292.11 秒）：舊 trace 重播測試只接受 scalar，未支援新 array trace；已依登錄 ID 分派至 scalar／array owner，保留原 scalar 容差及所有輸出斷言，array 使用 1e-12 絕對容差。新的完整驗證與獨立審查仍待完成。
 
 找到原規格指定研究程式／JSON 後，離線重播原研究 318 位球員、1,446 案例，結果在 1e-12 內零差異。另以目前登錄的單欄位混合式做前季選 k、後季固定 k 的診斷：325 位球員／1,473 訓練案例，317 位／1,446 驗證案例，11 欄位的合併驗證 MAE 均較 prior 及現行 k 小。它不是實際引擎的因果 R4，不含零分鐘、傷情／出賽、排名、策略及逐檢查點驗收；沒有套用新 k。124 個參數葉值保持原樣，只補原研究與未校準限制的具體出處。
 
-來源調查可繼續，但目前尚未取得免費、條款適用且涵蓋完整即時傷情／排名／歷史的正式資料入口。SportsDataIO Discovery Lab 有免費上一季個人研究方案；API-Sports 有免費額度，但用途授權和歷史覆蓋須另核對，都需要使用者帳號／key。不可把 demo key 或過時傷情當 live 證據。Yahoo OS 憑證讀取曾遭工具自動審批拒絕，沒有繞過；使用者已於 2026-10-02 回覆 Yahoo API 申請已送出，目前等待審核／憑證核發，尚無真實 OAuth／同步證據。申請不再列為待辦。
+來源調查可繼續，但目前尚未取得免費、條款適用且涵蓋完整即時傷情／排名／歷史的正式資料入口。SportsDataIO Discovery Lab 有免費上一季個人研究方案；API-Sports 有免費額度，但用途授權和歷史覆蓋須另核對，都需要使用者帳號／key。不可把 demo key 或過時傷情當 live 證據。追加核對 ScoreTape 官方 docs／terms，允許本人研究／分析／建模，免費七天窗口且公開 health 已取得 status ok；列為當季前向來源優先待驗，仍無 key／真實 NBA coverage，不能補回跨季歷史。Yahoo OS 憑證讀取曾遭工具自動審批拒絕，沒有繞過；使用者已於 2026-10-02 回覆 Yahoo API 申請已送出，目前等待審核／憑證核發，尚無真實 OAuth／同步證據。申請不再列為待辦。
 
 ## 1. 接手時先知道的事
 
@@ -203,7 +205,7 @@ Goldband repo `/Users/leo/goldband` 的 `9f33793` 是先前獨立提交；本次
 | U2 | 待確認項、來源／理由及失效路徑已補；全部來源／狀態情境未逐條驗收。 | UI、projection flags、同步設定差異 | 依規格整理待確認事項、來源／理由／操作，核對忽略／到期／狀態改變後行為。 |
 | U3 | 本機完成 20 數字獨立手算、實際手調／撤銷、UI 與模擬值同源；合成資料邊界。 | `apps/inseason/static/views.js::playerCard`、`inseason/projection.py::blend_player/effective_projection` | 清楚分開先驗、混合、手調及最後由命中率重算的 made；抽 20 個 UI 數字獨立手算（至少 3 位小數）並驗證傳給模擬的值。 |
 | U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；本批另完成同日連續換人的有效合成授權／保存計畫沿用流程；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
-| F1 | 129 條登錄；142 檔／464 Python 候選及 C++／JS 人工盤點 pending 均為 0。兩應用隨機 20 個實際 scalar trace 已手算／展開核對；拍賣最新候選審查與全功能最終 UI trace 核對未完成，F1 未結案。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
+| F1 | 129 條登錄；142 檔／464 Python 候選及 C++／JS 人工盤點 pending 均為 0。兩應用隨機 20 個實際 scalar trace 已手算／展開核對；拍賣候選已審查／提交；逐功能核對再補四組季賽 trace，該新候選完整驗證／獨立審查仍待完成，F1 未結案。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
 | F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；已找到原規格指定的 `/Users/leo/fantasy-research-2026-27/claude-report-v2/evidence-2026-09-27/` 程式／JSON，重播 318 位球員、1,446 案例與原結果在 1e-12 內零差異。原研究是同季擬合，ESPN dump 於 2026-09-25 季後擷取，不能證明歷史公開時點；也不能當目前 strict-win 引擎的跨季校準。無證據不能改標已校準；OREB 等未回測項另列。 |
 | F3 | 10 隊、不同位置與 OREB／A/T／H2H Each Category 的合成 F0–F6 本機已有驗證。 | `tests/inseason_support.py`、`test_inseason_portability.py`、跨功能測試 | 真正改類別公式（含比率／A/T）、位置、10 隊、H2H Each Category，F0–F6 跑完且合法；只改設定，不在程式塞聯盟特例。 |
 
