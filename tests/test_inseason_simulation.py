@@ -111,6 +111,14 @@ def test_today_uses_weekly_calibrated_score_and_uncertainty(mode, calibration):
     forecast = sim.week("team0", "team1", "2")
     daily = today(sim, sim.as_of.astimezone(sim.zone).date(), "Asia/Taipei")
     assert daily.score_after == forecast.score
+    for row in daily.players:
+        assert row.category_changes.keys() == row.category_traces.keys()
+        for label, (delta, scaled) in row.category_traces.items():
+            assert delta.formula_id == "difference" and scaled.formula_id == "product"
+            assert delta.result == delta.inputs["after"] - delta.inputs["before"]
+            assert scaled.inputs["gain"] == delta.result
+            assert scaled.result == pytest.approx(delta.result * calibration)
+            assert row.category_changes[label] == scaled.result
     assert forecast.standard_error == pytest.approx(forecast.traces[1].result * calibration)
     assert all(
         c.standard_error == pytest.approx(c.traces[-2].result * calibration)

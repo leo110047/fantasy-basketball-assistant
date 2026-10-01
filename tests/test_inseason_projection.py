@@ -177,6 +177,8 @@ def test_undo_of_replacement_restores_original_adjustment():
 
 def test_registered_formulas_have_hand_calculated_examples():
     expected = {
+        "historical_games": 60,
+        "average_surplus": 6,
         "management_gain": 3,
         "availability_probability": 0.5,
         "upper_total": float.fromhex("0x1.0000000000001p+0"),

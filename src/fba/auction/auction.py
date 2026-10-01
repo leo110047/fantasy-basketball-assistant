@@ -20,6 +20,7 @@ from fba.contracts.config import AuctionModel, ManagedPricingModel
 from fba.contracts.season import SeasonKernel
 from fba.core.roster import completable, effective_players, validate_draft
 from fba.formulas.market import price_market
+from fba.formulas.registry import evaluate
 
 
 class CapRunner(Protocol):
@@ -322,7 +323,11 @@ def compare(
                 "purchases": tuple(sorted((*buy.purchases, player_id))),
             }
         )
-    delta = buy.utility - skip.utility if isinstance(buy, Plan) and isinstance(skip, Plan) else None
+    delta = (
+        evaluate("difference", after=buy.utility, before=skip.utility).result
+        if isinstance(buy, Plan) and isinstance(skip, Plan)
+        else None
+    )
     decimals = portfolio.parameters.result_decimals
     return Comparison(
         player_id=player_id,

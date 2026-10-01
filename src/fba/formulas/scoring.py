@@ -8,6 +8,7 @@ from fba.contracts.backtest import CategoryOutcome, Pairing, ReplayTeam, Standin
 from fba.contracts.base import DataError
 from fba.contracts.config import LeagueRules
 from fba.formulas.categories import category_values
+from fba.formulas.registry import evaluate
 from fba.formulas.simulation import standings_credit
 from fba.formulas.vector import category_points
 
@@ -44,9 +45,9 @@ def matchup(
     values = categories(np.array((home, away)), league, axes)
     for i, c in enumerate(league.categories):
         a, b = (round(float(v), c.comparison_decimals) for v in values[:, i])
-        delta = a - b
+        delta = evaluate("difference", after=a, before=b).result
         direction = 1 if c.direction == "higher" else -1
-        a, b = a * direction, b * direction
+        a, b = (evaluate("product", gain=v, probability=float(direction)).result for v in (a, b))
         winner = "home" if delta > 0 else "away" if delta < 0 else "tie"
         outcomes.append(CategoryOutcome(id=c.id, home=a, away=b, winner=winner))
         tie = c.tie_value if league.scoring.category_ties == "use_tie_value" else 0.0

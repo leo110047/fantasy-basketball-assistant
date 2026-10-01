@@ -266,7 +266,7 @@ def injury_actions(
 
 def lineup_effects(
     sim: Simulation, lineup: DayLineup, opponent: str, week: str
-) -> dict[str, tuple[FormulaTrace, dict[str, float]]]:
+) -> dict[str, tuple[FormulaTrace, dict[str, tuple[FormulaTrace, ...]]]]:
     own, other, _ = sim.matchup_totals(lineup.team_id, opponent, week)
     _, through = sim.actual(lineup.team_id, week)
     roster = roster_on(sim, lineup.team_id, lineup.on)
@@ -279,7 +279,7 @@ def lineup_effects(
     locked_slots = {slot for slot, pid in team.selected_slots.items() if sim.locked(pid, lineup.on)}
     movable_slots = tuple(s for s in sim.league.starter_slots if s.id not in locked_slots)
     positions = {p.player.id: p.player.positions for p in sim.projection(lineup.on).players}
-    results: dict[str, tuple[FormulaTrace, dict[str, float]]] = {}
+    results: dict[str, tuple[FormulaTrace, dict[str, tuple[FormulaTrace, ...]]]] = {}
     started = monotonic()
     for pid in draws:
         if sim.locked(pid, lineup.on):
@@ -302,16 +302,20 @@ def lineup_effects(
             (draws[p] for p in alternative_slots.values()), start=np.zeros_like(rest)
         )
         changed_categories, _ = sim.score(altered, other)
+        changes: dict[str, tuple[FormulaTrace, ...]] = {}
+        for i, category in enumerate(sim.league.categories):
+            delta = evaluate(
+                "difference",
+                after=float(mean_array(categories[:, i])),
+                before=float(mean_array(changed_categories[:, i])),
+            )
+            scaled = evaluate(
+                "product", gain=delta.result, probability=sim.params.calibration.value
+            )
+            changes[category.label or category.id] = (delta, scaled)
         results[pid] = (
             evaluate("difference", after=selected_score, before=alternative),
-            {
-                c.label or c.id: evaluate(
-                    "product",
-                    gain=float(mean_array(categories[:, i]) - mean_array(changed_categories[:, i])),
-                    probability=sim.params.calibration.value,
-                ).result
-                for i, c in enumerate(sim.league.categories)
-            },
+            changes,
         )
     return results
 
@@ -348,7 +352,9 @@ def today_players(
         elif effect is not None:
             trace, changes = effect
             helpful = [
-                label for label, delta in changes.items() if delta > sim.params.tolerance.value
+                label
+                for label, traces in changes.items()
+                if traces[-1].result > sim.params.tolerance.value
             ]
             reason = (
                 "先發" if pid in lineup.slots.values() else "板凳"
@@ -366,7 +372,10 @@ def today_players(
                 slot=slot,
                 reason=reason,
                 marginal=effect[0] if effect else None,
-                category_changes=effect[1] if effect else {},
+                category_changes={label: traces[-1].result for label, traces in effect[1].items()}
+                if effect
+                else {},
+                category_traces=effect[1] if effect else {},
             )
         )
     return tuple(rows)

@@ -4,7 +4,15 @@ from numpy.typing import NDArray
 from fba.contracts.base import DataError
 from fba.contracts.config import Category, Linear, Term
 from fba.contracts.inseason import DerivedStat
-from fba.formulas.simulation import category_ratio, comparison_margin, game_threshold, linear_totals
+from fba.formulas.simulation import (
+    array_product,
+    category_ratio,
+    comparison_margin,
+    derived_sum,
+    game_threshold,
+    linear_totals,
+    nonnegative_samples,
+)
 from fba.formulas.vector import category_points, week_points
 
 type Array = NDArray[np.float64]
@@ -23,7 +31,7 @@ def total_terms(box: Array, terms: tuple[Term, ...], axes: tuple[str, ...]) -> A
 def category_values(
     box: Array, categories: tuple[Category, ...], axes: tuple[str, ...], *, directed: bool = True
 ) -> Array:
-    positive = np.maximum(box, 0)
+    positive = nonnegative_samples({"values": box})
     result: list[Array] = []
     for category in categories:
         formula = category.formula
@@ -44,18 +52,32 @@ def category_values(
                     else np.zeros_like(numerator),
                 }
             )
-        result.append(value * (-1 if directed and category.direction == "lower" else 1))
+        result.append(
+            array_product(
+                {
+                    "values": value,
+                    "multiplier": np.asarray(
+                        -1 if directed and category.direction == "lower" else 1
+                    ),
+                }
+            )
+        )
     return np.stack(result, axis=-1)
 
 
 def derive_games(box: Array, base: tuple[str, ...], definitions: tuple[DerivedStat, ...]) -> Array:
     axes, columns = list(base), [box[..., i] for i in range(len(base))]
     for definition in definitions:
-        values = np.stack(
-            [columns[axes.index(t.stat_id)] * t.coefficient for t in definition.terms], axis=-1
+        values = array_product(
+            {
+                "values": np.stack(
+                    [columns[axes.index(t.stat_id)] for t in definition.terms], axis=-1
+                ),
+                "multiplier": np.asarray([t.coefficient for t in definition.terms]),
+            }
         )
         if definition.kind == "linear":
-            value = values.sum(axis=-1)
+            value = derived_sum({"values": values})
         else:
             value = game_threshold(
                 {

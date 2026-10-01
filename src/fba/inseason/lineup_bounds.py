@@ -13,6 +13,7 @@ from fba.formulas.simulation import (
     comparison_margin,
     linear_interval,
     mean_array,
+    nonnegative_samples,
     outward_interval,
     ratio_interval,
     subset_interval,
@@ -48,7 +49,7 @@ def score_ceilings(
     sim: Simulation, lower: Array, upper: Array, opponent: Array, *, week_tie: float = 0.0
 ) -> Array:
     """The same ceiling, allowing leading independent candidate dimensions."""
-    lower, upper = np.maximum(lower, 0), np.maximum(upper, 0)
+    lower, upper = nonnegative_samples({"values": lower}), nonnegative_samples({"values": upper})
     away = category_values(opponent, sim.league.categories, sim.axes)
     differences: list[Array] = []
     for i, category in enumerate(sim.league.categories):

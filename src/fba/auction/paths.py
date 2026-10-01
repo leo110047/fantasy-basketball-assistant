@@ -325,7 +325,9 @@ class AuctionPaths:
                     seed=seed,
                     participate=buy,
                     skip=skip,
-                    delta=buy.score - skip.score if buy.complete and skip.complete else None,
+                    delta=evaluate("difference", after=buy.score, before=skip.score).result
+                    if buy.complete and skip.complete
+                    else None,
                 )
             )
         return tuple(pairs)

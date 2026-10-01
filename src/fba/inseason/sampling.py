@@ -17,7 +17,7 @@ from fba.contracts.inseason import (
 from fba.formulas.arrays import evaluate_array
 from fba.formulas.categories import derive_games
 from fba.formulas.registry import evaluate
-from fba.formulas.simulation import mean_array
+from fba.formulas.simulation import array_product, mean_array, nested_count_limit
 
 
 def sample_game(
@@ -80,7 +80,14 @@ def sample_game(
                 sampled[:, i] = random(child + ":nested").binomial(
                     sampled[:, j].astype(np.int64), probability
                 )
-        sampled *= (random("availability").random(samples) < player.probability)[:, None]
+        sampled = array_product(
+            {
+                "values": sampled,
+                "multiplier": (random("availability").random(samples) < player.probability)[
+                    :, None
+                ],
+            }
+        )
         result = derive_games(sampled, league.base_stats, league.derived)
         return result
     source = np.array([[b.stats.get(s, 0.0) for s in league.base_stats] for b in history])
@@ -103,7 +110,12 @@ def sample_game(
             league.base_stats.index(shot.made),
             league.base_stats.index(shot.attempted),
         )
-        sampled[:, i] = np.minimum(sampled[:, i], sampled[:, j])
-    sampled *= (random("availability").random(samples) < player.probability)[:, None]
+        sampled[:, i] = nested_count_limit({"child": sampled[:, i], "parent": sampled[:, j]})
+    sampled = array_product(
+        {
+            "values": sampled,
+            "multiplier": (random("availability").random(samples) < player.probability)[:, None],
+        }
+    )
     result = derive_games(sampled, league.base_stats, league.derived)
     return result

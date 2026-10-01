@@ -82,6 +82,7 @@ class TodayAction(Record):
 
 
 class TodayPlayer(Record):
+    category_traces: dict[Text, tuple[FormulaTrace, ...]] = {}
     player_id: Text
     opponents: tuple[Text, ...]
     tipoffs: tuple[AwareDatetime, ...]

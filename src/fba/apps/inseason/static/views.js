@@ -265,7 +265,10 @@ export function todayView(ctx) {
       playerName(ctx,p.player_id), p.opponents.join("、") || "—",
       p.tipoffs.map(t=>dateText(t,ctx.data.preferences.timezone)).join("、") || "—",
       p.status, p.slot ?? "板凳", p.reason,
-      p.marginal ? formula(p.marginal, ctx.data.formulas) : "—"
+      p.marginal ? el("div", {}, formula(p.marginal, ctx.data.formulas),
+        Object.entries(p.category_traces ?? {}).map(([label, traces]) => el("details", {},
+          el("summary", {}, `${label} Δ ${number(p.category_changes[label])}`),
+          traces.map(t => formula(t, ctx.data.formulas))))) : "—"
     ])),
     table(["球員", "鎖定時間", "距離鎖定"], locks),
     result.recommendation ? section("已計算的 F3 換人計畫",

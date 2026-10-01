@@ -43,6 +43,26 @@ def health_step(inputs: NumericInputs) -> Array:
     )
 
 
+def array_product(inputs: NumericInputs) -> Array:
+    return np.asarray(inputs["values"] * inputs["multiplier"], dtype=np.float64)
+
+
+def nonnegative_samples(inputs: Inputs) -> Array:
+    return np.maximum(inputs["values"], 0.0)
+
+
+def nested_count_limit(inputs: Inputs) -> Array:
+    return np.minimum(inputs["child"], inputs["parent"])
+
+
+def strict_win(inputs: Inputs) -> Array:
+    return np.where((inputs["own"] == 1) & (inputs["other"] < 1), 1.0, 0.0)
+
+
+def derived_sum(inputs: Inputs) -> Array:
+    return inputs["values"].sum(axis=-1)
+
+
 def subset_bound(inputs: Inputs) -> Array:
     draw, fixed, direction = inputs["draw"], inputs["fixed"], inputs["direction"]
     if fixed.ndim or fixed not in (0, 1) or direction.ndim or direction not in (-1, 1):

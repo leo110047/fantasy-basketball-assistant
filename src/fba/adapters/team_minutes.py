@@ -31,11 +31,13 @@ def minute_estimates(
             estimates.append(
                 MinuteEstimate(
                     prior_id=p.historical_prior_id,
-                    expected_games=min(
-                        season_games,
-                        p.historical_games_upper,
-                        max(p.historical_games_lower, len(played)),
-                    ),
+                    expected_games=evaluate(
+                        "historical_games",
+                        eligible=float(season_games),
+                        upper=float(p.historical_games_upper),
+                        lower=float(p.historical_games_lower),
+                        observed=float(len(played)),
+                    ).result,
                     minutes=evaluate("mean", values=tuple(played)).result,
                     source_ids=tuple(sorted({g.source_id for g in history})),
                 )

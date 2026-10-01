@@ -27,6 +27,7 @@ from fba.formulas.simulation import (
     ranked_health_value,
     scheduled_health,
 )
+from fba.formulas.vector import matrix_product, weighted_rows
 
 type FloatArray = NDArray[np.float64]
 
@@ -355,8 +356,10 @@ class ManagedSeason:
             w = int(self.week[d])
             ids = list(use)
             health = self.health[:, d][:, ids]
-            realised[:, w] += health @ self.raw[ids]
-            expected[w] += (self.raw[ids] * self.availability[ids, None]).sum(axis=0)
+            realised[:, w] += matrix_product({"left": health, "right": self.raw[ids]})
+            expected[w] += weighted_rows(
+                {"values": self.raw[ids], "weights": self.availability[ids]}
+            )
         self.control_means[roster] = (realised, expected)
         return realised, expected
 

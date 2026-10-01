@@ -5,6 +5,26 @@ from fba.formulas import scalar
 
 FORMULAS = (
     ScalarFormula(
+        "historical_games",
+        "歷史出賽先驗的場數界限",
+        r"G=\min(G_E,u,\max(l,G_O))",
+        "games",
+        ("preparation.historical_games_lower", "preparation.historical_games_upper"),
+        scalar.historical_games,
+        {"eligible": 60.0, "upper": 70.0, "lower": 20.0, "observed": 80.0},
+        {"eligible": "games", "upper": "games", "lower": "games", "observed": "games"},
+    ),
+    ScalarFormula(
+        "average_surplus",
+        "每個空名額的剩餘溢價預算",
+        r"\bar s=\max(S/\max(R,1),\epsilon)",
+        "currency/player",
+        (),
+        scalar.average_surplus,
+        {"surplus": 30.0, "slots": 5.0, "floor": 1e-12},
+        {"surplus": "currency", "slots": "players", "floor": "currency/player"},
+    ),
+    ScalarFormula(
         "availability_probability",
         "可出賽場數比例",
         r"q=\min(1,G_H/\max(1,G_E))",

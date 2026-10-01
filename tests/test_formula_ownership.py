@@ -1,4 +1,5 @@
 import json
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -6,6 +7,24 @@ from formula_ownership_support import NumericalInventory, census
 
 from fba.formulas.arrays import ARRAY_FORMULAS
 from fba.formulas.registry import registry
+
+
+def test_native_and_javascript_source_inventory_covers_every_current_file():
+    root = Path(__file__).parents[1]
+    inventory = json.loads((root / "design/formula-ownership.json").read_text())["source_files"]
+    actual = {
+        str(path.relative_to(root)): sha256(path.read_bytes()).hexdigest()
+        for path in (root / "src/fba").rglob("*")
+        if path.suffix in (".js", ".cpp")
+    }
+    assert actual == {name: row["sha256"] for name, row in inventory.items()}
+    ids = {row.id for row in (*registry(), *ARRAY_FORMULAS)}
+    assert all(
+        row["role"] in {"composition", "structure", "pending"}
+        and row["reason"]
+        and set(row["formula_ids"]) <= ids
+        for row in inventory.values()
+    )
 
 
 def test_numerical_census_has_no_unrecorded_or_changed_sites():

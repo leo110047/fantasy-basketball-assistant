@@ -137,7 +137,16 @@ def distribution_price(
         sorted(participants, key=lambda p: (room[p[0]].id != mine, room[p[0]].maximum_bid, p[1]))
     )
     maximum = np.array([room[j].maximum_bid for j, _ in participants], dtype=float)
-    premium = np.array([max(0.0, anchor - minimum) * wealth for _, wealth in participants])
+    positive = evaluate(
+        "positive_part",
+        value=evaluate("difference", after=anchor, before=float(minimum)).result,
+    ).result
+    premium = np.array(
+        [
+            evaluate("product", gain=positive, probability=wealth).result
+            for _, wealth in participants
+        ]
+    )
     levels = np.arange(minimum, maximum.max(), increment, dtype=float)
     cdf = bid_cdf(levels, maximum, premium, parameters.volatility, shift, minimum, increment)
     previous = bid_cdf(
@@ -222,7 +231,12 @@ def market_factors(
     denominator += max(0, slots - len(remaining)) * league.minimum_bid
     cash = sum(t.budget for t in room if t.slots)
     inflation = evaluate("inflation", cash=float(cash), anchor_total=denominator).result
-    average_surplus = max(surplus / max(slots, 1), np.finfo(float).eps)
+    average_surplus = evaluate(
+        "average_surplus",
+        surplus=float(surplus),
+        slots=float(slots),
+        floor=float(np.finfo(float).eps),
+    ).result
     return anchors, remaining, inflation, average_surplus
 
 
@@ -255,7 +269,10 @@ def price_market(
             league,
             parameters,
             anchor,
-            tuple((j, wealth * inflation) for j, wealth in participants),
+            tuple(
+                (j, evaluate("product", gain=wealth, probability=inflation).result)
+                for j, wealth in participants
+            ),
             room,
             state.mine,
             shift,

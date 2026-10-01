@@ -137,7 +137,7 @@ def complete_forecast(
             raise DataError(
                 f"preparation.{forecast.player_id}.{term.stat_id}: negative derived count"
             )
-        values[term.stat_id] = max(0, inferred)
+        values[term.stat_id] = evaluate("positive_part", value=inferred).result
         notes.append(
             PreparationNote(
                 player_id=forecast.player_id,
@@ -282,11 +282,13 @@ def prepare_player(
     notes: list[PreparationNote] = []
     priors: list[Prior] = []
     if samples and player.history_status == "available":
-        gp = min(
-            team.full_season_games,
-            parameters.historical_games_upper,
-            max(parameters.historical_games_lower, len(samples)),
-        )
+        gp = evaluate(
+            "historical_games",
+            eligible=float(team.full_season_games),
+            upper=float(parameters.historical_games_upper),
+            lower=float(parameters.historical_games_lower),
+            observed=float(len(samples)),
+        ).result
         means = tuple(
             evaluate("mean", values=tuple(r[i] for r in samples)).result
             for i in range(len(samples[0]))

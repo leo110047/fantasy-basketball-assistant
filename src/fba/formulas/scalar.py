@@ -52,6 +52,18 @@ def absolute_error(values: ScalarInputs) -> float:
     return abs(number(values, "predicted") - number(values, "observed"))
 
 
+def historical_games(values: ScalarInputs) -> float:
+    return min(
+        number(values, "eligible"),
+        number(values, "upper"),
+        max(number(values, "lower"), number(values, "observed")),
+    )
+
+
+def average_surplus(values: ScalarInputs) -> float:
+    return max(number(values, "surplus") / max(number(values, "slots"), 1), number(values, "floor"))
+
+
 def blend(values: ScalarInputs) -> float:
     k, prior, total, sample = (number(values, k) for k in ("k", "prior", "total", "sample"))
     return (k * prior + total) / (k + sample)

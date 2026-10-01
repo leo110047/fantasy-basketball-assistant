@@ -48,6 +48,11 @@ def test_registered_scalar_implementations_are_one_to_one_and_complete():
 
 def simulation_example_answers():
     return {
+        "array_product": [[4, -3], [10, -1]],
+        "nonnegative_samples": [0, 0, 3],
+        "derived_sum": [1, 9],
+        "nested_count_limit": [3, 2, 0],
+        "strict_win": [1, 0, 0, 0],
         "health_step": [1, 1, 0],
         "subset_bound": [1, 2],
         "outward_bound": [1, -2],

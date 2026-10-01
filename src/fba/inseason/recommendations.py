@@ -9,7 +9,7 @@ from fba.contracts.inseason import FreeAgent, InseasonPreferences, WeekForecast
 from fba.contracts.inseason_results import AddPlan, RosterMove
 from fba.formulas.categories import category_values
 from fba.formulas.registry import evaluate
-from fba.formulas.simulation import mean_array, variance_array
+from fba.formulas.simulation import mean_array, nonnegative_samples, variance_array
 from fba.inseason.drop_candidates import prioritized_drops
 from fba.inseason.forecast import category_changes
 from fba.inseason.matchup import Simulation
@@ -89,7 +89,7 @@ def quick_score(
     a, _ = sim.total(sim.snapshot.mine, week.id)
     b, _ = sim.total(opponent, week.id)
     shifted = mean_array(a, axis=0) + np.array([deltas.get(s, 0.0) for s in sim.axes])
-    shifted = np.maximum(shifted, 0.0)
+    shifted = nonnegative_samples({"values": shifted})
     total = 0.0
     for category in sim.league.categories:
         if category.id not in key_categories:

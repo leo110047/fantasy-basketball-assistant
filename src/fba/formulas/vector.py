@@ -1,5 +1,6 @@
 """Vector equations referenced by the shared executable registry."""
 
+from collections.abc import Mapping
 from fractions import Fraction
 from itertools import product
 
@@ -11,6 +12,7 @@ from fba.contracts.base import DataError
 
 type Array = NDArray[np.float64]
 type Inputs = dict[str, Array]
+type MatrixInputs = Mapping[str, Array | NDArray[np.bool_]]
 
 
 def availability_regression(inputs: Inputs) -> Array:
@@ -55,7 +57,7 @@ def utility_rescale(inputs: Inputs) -> Array:
     return inputs["values"] / scale * inputs["reference"].std()
 
 
-def matrix_product(inputs: Inputs) -> Array:
+def matrix_product(inputs: MatrixInputs) -> Array:
     return np.asarray(inputs["left"] @ inputs["right"], dtype=np.float64)
 
 

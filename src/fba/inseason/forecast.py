@@ -10,7 +10,7 @@ from fba.contracts.formula import FormulaTrace
 from fba.contracts.inseason import CategoryForecast, WeekForecast
 from fba.formulas.categories import category_values, total_terms
 from fba.formulas.registry import evaluate
-from fba.formulas.simulation import mean_array, variance_array
+from fba.formulas.simulation import mean_array, strict_win, variance_array
 from fba.inseason.lineup_bounds import certified_loss
 from fba.inseason.priority import matchup_priority
 
@@ -66,7 +66,11 @@ def forecast_score(
         sim.forecast_cache.move_to_end(key)
         return sim.forecast_cache[key].score
     own, other = cached_matchup_points(sim, home, away, week, rosters)
-    raw = own if sim.league.scoring == "h2h_each_category" else ((own == 1) & (other < 1))
+    raw = (
+        own
+        if sim.league.scoring == "h2h_each_category"
+        else strict_win({"own": own, "other": other})
+    )
     return sim.calibrated_score(float(mean_array(raw))).result
 
 
