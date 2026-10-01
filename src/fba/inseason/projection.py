@@ -255,7 +255,7 @@ def adjusted_values(
     entries: tuple[AdjustmentEntry, ...],
     params: InseasonParameters,
     back_to_back: bool,
-) -> tuple[float, float, dict[str, float], dict[str, float]]:
+) -> tuple[float, float, dict[str, float], dict[str, float], dict[str, FormulaTrace]]:
     values = {
         "minutes": minutes,
         "q": q,
@@ -263,6 +263,7 @@ def adjusted_values(
         **{"shot:" + k: v for k, v in shots.items()},
     }
     fields = {f.id: f for f in params.fields}
+    traces: dict[str, FormulaTrace] = {}
     for entry in sorted(entries, key=lambda e: fields[e.field].only_back_to_back):
         field = fields[entry.field]
         if field.only_back_to_back and not back_to_back:
@@ -271,16 +272,18 @@ def adjusted_values(
         for target in field.targets:
             if target not in values:
                 continue  # This league does not score the target statistic.
-            values[target] = (
-                evaluate("product", gain=values[target], probability=value).result
-                if field.kind == "multiply"
-                else value
-            )
+            if field.kind == "multiply":
+                trace = evaluate("product", gain=values[target], probability=value)
+                traces[f"adjustment:{entry.id}:{target}"] = trace
+                values[target] = trace.result
+            else:
+                values[target] = value
     return (
         values["minutes"],
         values["q"],
         {s: values["rate:" + s] for s in rates},
         {s: values["shot:" + s] for s in shots},
+        traces,
     )
 
 
@@ -457,9 +460,10 @@ def effective_projection(
         own = tuple(e for e in entries if e.player_id == player.id)
         flags = player_flags(player, boxes, m, rates, own, params)
         b2b = player.team_id in b2b_teams
-        m, q, rates, shots = adjusted_values(
+        m, q, rates, shots, adjustment_traces = adjusted_values(
             m, params.availability[status].value, rates, shots, own, params, b2b
         )
+        traces.update(adjustment_traces)
         for shot in league.shots:
             if shot.id in shots:
                 final_shot = evaluate(

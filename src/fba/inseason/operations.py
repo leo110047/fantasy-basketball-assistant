@@ -22,7 +22,7 @@ from fba.data.codec import canonical, decode, digest
 from fba.data.yahoo import SyncBundle
 from fba.data.yahoo_identity import unresolved_metadata
 from fba.formulas.fitting import fit_acceptance
-from fba.formulas.registry import definitions
+from fba.formulas.registry import definitions, evaluate
 from fba.inseason.adjustments import entry_state, redistribute
 from fba.inseason.forecast_records import recommendation_policy, record_forecast
 from fba.inseason.projection import visible_games
@@ -364,16 +364,20 @@ def refit_acceptance(session: InseasonSession) -> JsonValue:
     proposals = tuple(
         snapshot_record(s, Proposal) for s in session.league_store().history("proposals")
     )
-    a, b, threshold, loss, predicted, actual = fit_acceptance(
+    a, b, threshold, _, predicted, actual = fit_acceptance(
         proposals, session.params.fit_minimum.value, session.params.tolerance.value
+    )
+    loss_trace = evaluate(
+        "log_loss", predicted=predicted, observed=actual, epsilon=session.params.tolerance.value
     )
     report: JsonValue = {
         "beta_rank": a,
         "beta_need": b,
         "threshold": threshold,
         "noise": 1.0,
-        "log_loss": loss,
+        "log_loss": loss_trace.result,
         "count": len(predicted),
+        "traces": json_value([loss_trace.model_dump(mode="json")]),
         "bins": json_value(
             [
                 b.model_dump(mode="json")

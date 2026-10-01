@@ -16,7 +16,7 @@ from fba.contracts.config import (
     Term,
 )
 from fba.contracts.data import Digest
-from fba.contracts.formula import FormulaTrace
+from fba.contracts.formula import ArrayFormulaTrace, FormulaTrace
 
 Probability = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
 
@@ -352,6 +352,8 @@ class EffectiveProjection(Record):
 
 
 class CategoryForecast(Record):
+    value_axes: tuple[Text, ...] = ()
+    value_traces: tuple[ArrayFormulaTrace, ...] = ()  # Do not invent trace for older records.
     id: Text
     label: Text
     home: Finite

@@ -3,7 +3,9 @@ from numpy.typing import NDArray
 
 from fba.contracts.base import DataError
 from fba.contracts.config import Category, Linear, Term
+from fba.contracts.formula import ArrayFormulaTrace
 from fba.contracts.inseason import DerivedStat
+from fba.formulas.arrays import evaluate_array
 from fba.formulas.simulation import (
     array_product,
     category_ratio,
@@ -18,13 +20,60 @@ from fba.formulas.vector import category_points, week_points
 type Array = NDArray[np.float64]
 
 
+def term_inputs(box: Array, terms: tuple[Term, ...], axes: tuple[str, ...]) -> dict[str, Array]:
+    return {
+        "values": box,
+        "indices": np.asarray([axes.index(t.stat_id) for t in terms], dtype=np.float64),
+        "weights": np.asarray([t.coefficient for t in terms]),
+    }
+
+
 def total_terms(box: Array, terms: tuple[Term, ...], axes: tuple[str, ...]) -> Array:
-    return linear_totals(
-        {
-            "values": box,
-            "indices": np.asarray([axes.index(t.stat_id) for t in terms], dtype=np.float64),
-            "weights": np.asarray([t.coefficient for t in terms]),
-        }
+    return linear_totals(term_inputs(box, terms, axes))
+
+
+def ratio_inputs(category: Category, numerator: Array, denominator: Array) -> dict[str, Array]:
+    formula = category.formula
+    assert not isinstance(formula, Linear)
+    if formula.zero_denominator == "error" and np.any(denominator <= 0):
+        raise DataError(f"category.{category.id}: zero denominator")
+    return {
+        "numerator": numerator,
+        "denominator": denominator,
+        "zero_value": numerator
+        if formula.zero_denominator == "numerator"
+        else np.zeros_like(numerator),
+    }
+
+
+def category_evidence(
+    box: Array, category: Category, axes: tuple[str, ...]
+) -> tuple[Array, Array, Array | None, tuple[ArrayFormulaTrace, ...]]:
+    """Trace one displayed category from a bounded, two-team mean-statistic input."""
+    positive = evaluate_array("nonnegative_samples", values=box)
+    formula = category.formula
+    numerator = evaluate_array(
+        "linear_totals",
+        **term_inputs(
+            positive.result,
+            formula.terms if isinstance(formula, Linear) else formula.numerator,
+            axes,
+        ),
+    )
+    traces = (positive.trace, numerator.trace)
+    if isinstance(formula, Linear):
+        return numerator.result, numerator.result, None, traces
+    denominator = evaluate_array(
+        "linear_totals", **term_inputs(positive.result, formula.denominator, axes)
+    )
+    ratio = evaluate_array(
+        "category_ratio", **ratio_inputs(category, numerator.result, denominator.result)
+    )
+    return (
+        ratio.result,
+        numerator.result,
+        denominator.result,
+        (*traces, denominator.trace, ratio.trace),
     )
 
 
@@ -41,17 +90,7 @@ def category_values(
         value = numerator
         if not isinstance(formula, Linear):
             denominator = total_terms(positive, formula.denominator, axes)
-            if formula.zero_denominator == "error" and np.any(denominator <= 0):
-                raise DataError(f"category.{category.id}: zero denominator")
-            value = category_ratio(
-                {
-                    "numerator": numerator,
-                    "denominator": denominator,
-                    "zero_value": numerator
-                    if formula.zero_denominator == "numerator"
-                    else np.zeros_like(numerator),
-                }
-            )
+            value = category_ratio(ratio_inputs(category, numerator, denominator))
         result.append(
             array_product(
                 {

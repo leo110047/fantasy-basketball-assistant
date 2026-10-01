@@ -36,8 +36,10 @@ def calibration_bins(
             for p, y in zip(predicted, observed, strict=True)
             if min(count - 1, int(p * count)) == index
         )
-        p = evaluate("mean", values=tuple(p for p, _ in members)).result if members else None
-        y = evaluate("mean", values=tuple(y for _, y in members)).result if members else None
+        predicted_mean = evaluate("mean", values=tuple(p for p, _ in members)) if members else None
+        observed_mean = evaluate("mean", values=tuple(y for _, y in members)) if members else None
+        p = predicted_mean.result if predicted_mean else None
+        y = observed_mean.result if observed_mean else None
         weights = Counter(
             cluster
             for probability, cluster in zip(predicted, clusters or (), strict=False)
@@ -76,6 +78,7 @@ def calibration_bins(
                 effective_samples=effective_n,
                 uncertainty=uncertainty,
                 traces=(
+                    *((predicted_mean, observed_mean) if predicted_mean and observed_mean else ()),
                     *((effective,) if effective else ()),
                     *((margin,) if margin else ()),
                     *((error,) if error else ()),

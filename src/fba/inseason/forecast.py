@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from fba.contracts.base import DataError
-from fba.contracts.config import Linear
 from fba.contracts.formula import FormulaTrace
 from fba.contracts.inseason import CategoryForecast, WeekForecast
-from fba.formulas.categories import category_values, total_terms
+from fba.formulas.categories import category_evidence, category_values
 from fba.formulas.registry import evaluate
 from fba.formulas.simulation import mean_array, strict_win, variance_array
 from fba.inseason.lineup_bounds import certified_loss
@@ -198,7 +197,7 @@ def category_forecast(
 ) -> CategoryForecast:
     category = sim.league.categories[index]
     means = np.stack((mean_array(a, axis=0), mean_array(b, axis=0)))
-    values = category_values(means, (category,), sim.axes, directed=False)[:, 0]
+    values, numerator, denominator, value_traces = category_evidence(means, category, sim.axes)
     distribution_a = category_values(a, (category,), sim.axes)[:, 0]
     distribution_b = category_values(b, (category,), sim.axes)[:, 0]
     raw = float(mean_array(points))
@@ -214,13 +213,6 @@ def category_forecast(
     normal = evaluate("normal", z=z.result)
     error = evaluate("error", variance=float(variance_array(points)), samples=float(sim.samples))
     scaled_error = evaluate("product", gain=error.result, probability=sim.params.calibration.value)
-    formula = category.formula
-    numerator = total_terms(
-        means, formula.terms if isinstance(formula, Linear) else formula.numerator, sim.axes
-    )
-    denominator = (
-        None if isinstance(formula, Linear) else total_terms(means, formula.denominator, sim.axes)
-    )
     p = calibrated.result
     return CategoryForecast(
         id=category.id,
@@ -242,4 +234,6 @@ def category_forecast(
         if p <= sim.params.abandon_probability.value
         else "key",
         traces=(calibrated, z, normal, error, scaled_error),
+        value_axes=sim.axes,
+        value_traces=value_traces,
     )

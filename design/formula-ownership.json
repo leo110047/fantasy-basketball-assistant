@@ -1121,8 +1121,8 @@
     "fba.formulas.categories.category_values": {
       "role": "composition",
       "owner": "fba.formulas.categories.category_values",
-      "reason": "Registered nonnegative_samples/linear_totals/category_ratio/array_product own category construction and orientation.",
-      "signature": "9551c130702c8babd05928ed143b845ba953bc5893ab707ffc85db379c01c425"
+      "reason": "Registered nonnegative_samples, linear_totals, category_ratio and array_product own clipping, weighted category totals, ratio policies and direction. Both computed arrays and bounded displayed evidence reuse the same term and zero-denominator input assembly.",
+      "signature": "6ed9d5f3e011a8ff8f5721fed24a012c12152c922b5b92bc2ccfce2c5a1c4d02"
     },
     "fba.formulas.categories.derive_games": {
       "role": "composition",
@@ -2219,8 +2219,8 @@
     "fba.inseason.forecast.category_forecast": {
       "role": "composition",
       "owner": "fba.inseason.forecast.category_forecast",
-      "reason": "Registered category totals/ratio, sample_mean/variance, calibration/z/normal/error/product own forecasts; reciprocal tolerance only bounds numerical z saturation.",
-      "signature": "29ae1859d1539551fcbc2a91a81ba6fd1310c44f37b6b979834035af7d281a41"
+      "reason": "Registered mean_array/variance_array, calibration, z, normal, error and product compose category forecast summaries. Displayed totals and ratios now retain bounded two-team nonnegative_samples/linear_totals/category_ratio evidence from category_evidence; Monte Carlo arrays and reduction order are unchanged.",
+      "signature": "334b1a80ba57cbadf14aba2854ddaf9a474af876198c17d4d7c20ed54c4c0e2b"
     },
     "fba.inseason.injury_returns.reuse_return_plans": {
       "role": "structure",
@@ -2387,8 +2387,8 @@
     "fba.inseason.projection.adjusted_values": {
       "role": "composition",
       "owner": "fba.inseason.projection.adjusted_values",
-      "reason": "Configured manual field dispatch to registered product; residual additions concatenate rate/shot keys.",
-      "signature": "25541e016d31fd4697954c07f5e56f2cd970cff93e1621bbadff8347957e6668"
+      "reason": "Configured override/status values are provided facts; registered product owns every applied multiplier. Returned adjustment traces preserve each entry/target and ordered prior value without changing status or back-to-back precedence.",
+      "signature": "e921599dcfb850fa59761bf9397929d416d152d90d835ad0b1ab381fdbd63af1"
     },
     "fba.inseason.projection.player_flags": {
       "role": "composition",
@@ -2405,8 +2405,8 @@
     "fba.inseason.projection.effective_projection": {
       "role": "composition",
       "owner": "fba.inseason.projection.effective_projection",
-      "reason": "Single effective projection composes registered blend/adjustment/product/linear/expectation. fsum aggregates exposure and set differences choose fallback coverage.",
-      "signature": "269906645bbde8bbad6e3c42070f86b2e079eec874bbcf77fb018197b3abba4d"
+      "reason": "Composes configured causal visibility, priors, registered blends/expectation and final made/scoring equations. Applied multiplier traces are retained with the effective player; sampling and rates use the same final values.",
+      "signature": "55a8d151b7c93801ae633bf89d1935680c77f372046743932a4c380fcbb7ed57"
     },
     "fba.inseason.recommendations.legal_roster": {
       "role": "validation",
@@ -2477,8 +2477,8 @@
     "fba.inseason.review.calibration_bins": {
       "role": "composition",
       "owner": "fba.inseason.review.calibration_bins",
-      "reason": "Registered mean/effective_samples/monitor_margin/absolute_error provide evidence; index arithmetic defines display bins and configured threshold plus margin composes the alert policy.",
-      "signature": "54139e4ef89c0519aa1df6ef686971eede18301db346d198e1d220056c4bdc63"
+      "reason": "Registered mean, effective_samples, monitor_margin and absolute_error compose calibration summaries. Bin indices/interval endpoints and count/threshold validation are grouping structure. Predicted/observed means retain actual member inputs alongside existing uncertainty/error traces.",
+      "signature": "6dc68da929db6bd8556df2e25a8d2551a1159b8b35734ca79f383d738cea6473"
     },
     "fba.inseason.review.weekly_review": {
       "role": "composition",
@@ -2816,10 +2816,17 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "eb91bba6dff2794c819475cb8862d5be7c218de3c4337babc52000ca1f92e0aa",
+      "sha256": "9996d377b3b8980a1aa35d642772d8d302ce9ecf2411ca53cc0db12a23dc33ab",
       "role": "composition",
-      "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering.",
-      "formula_ids": []
+      "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
+      "formula_ids": [
+        "category_ratio",
+        "linear_totals",
+        "log_loss",
+        "mean",
+        "nonnegative_samples",
+        "product"
+      ]
     },
     "src/fba/apps/static/timing.js": {
       "sha256": "20c7c56a8656ceb28d1ca7147d680b851c62e9b5602e9623a6b2fd88c94f977b",
