@@ -10,6 +10,7 @@ from inseason_support import fixture
 from fba.contracts.config import Linear, Ratio, Term
 from fba.contracts.inseason import CalculationTimeout
 from fba.inseason.matchup import Simulation
+from fba.inseason.roster_timeline import RosterChange
 from fba.inseason.season import season_forecasts, season_value
 from fba.inseason.trade_bounds import roster_ceiling
 from fba.inseason.trades import trade_effects
@@ -86,7 +87,9 @@ def test_uncertified_roster_changes_keep_the_original_complete_search(unsupporte
     if unsupported == "add":
         send = ("p0", "p1")
     elif unsupported == "transition":
-        sim.transitions["team0"] = ((sim.as_of.date() + timedelta(days=2), ("p0", "p12")),)
+        sim.transitions["team0"] = (
+            RosterChange(sim.as_of.date() + timedelta(days=2), "p12", "p1"),
+        )
     elif unsupported == "injury":
         sim.snapshot = sim.snapshot.model_copy(
             update={

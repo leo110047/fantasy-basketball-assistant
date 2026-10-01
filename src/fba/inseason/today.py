@@ -6,7 +6,7 @@ import numpy as np
 
 from fba.contracts.base import DataError
 from fba.contracts.formula import FormulaTrace
-from fba.contracts.inseason import DayLineup
+from fba.contracts.inseason import DayLineup, InjuryReturn
 from fba.contracts.inseason_results import (
     AddPlan,
     TodayAction,
@@ -15,7 +15,7 @@ from fba.contracts.inseason_results import (
 )
 from fba.core.lineups import legal_assignment
 from fba.formulas.registry import evaluate
-from fba.inseason.injury_returns import reuse_return_plans
+from fba.inseason.injury_returns import cache_saved_returns, reuse_return_plans
 from fba.inseason.matchup import Simulation
 from fba.inseason.recommendations import admissible_plan, changed_simulation, earliest_move
 
@@ -45,16 +45,19 @@ def today(
     if pairing is None:
         raise DataError("today.opponent: actual scheduled opponent missing")
     opponent = pairing.away if pairing.home == team.id else pairing.home
-    sim, pending = reuse_return_plans(sim, (team.id, opponent))
+    saved = (
+        {team.id: plan.before.injury_returns} if plan is not None and team.injury_players else None
+    )
+    sim, pending = reuse_return_plans(sim, (team.id, opponent), saved)
     forecast = sim.week(team.id, opponent, week.id)
     if plan is not None and plan.moves:
         current_policy = plan.model_copy(update={"priority": forecast.priority})
         if not admissible_plan(current_policy, sim.params.tolerance.value):
             raise DataError("today.plan_id: 計畫不符合目前整季保護規則，請重新計算 F3")
-        if forecast.injury_returns or set(pending).intersection(team.injury_players):
-            raise DataError("today.plan_id: 換人與 IL 回歸的合併時間軸尚未支援；請先完成回歸並同步")
         child = changed_simulation(sim, team.id, plan.moves)
         child.injury_plan_cache = sim.injury_plan_cache.copy()
+        if team.injury_players:
+            cache_saved_returns(child, team.id, plan.after.injury_returns)
         sim = child
         forecast = sim.week(team.id, opponent, week.id).model_copy(
             update={
@@ -93,7 +96,7 @@ def today(
                     completed=identifier in completed,
                 )
             )
-        elif pid in active:
+        if pid in active:
             identifier = f"{on}:lineup:{pid}"
             actions.append(
                 TodayAction(
@@ -126,8 +129,7 @@ def today(
         for move in plan.moves:
             if move.effective_on == on:
                 identifier = f"{plan.id}:{move.add}:{move.drop}"
-                actions.insert(
-                    0,
+                actions.append(
                     TodayAction(
                         id=identifier,
                         kind="add_drop",
@@ -137,6 +139,7 @@ def today(
                         completed=identifier in completed,
                     ),
                 )
+    actions = ordered_roster_actions(actions, returns, on)
     return TodayResult(
         on=on,
         lineup=lineup,
@@ -164,11 +167,26 @@ def today(
 
 
 def roster_on(sim: Simulation, team: str, on: date) -> tuple[str, ...]:
-    roster = sim.roster(team)
-    for effective, changed in sim.transitions.get(team, ()):
-        if effective <= on:
-            roster = changed
-    return sim.projected_roster(team, on, roster)
+    return sim.projected_roster(team, on, sim.roster(team))
+
+
+def ordered_roster_actions(
+    actions: list[TodayAction], returns: tuple[InjuryReturn, ...], on: date
+) -> list[TodayAction]:
+    identifiers: list[str] = []
+    for move in returns:
+        if move.effective_on <= on:
+            if move.drop is not None:
+                identifiers.append(f"{on}:injury_drop:{move.drop}")
+            identifiers.append(f"{on}:injury_out:{move.player_id}")
+    by_id = {a.id: a for a in actions}
+    ordered = [by_id[key] for key in identifiers if key in by_id]
+    remaining = [a for a in actions if a.id not in identifiers]
+    return [
+        *ordered,
+        *(a for a in remaining if a.kind == "add_drop"),
+        *(a for a in remaining if a.kind != "add_drop"),
+    ]
 
 
 def injury_actions(
@@ -176,14 +194,16 @@ def injury_actions(
 ) -> tuple[TodayAction, ...]:
     team = next(t for t in sim.snapshot.teams if t.id == sim.snapshot.mine)
     players = {p.player.id: p for p in sim.projection(on).players}
-    occupied = {
-        s.id: sum(v == s.id for v in team.injury_players.values()) for s in sim.league.injury_slots
-    }
-    result: list[TodayAction] = []
     returns = {
         m.player_id: m
         for m in sim.injury_plan_cache.get((team.id, tuple(sorted(team.players))), ())
     }
+    activating_ids = {pid for pid, move in returns.items() if move.effective_on <= on}
+    occupied = {
+        s.id: sum(v == s.id and pid not in activating_ids for pid, v in team.injury_players.items())
+        for s in sim.league.injury_slots
+    }
+    result: list[TodayAction] = []
     for pid, slot_id in sorted(team.injury_players.items()):
         slot = next(s for s in sim.league.injury_slots if s.id == slot_id)
         planned = returns.get(pid)
@@ -217,7 +237,9 @@ def injury_actions(
                 )
             )
     # More restrictive slots are filled first; no ineligible IL recommendation.
-    for pid in sorted(team.players):
+    for pid in roster_on(sim, team.id, on):
+        if pid in activating_ids:
+            continue
         for slot in sorted(sim.league.injury_slots, key=lambda s: (len(s.eligible_statuses), s.id)):
             if (
                 occupied[slot.id] < slot.count

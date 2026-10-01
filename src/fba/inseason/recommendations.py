@@ -12,6 +12,7 @@ from fba.formulas.registry import evaluate
 from fba.inseason.drop_candidates import prioritized_drops
 from fba.inseason.forecast import category_changes
 from fba.inseason.matchup import Simulation
+from fba.inseason.roster_timeline import RosterChange
 from fba.inseason.season import MissingSeasonOpponent, season_value
 
 
@@ -56,15 +57,10 @@ def changed_simulation(sim: Simulation, team: str, moves: tuple[RosterMove, ...]
         # Reuse the existing ROS pool without mixing it with weekly draws.
         # Forecast/lineup caches remain private to this transition scenario.
         child.season().draws = sim.season_engine.draws
-    roster = sim.roster(team)
-    transitions: list[tuple[date, tuple[str, ...]]] = []
-    for move in moves:
-        roster = sim.projected_roster(team, move.effective_on, roster)
-        if move.drop not in roster or move.add in roster:
-            raise DataError("recommendations: plan reuses an unavailable player")
-        roster = tuple(sorted((*tuple(p for p in roster if p != move.drop), move.add)))
-        transitions.append((move.effective_on, roster))
-    child.transitions[team] = tuple(transitions)
+    if any(a.effective_on > b.effective_on for a, b in zip(moves, moves[1:], strict=False)):
+        raise DataError("recommendations: moves must be in chronological order")
+    child.transitions = sim.transitions.copy()
+    child.transitions[team] = tuple(RosterChange(m.effective_on, m.add, m.drop) for m in moves)
     return child
 
 
@@ -181,7 +177,12 @@ def search_add_plans(
         evaluated.sort(key=lambda p: (-round(p.score / sim.params.tolerance.value), p.id))
         results.extend(p for p in evaluated if admissible_plan(p, sim.params.tolerance.value))
         beam = [
-            (p.moves, changed_simulation(sim, team.id, p.moves).transitions[team.id][-1][1])
+            (
+                p.moves,
+                changed_simulation(sim, team.id, p.moves).projected_roster(
+                    team.id, p.moves[-1].effective_on, sim.roster(team.id)
+                ),
+            )
             for p in evaluated[: sim.params.beam_width.value]
         ]
     unique = {p.id: p for p in results}
@@ -220,7 +221,7 @@ def evaluate_plan(
             # matters. The existing ROS engine owns those roster-keyed caches.
             # IL scenarios and later transitions keep their full timeline.
             future_sim = sim
-            rosters = {team: child.transitions[team][-1][1]} if moves else None
+            rosters = {team: child.projected_roster(team, start, sim.roster(team))}
         delta_season = evaluate(
             "difference", after=season_value(future_sim, team, rosters, after=start), before=future
         )
@@ -305,7 +306,7 @@ def candidate_moves(
             ),
         )
     current = changed_simulation(sim, sim.snapshot.mine, moves) if moves else sim
-    roster = current.projected_roster(sim.snapshot.mine, on, roster)
+    roster = current.projected_roster(sim.snapshot.mine, on, sim.roster(sim.snapshot.mine))
     drops = prioritized_drops(
         current,
         prefs,

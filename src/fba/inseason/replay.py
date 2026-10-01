@@ -217,7 +217,9 @@ def replay_case(
                 moves[-1].drop,
             ),
         )
-        roster = changed_simulation(sim, mine, ranked).transitions[mine][-1][1]
+        roster = changed_simulation(sim, mine, ranked).projected_roster(
+            mine, ranked[-1].effective_on, sim.roster(mine)
+        )
     ranking = (
         changed_simulation(sim, mine, ranked).week(mine, rival, case.week_id) if ranked else before
     )

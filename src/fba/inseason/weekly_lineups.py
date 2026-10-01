@@ -32,9 +32,6 @@ def joint_lineup(
     count = 1
     for day in initial:
         active = roster if roster is not None else sim.roster(team)
-        for effective, changed in sim.transitions.get(team, ()):
-            if effective <= day.on:
-                active = changed
         active = sim.projected_roster(team, day.on, active)
         draws = sim.daily_draws(active, day.on, max(sim.as_of, through))
         fixed, slots, free = sim.lineup_constraints(team, day.on, draws)

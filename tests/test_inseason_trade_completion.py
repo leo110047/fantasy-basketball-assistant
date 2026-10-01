@@ -12,6 +12,7 @@ from fba.contracts.config import Linear, Ratio, Term
 from fba.contracts.inseason import CalculationTimeout, SeasonGame
 from fba.inseason.matchup import Simulation
 from fba.inseason.recommendations import legal_roster
+from fba.inseason.roster_timeline import RosterChange
 from fba.inseason.season import season_value
 from fba.inseason.trade_bounds import free_agent_bounds
 from fba.inseason.trades import completion_candidates
@@ -156,7 +157,9 @@ def test_candidate_bounds_cover_full_forecasts_with_signed_terms_and_rounded_rat
 def test_uncertified_future_rosters_and_error_categories_keep_complete_comparison(unsupported):
     sim = completion_case()
     if unsupported == "transition":
-        sim.transitions["team0"] = ((sim.as_of.date() + timedelta(days=2), ("p0", "p6")),)
+        # A real future move, distinct from every FA under comparison. An
+        # already scheduled acquisition of p6 would make adding p6 now illegal.
+        sim.transitions["team0"] = (RosterChange(sim.as_of.date() + timedelta(days=2), "p2", "p1"),)
     elif unsupported == "injury":
         sim.snapshot = sim.snapshot.model_copy(
             update={

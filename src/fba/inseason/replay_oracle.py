@@ -31,7 +31,9 @@ def exhaustive_plans(
         following: list[tuple[RosterMove, ...]] = []
         for moves in frontier:
             roster = (
-                changed_simulation(sim, before.home, moves).transitions[before.home][-1][1]
+                changed_simulation(sim, before.home, moves).projected_roster(
+                    before.home, moves[-1].effective_on, sim.roster(before.home)
+                )
                 if moves
                 else sim.roster(before.home)
             )

@@ -583,9 +583,9 @@ def test_il_drop_compares_remaining_playoffs_and_keeps_unknown_opponents_explici
             sim.params.season_simulations.value,
         )
         child.project_injury_returns = False
-        child.transitions["team0"] = (
-            (on, tuple(p for p in sim.roster("team0") if p != drop) + ("p6",)),
-        )
+        from fba.inseason.roster_timeline import RosterChange
+
+        child.transitions["team0"] = (RosterChange(on, "p6", drop),)
         assert season_value(child, "team0", after=on) == 0.0
         values[drop] = season_value(child, "team0", after=on, include_playoffs=True)
     assert values["p1"] > values["p0"]

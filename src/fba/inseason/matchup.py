@@ -43,6 +43,7 @@ from fba.inseason.projection import (
     projection_profile_key,
     visible_games,
 )
+from fba.inseason.roster_timeline import RosterChange, merge_changes, roster_after
 from fba.inseason.sampling import sample_game
 from fba.inseason.weekly_lineups import joint_lineup
 
@@ -72,7 +73,7 @@ class Simulation:
         self.samples = samples if samples is not None else params.simulations.value
         self.untouchable = frozenset(untouchable)
         self.axes = (*league.base_stats, *(d.id for d in league.derived))
-        self.transitions: dict[str, tuple[tuple[date, tuple[str, ...]], ...]] = {}
+        self.transitions: dict[str, tuple[RosterChange, ...]] = {}
         self.projections: dict[date, EffectiveProjection] = {}
         self.projection_profiles: dict[tuple[tuple[str, ...], ...], EffectiveProjection] = {}
         self.player_index = ProjectionIndex()
@@ -311,19 +312,17 @@ class Simulation:
 
     def projected_roster(self, team: str, on: date, roster: tuple[str, ...]) -> tuple[str, ...]:
         roster = tuple(sorted(roster))
-        if not self.project_injury_returns:
-            return roster
-        if not next(t.injury_players for t in self.snapshot.teams if t.id == team):
-            return roster
-        from fba.inseason.injury_returns import return_plan
+        returns: tuple[InjuryReturn, ...] = ()
+        if self.project_injury_returns and next(
+            t.injury_players for t in self.snapshot.teams if t.id == team
+        ):
+            from fba.inseason.injury_returns import return_plan
 
-        key = team, tuple(sorted(roster))
-        if key not in self.injury_plan_cache:
-            self.injury_plan_cache[key] = return_plan(self, team, roster)
-        for move in self.injury_plan_cache[key]:
-            if move.effective_on <= on:
-                roster = tuple(p for p in roster if p != move.drop) + (move.player_id,)
-        return tuple(sorted(roster))
+            key = team, roster
+            if key not in self.injury_plan_cache:
+                self.injury_plan_cache[key] = return_plan(self, team, roster)
+            returns = self.injury_plan_cache[key]
+        return roster_after(roster, merge_changes(self.transitions.get(team, ()), returns), on)
 
     def total(
         self, team_id: str, week_id: str, roster: tuple[str, ...] | None = None
@@ -338,11 +337,7 @@ class Simulation:
         lineups: list[DayLineup] = []
         on = max(week.start, self.as_of.astimezone(self.zone).date())
         while on <= week.end:
-            current_roster = roster
-            for effective, changed_roster in self.transitions.get(team_id, ()):
-                if effective <= on:
-                    current_roster = changed_roster
-            current_roster = self.projected_roster(team_id, on, current_roster)
+            current_roster = self.projected_roster(team_id, on, roster)
             draws = self.daily_draws(current_roster, on, max(through, self.as_of))
             fixed, slots, positions = self.lineup_constraints(team_id, on, draws)
             means = {pid: draw.mean(axis=0) for pid, draw in draws.items()}
@@ -438,9 +433,6 @@ class Simulation:
             result: list[DayLineup] = []
             for day in current:
                 active = roster if roster is not None else self.roster(team)
-                for effective, changed in self.transitions.get(team, ()):
-                    if effective <= day.on:
-                        active = changed
                 active = self.projected_roster(team, day.on, active)
                 draws = self.daily_draws(active, day.on, max(self.as_of, through))
                 rest = own - sum((draws[p] for p in day.slots.values()), start=np.zeros_like(own))
