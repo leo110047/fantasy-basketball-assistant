@@ -78,7 +78,7 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 
 | ID | 現況／後果 | 接手位置 | 完成條件 |
 | --- | --- | --- | --- |
-| R1 | 固定 origin／去重／原始歷史／類別 cohort 已修；本輪補完整規則雜湊，檢查所有原始決策並拒絕已知不符。無雜湊舊紀錄可相容讀取，但其歷史規則出處未驗。 | `inseason/operations.py::week_result`、`inseason/review.py::weekly_review/cumulative_review` | 定義固定評估 cohort／去重鍵；同一資訊重開頁不改變權重，保留不同決策與原始歷史。完整規則變更不能去重為同一預測或套用現在規則重評；缺歷史規則出處應明示限制。 |
+| R1 | 固定 origin／去重／原始歷史／類別 cohort 已修；本輪補完整規則雜湊，檢查所有原始決策並拒絕已知不符。無雜湊舊紀錄與未保存驗證狀態的舊報告可相容讀取；單週／累積畫面已明示歷史規則未確認，匯出與擬合保留相同限制。本機 Chrome 已核對未知／已驗證控制案例及正常退出；原始未知規則仍無法補證。 | `inseason/operations.py::week_result`、`inseason/review.py::weekly_review/cumulative_review` | 定義固定評估 cohort／去重鍵；同一資訊重開頁不改變權重，保留不同決策與原始歷史。完整規則變更不能去重為同一預測或套用現在規則重評；缺歷史規則出處應明示限制。 |
 | R2 | 同步成功後保存當時預測、內容去重／失敗隔離本機已修；不補造過去預測。 | `inseason/session.py` 同步完成路徑、`inseason/operations.py::complete_reviews` | 不依賴頁面瀏覽的當時預測保存；同步、排程、重啟不重複寫入。不准用事後資料補造事前預測。 |
 | R3 | 分群樣本量、不等權重 n_eff 與提醒有獨立公式答案；真實區間 coverage 未驗。 | `inseason/review.py::calibration_bins/weekly_review/cumulative_review` | 明確樣本量／不確定性政策與參數出處，覆蓋少量與足量案例；不是直接提高門檻或隱藏提醒。 |
 | R4 | 未完成：合法凍結時間序列、實際引擎因果重播、跨季 holdout、策略比較與 recall。 | `inseason/backtest.py`、`contracts/inseason_backtest.py`、`inseason/replay.py` | 用真實凍結時間序列跑實際引擎，前季訓練／後季 holdout；5/10/20/30/40 場預測誤差、旗標命中率、出賽 Brier、10 分箱≤5pp、規格 Brier 基準。換人 recall≥95%、與不動／公開排名策略比較也須真實因果重播。 |
@@ -91,7 +91,7 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 | U2 | 本機合成 Chrome 已驗忽略／忽略到期、傷情改變解除舊忽略、手調到期恢復、新球隊頁／舊手調提醒及接受／撤銷；供應商設定差異恢復仍待真實 Yahoo。 | UI、projection flags、同步設定差異 | 依規格整理待確認事項、來源／理由／操作，核對忽略／到期／狀態改變後行為。 |
 | U3 | 本機完成 20 數字獨立手算、實際手調／撤銷、UI 與模擬值同源；合成資料邊界。 | `apps/inseason/static/views.js::playerCard`、`inseason/projection.py::blend_player/effective_projection` | 清楚分開先驗、混合、手調及最後由命中率重算的 made；抽 20 個 UI 數字獨立手算（至少 3 位小數）並驗證傳給模擬的值。 |
 | U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；本批另完成同日連續換人的有效合成授權／保存計畫沿用流程；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
-| F1 | 129 條登錄；142 檔／464 Python 候選及 C++／JS 人工盤點 pending 均為 0。兩應用隨機 20 個實際 scalar trace 已手算／展開核對；逐功能核對另補四組季賽 trace，相關候選完整檢查及獨立審查已通過；公式所有權／UI trace 本機範圍結案；不包含原規格功能 F1 的歷史校準。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
+| F1 | 129 條登錄；142 檔／470 Python 候選及 C++／JS 人工盤點 pending 均為 0。兩應用隨機 20 個實際 scalar trace 已手算／展開核對；逐功能核對另補四組季賽 trace，相關候選完整檢查及獨立審查已通過；公式所有權／UI trace 本機範圍結案；不包含原規格功能 F1 的歷史校準。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
 | F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；已找到原規格指定的 `/Users/leo/fantasy-research-2026-27/claude-report-v2/evidence-2026-09-27/` 程式／JSON，重播 318 位球員、1,446 案例與原結果在 1e-12 內零差異。原研究是同季擬合，ESPN dump 於 2026-09-25 季後擷取，不能證明歷史公開時點；也不能當目前 strict-win 引擎的跨季校準。無證據不能改標已校準；OREB 等未回測項另列。 |
 | F3 | 10 隊、不同位置與 OREB／A/T／H2H Each Category 的合成 F0–F6 本機已有驗證。 | `tests/inseason_support.py`、`test_inseason_portability.py`、跨功能測試 | 真正改類別公式（含比率／A/T）、位置、10 隊、H2H Each Category，F0–F6 跑完且合法；只改設定，不在程式塞聯盟特例。 |
 
@@ -108,7 +108,7 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 
 ## 5. 接續順序與操作
 
-1. 核對 git／遠端 main、最新證據入口與本文件。完成已審查候選的分批 commit 與推送，讀回遠端 SHA；審查期間固定候選。未變更範圍沿用相同候選證據，新增範圍做相符驗證及 Goldband 獨立審查。
+1. 本輪搜尋批次已提交 `6797390`，Goldband `e1723844-66e4-41f5-8df7-5d8ccbe96c4e` 完整 1,443 tests／513.16 秒、兩 required verified-pass、0 findings；309檔0 drift。R1 後續批次與推送／CI 狀態以最新報告入口為準。核對 git／遠端 main、最新證據入口與本文件。完成已審查候選的分批 commit 與推送，讀回遠端 SHA；審查期間固定候選。未變更範圍沿用相同候選證據，新增範圍做相符驗證及 Goldband 獨立審查。
 2. 取得 ScoreTape wire receipt 後核對欄位與合法存取範圍，補 A1/A7 的真實 adapter。Yahoo 核准後以使用者提供的本機設定完成唯讀 OAuth／refresh／同步及去識別 fixture，補 A2/A6/M3/V1。必要秘密只由使用者在設定流程輸入。
 3. 取得當時公開且可用的歷史後，跑實際引擎的因果 holdout／策略比較及校準；保留資料限制。B2 程式已改完整條件式搜尋；繼續驗證 F3 recall 與真實策略品質，不以合成 oracle 代替歷史驗收。
 4. V2–V4 仍需 Windows 11 保留 port／GUI 共存、無 Python 的乾淨兩平台 clone 與實際雙擊全情境；CI runner 及 --help 不替代此證據。V6 依原規格逐條整合驗收，效能項目依暫停指示保留，未達標不結案。

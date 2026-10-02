@@ -161,6 +161,7 @@ class CalibrationBin(Record):
 
 
 class WeeklyReview(Record):
+    rules_verified: bool = False
     week_id: Text
     prediction_ids: tuple[Text, ...]
     rows: tuple[dict[str, JsonValue], ...]
@@ -178,6 +179,7 @@ class WeeklyReview(Record):
 
 
 class CalibrationObservationRecord(Record):
+    league_sha256: Digest | None = None
     prediction_id: Text
     category: Text
     created_at: AwareDatetime

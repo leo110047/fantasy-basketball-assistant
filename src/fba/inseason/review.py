@@ -260,6 +260,7 @@ def weekly_review(
         params=params,
     )
     return WeeklyReview(
+        rules_verified=all(p.league_sha256 is not None for p in all_records),
         week_id=week_id,
         prediction_ids=tuple(p.id for p in records),
         rows=tuple(rows),
@@ -323,6 +324,7 @@ def cumulative_review(
     )
     return {
         "weeks": len(reviews),
+        "unverified_rule_weeks": sum(not r.rules_verified for r in reviews),
         "category_predictions": len(predicted),
         "category_brier": score.result,
         "week_brier": weekly.result if weekly else None,
@@ -360,6 +362,7 @@ def calibration_history(
             original = saved[identifier]
             forecast = next(c for c in original.with_adjustments.categories if c.id == category)
             observations[identifier, category] = CalibrationObservationRecord(
+                league_sha256=original.league_sha256 if review.rules_verified else None,
                 prediction_id=identifier,
                 category=category,
                 created_at=original.created_at,
@@ -374,6 +377,7 @@ def calibration_history(
                 original = saved[identifier]
                 if original.week_score_kind == "win_probability":
                     weeks[identifier] = CalibrationObservationRecord(
+                        league_sha256=original.league_sha256 if review.rules_verified else None,
                         prediction_id=identifier,
                         category="week",
                         created_at=original.created_at,
@@ -395,6 +399,7 @@ def fit_observations(
         return None
     predicted = tuple(o.raw_probability for o in observations)
     observed = tuple(o.observed for o in observations)
+    rules_verified = all(o.league_sha256 is not None for o in observations)
     c = fit_shrinkage(predicted, observed)
     calibrated = tuple(evaluate("calibration", p=p, c=c).result for p in predicted)
     return {
@@ -406,8 +411,10 @@ def fit_observations(
             "reason": (
                 "Fit from immutable fixed-origin prior-season forecasts and outcomes; "
                 "holdout not performed"
+                + ("; historical league rules unverified" if not rules_verified else "")
             ),
         },
+        "rules_verified": rules_verified,
         "samples": len(predicted),
         "training_brier": evaluate("brier", predicted=calibrated, observed=observed).result,
     }

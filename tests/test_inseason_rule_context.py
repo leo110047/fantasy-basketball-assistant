@@ -91,3 +91,77 @@ def test_review_does_not_rescore_hidden_later_decisions_with_changed_rules():
     changed = saved.model_copy(update={"id": "later-rules", "league_sha256": "b" * 64})
     with pytest.raises(DataError, match="archived league rules"):
         weekly_review(sim.league, sim.params, final_scores(sim), (saved, changed), "2", {})
+
+
+@pytest.mark.parametrize("legacy_position", ("first", "later"))
+def test_review_discloses_missing_rules_from_any_archived_decision(legacy_position):
+    from datetime import timedelta
+
+    from fba.inseason.review import cumulative_review
+
+    sim = simulation()
+    known = prediction(sim)
+    legacy = known.model_copy(update={"league_sha256": None})
+    if legacy_position == "later":
+        legacy = legacy.model_copy(
+            update={
+                "id": "later-without-rules",
+                "created_at": known.created_at + timedelta(hours=1),
+            }
+        )
+        rows = (known, legacy)
+    else:
+        rows = (legacy,)
+    original = tuple(canonical(p) for p in rows)
+    verified = weekly_review(sim.league, sim.params, final_scores(sim), (known,), "2", {})
+    unverified = weekly_review(sim.league, sim.params, final_scores(sim), rows, "2", {})
+    assert verified.rules_verified is True
+    assert unverified.rules_verified is False
+    assert unverified.category_brier == verified.category_brier
+    assert unverified.week_brier == verified.week_brier
+    assert tuple(canonical(p) for p in rows) == original
+    assert cumulative_review((unverified,), sim.params)["unverified_rule_weeks"] == 1
+    # A verified correction supersedes this week's old result without deleting it.
+    assert cumulative_review((unverified, verified), sim.params)["unverified_rule_weeks"] == 0
+
+
+def test_old_serialized_report_defaults_to_unverified_rules():
+    from fba.contracts.inseason_results import WeeklyReview
+    from fba.inseason.review import cumulative_review
+
+    sim = simulation()
+    report = weekly_review(sim.league, sim.params, final_scores(sim), (prediction(sim),), "2", {})
+    legacy_payload = report.model_dump(exclude={"rules_verified"})
+    old = WeeklyReview.model_validate(legacy_payload)
+    assert not old.rules_verified
+    assert old.category_brier == report.category_brier
+    assert old.week_brier == report.week_brier
+    assert cumulative_review((old,), sim.params)["unverified_rule_weeks"] == 1
+
+
+@pytest.mark.parametrize("missing", ("prediction", "report", None))
+def test_calibration_export_and_fit_keep_rule_provenance(missing):
+    from fba.contracts.inseason_results import CalibrationHistory, WeeklyReview
+    from fba.inseason.review import calibration_history, refit_history
+
+    sim = simulation()
+    saved = prediction(sim)
+    if missing == "prediction":
+        saved = saved.model_copy(update={"league_sha256": None})
+    report = weekly_review(sim.league, sim.params, final_scores(sim), (saved,), "2", {})
+    if missing == "report":
+        report = WeeklyReview.model_validate(report.model_dump(exclude={"rules_verified"}))
+    exported = calibration_history(sim.league.season_id, (saved,), (report,), ("a" * 64,))
+    loaded = CalibrationHistory.model_validate_json(exported.model_dump_json())
+    assert loaded == exported
+    expected = saved.league_sha256 if missing is None else None
+    assert {o.league_sha256 for o in (*loaded.observations, *loaded.week_observations)} == {
+        expected
+    }
+    fitted = refit_history(loaded, "b" * 64)
+    assert fitted["holdout_passed"] is False
+    for level in ("calibration", "week_calibration"):
+        assert fitted[level]["rules_verified"] is (missing is None)
+        assert ("historical league rules unverified" in fitted[level]["evidence"]["reason"]) is (
+            missing is not None
+        )

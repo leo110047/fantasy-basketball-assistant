@@ -2477,20 +2477,20 @@
     "fba.inseason.review.weekly_review": {
       "role": "composition",
       "owner": "fba.inseason.review.weekly_review",
-      "reason": "Registered probability/calibration/Brier equations and original decision cohort; residual set subtraction checks source statistic coverage.",
-      "signature": "60591a037a2cd6322863dddebfae1bdf36534a3f3b20fbfaa28c0de41be32f33"
+      "reason": "Registered probability/calibration/Brier equations and original decision cohort; residual set subtraction checks source statistic coverage. Adds explicit provenance over every original archived decision after rule validation; Brier/MAE formulas and fixed evaluation cohort remain unchanged.",
+      "signature": "ec0918dde5d695d6c3fdc4e07675f812ab709a52fa7f68b065ee13faf4de3bd3"
     },
     "fba.inseason.review.cumulative_review": {
       "role": "composition",
       "owner": "fba.inseason.review.cumulative_review",
-      "reason": "Registered Brier/weighted_mean formulas aggregate original cohorts; remaining sums count predictions/excluded legacy weeks.",
-      "signature": "44b4da57600306fc2d87e327021d737980af76a639f0e7c4aa4ef1825d7abf88"
+      "reason": "Registered Brier/weighted_mean formulas aggregate original cohorts; remaining sums count predictions/excluded legacy weeks. Counts latest weekly reports lacking verified historical rules without changing metric weights, observations or bins.",
+      "signature": "2ffb882bb0ac9d8eac32c306c404186f12438c5ac342e0f9e85a361032f42f6d"
     },
     "fba.inseason.review.fit_observations": {
       "role": "composition",
       "owner": "fba.inseason.review.fit_observations",
-      "reason": "Registered calibration fit/calibration/Brier equations; max selects the latest observation timestamp for provenance.",
-      "signature": "59810753f1d740af2f784ddb6ac3d1889bf5fa7f6adc8dd715b4f2f2136ff0d2"
+      "reason": "Registered calibration fit/calibration/Brier equations; max selects the latest observation timestamp for provenance. Preserves missing league-rule provenance in refit metadata and evidence text; registered shrinkage, calibration and Brier formulas remain unchanged.",
+      "signature": "7600d162585cb521e064b2a9e99e085bd90ebff54a441c8da7cef87eb6f2df0c"
     },
     "fba.inseason.sampling.sample_game": {
       "role": "composition",
@@ -2852,7 +2852,7 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "6dd10eab7f3a77aad35c388d8625ec13e41c9b27d8cc75e16aac31b4f6f60d3e",
+      "sha256": "e76397a188a06cf05cdc04482958e90b7d7eb0ef63205ee6b78d907ffc0dedfb",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
       "formula_ids": [
