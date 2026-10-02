@@ -1,4 +1,3 @@
-from datetime import timedelta
 from itertools import product
 from math import fsum
 from zoneinfo import ZoneInfo
@@ -12,8 +11,8 @@ from fba.contracts.inseason_backtest import BacktestReport, BacktestStudy, Proje
 from fba.data.codec import canonical, digest
 from fba.formulas.fitting import fit_shrinkage
 from fba.formulas.registry import evaluate
+from fba.inseason.checkpoint_history import checkpoint_history
 from fba.inseason.parameter_fit import availability_fit, availability_samples, production_trial
-from fba.inseason.projection import observed_boxes
 from fba.inseason.review import calibration_bins
 
 
@@ -27,24 +26,16 @@ def metric(row: dict[str, JsonValue], key: str) -> float:
 def checkpoint_errors(
     season: ProjectionStudySeason, k: dict[str, float], checkpoints: tuple[int, ...]
 ) -> tuple[dict[str, JsonValue], ...]:
-    boxes = observed_boxes(season.players, season.players.as_of + timedelta(microseconds=1))
     priors = {p.player_id: p for p in season.priors.players}
-    zone = ZoneInfo(season.league.timezone)
     rows: list[dict[str, JsonValue]] = []
     for checkpoint in checkpoints:
+        trials = checkpoint_history(season, checkpoint)
         for stat in season.league.base_stats:
             errors: dict[str, list[float]] = {"blend": [], "prior": [], "current": []}
-            for pid, history in boxes.items():
-                current = tuple(
-                    b
-                    for b in history
-                    if season.league.starts_on
-                    <= b.played_at.astimezone(zone).date()
-                    <= season.league.ends_on
-                )
-                if len(current) <= checkpoint or pid not in priors:
+            for trial in trials:
+                if trial.player_id not in priors:
                     continue
-                past, future = current[:checkpoint], current[checkpoint:]
+                pid, past, future = trial.player_id, trial.past, trial.future
                 minutes = fsum(b.minutes for b in past)
                 remaining = fsum(b.minutes for b in future)
                 if minutes == 0 or remaining == 0:
@@ -273,24 +264,15 @@ def component_rows(
     k: float,
     half_life: float,
 ) -> tuple[dict[str, JsonValue], ...]:
-    boxes = observed_boxes(season.players, season.players.as_of + timedelta(microseconds=1))
     priors = {p.player_id: p for p in season.priors.players}
-    zone = ZoneInfo(season.league.timezone)
     shot = next((s for s in season.league.shots if s.id == field), None)
     rows: list[dict[str, JsonValue]] = []
     for checkpoint in checkpoints:
         errors: dict[str, list[float]] = {"blend": [], "prior": [], "current": []}
-        for pid, history in boxes.items():
-            current = tuple(
-                b
-                for b in history
-                if season.league.starts_on
-                <= b.played_at.astimezone(zone).date()
-                <= season.league.ends_on
-            )
-            if len(current) <= checkpoint or pid not in priors:
+        for trial in checkpoint_history(season, checkpoint):
+            if trial.player_id not in priors:
                 continue
-            past, future = current[:checkpoint], current[checkpoint:]
+            pid, past, future = trial.player_id, trial.past, trial.future
             if shot is None:
                 prior = priors[pid].minutes
                 observed = evaluate("mean", values=tuple(b.minutes for b in future)).result
@@ -356,21 +338,11 @@ def flag_report(
 ) -> tuple[dict[str, JsonValue], ...]:
     from fba.inseason.projection import effective_projection
 
-    boxes = observed_boxes(season.players, season.players.as_of + timedelta(microseconds=1))
     results: dict[str, list[bool]] = {kind: [] for kind in ("role", "production", "override")}
     zone = ZoneInfo(season.league.timezone)
     for checkpoint in checkpoints:
-        for pid, history in boxes.items():
-            current = tuple(
-                b
-                for b in history
-                if season.league.starts_on
-                <= b.played_at.astimezone(zone).date()
-                <= season.league.ends_on
-            )
-            if len(current) <= checkpoint:
-                continue
-            at = max(b.known_at for b in current[:checkpoint]) + timedelta(microseconds=1)
+        for trial in checkpoint_history(season, checkpoint):
+            pid, at, future = trial.player_id, trial.as_of, trial.future
             projection = effective_projection(
                 season.players,
                 season.priors,
@@ -383,7 +355,6 @@ def flag_report(
             player = next((p for p in projection.players if p.player.id == pid), None)
             if player is None:
                 continue
-            future = tuple(b for b in current[checkpoint:] if b.played_at > at and b.known_at > at)
             if not future or not fsum(b.minutes for b in future):
                 continue
             for flag in player.flags:

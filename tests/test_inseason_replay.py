@@ -120,3 +120,38 @@ def test_exhaustive_replay_measures_two_add_plans_and_fails_when_oracle_is_trunc
     assert report.rows[0].search_retained_best is not None
     with pytest.raises(CalculationTimeout, match="oracle_max_plans"):
         run_policy_replay(data.model_copy(update={"oracle_max_plans": 1}), params)
+
+
+def test_no_gain_controls_do_not_count_as_successful_recall():
+    data, params = study()
+    params = params.model_copy(
+        update={
+            "availability": {
+                status: value.model_copy(update={"value": 0.0})
+                for status, value in params.availability.items()
+            }
+        }
+    )
+    report = run_policy_replay(data, params)
+    assert report.rows[0].full_plan_count > 0
+    assert report.recall is None
+    assert report.beam_recall is None
+    assert report.rows[0].search_retained_best is None
+    assert not report.recall_passed
+
+
+def test_shortlist_recall_includes_candidates_lost_by_drop_screening(monkeypatch):
+    import fba.inseason.recommendations as recommendations
+
+    data, params = study()
+    original = recommendations.prioritized_drops
+
+    def restricted(*args, **kwargs):
+        legal = original(*args, **{**kwargs, "exhaustive": True})
+        return legal if kwargs.get("exhaustive") else tuple(p for p in legal if p == "p2")
+
+    monkeypatch.setattr(recommendations, "prioritized_drops", restricted)
+    report = run_policy_replay(data, params)
+    assert report.rows[0].shortlist_retained_best is False
+    assert report.rows[0].search_retained_best is False
+    assert report.rows[0].full_candidates == report.rows[0].full_plan_count

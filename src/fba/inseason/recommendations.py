@@ -66,20 +66,11 @@ def changed_simulation(sim: Simulation, team: str, moves: tuple[RosterMove, ...]
 
 
 def quick_score(
-    sim: Simulation, add: str, drop: str, on: date, end: date, key_categories: tuple[str, ...]
+    sim: Simulation, moves: tuple[RosterMove, ...], end: date, key_categories: tuple[str, ...]
 ) -> float:
-    projection = {p.player.id: p for p in sim.projection(on).players}
-    deltas: dict[str, float] = {}
-    for pid, sign in ((add, 1), (drop, -1)):
-        p = projection[pid]
-        games = sum(
-            len(sim.games_on(p.player.team_id, on + timedelta(days=day)))
-            for day in range((end - on).days + 1)
-        )
-        for stat, value in p.expected.items():
-            contribution = evaluate("product", gain=value, probability=float(sign * games)).result
-            deltas[stat] = deltas.get(stat, 0.0) + contribution
-    week = next(w for w in sim.league.matchups if w.start <= on <= w.end)
+    if not key_categories:
+        return 0.0  # Exhaustive/reference policies do not need screening scores.
+    week = next(w for w in sim.league.matchups if w.start <= moves[-1].effective_on <= w.end)
     pair = next(
         p
         for p in sim.snapshot.pairings
@@ -88,6 +79,22 @@ def quick_score(
     opponent = pair.away if pair.home == sim.snapshot.mine else pair.home
     a, _ = sim.total(sim.snapshot.mine, week.id)
     b, _ = sim.total(opponent, week.id)
+    # Compare every prefix against the same original team. This remains a raw
+    # expected-game screening approximation; evaluate_plan owns legal lineups.
+    deltas: dict[str, float] = {}
+    for move in moves:
+        projection = {p.player.id: p for p in sim.projection(move.effective_on).players}
+        for pid, sign in ((move.add, 1), (move.drop, -1)):
+            player = projection[pid]
+            games = sum(
+                len(sim.games_on(player.player.team_id, move.effective_on + timedelta(days=day)))
+                for day in range((end - move.effective_on).days + 1)
+            )
+            for stat, value in player.expected.items():
+                contribution = evaluate(
+                    "product", gain=value, probability=float(sign * games)
+                ).result
+                deltas[stat] = deltas.get(stat, 0.0) + contribution
     shifted = mean_array(a, axis=0) + np.array([deltas.get(s, 0.0) for s in sim.axes])
     shifted = nonnegative_samples({"values": shifted})
     total = 0.0
@@ -111,6 +118,17 @@ def quick_score(
             before=evaluate("normal", z=before_z.result).result,
         ).result
     return total
+
+
+def search_context(sim: Simulation, before: WeekForecast) -> tuple[tuple[str, ...], float]:
+    """One objective/category policy for interactive and reference evaluation."""
+    must_win = before.priority is not None and before.priority.status == "must_win"
+    keys = tuple(c.id for c in before.categories if c.strategy == "key")
+    if must_win or not keys:
+        keys = tuple(c.id for c in before.categories)
+    week = next(w for w in sim.league.matchups if w.id == before.week_id)
+    future = 0.0 if must_win else season_value(sim, before.home, after=week.end + timedelta(days=1))
+    return keys, future
 
 
 def search_adds(
@@ -143,14 +161,7 @@ def search_add_plans(
     opponent = pair.away if pair.home == team.id else pair.home
     week = next(w for w in sim.league.matchups if w.id == week_id)
     before = sim.week(team.id, opponent, week_id)
-    keys = tuple(c.id for c in before.categories if c.strategy == "key")
-    if (before.priority and before.priority.status == "must_win") or not keys:
-        keys = tuple(c.id for c in before.categories)
-    future = (
-        0.0
-        if before.priority and before.priority.status == "must_win"
-        else season_value(sim, team.id, after=week.end + timedelta(days=1))
-    )
+    keys, future = search_context(sim, before)
     beam: list[tuple[tuple[RosterMove, ...], tuple[str, ...]]] = [((), team.players)]
     results: list[AddPlan] = []
     for depth in range(remaining):
@@ -336,9 +347,7 @@ def candidate_moves(
             proposed = tuple(p for p in roster if p != drop) + (free.player_id,)
             if legal_roster(sim, proposed, on):
                 move = RosterMove(add=free.player_id, drop=drop, effective_on=on, starter_games=0)
-                result.append(
-                    (quick_score(current, free.player_id, drop, on, end, keys), (*moves, move))
-                )
+                result.append((quick_score(sim, (*moves, move), end, keys), (*moves, move)))
     return result
 
 

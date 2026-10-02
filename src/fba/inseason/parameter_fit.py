@@ -1,6 +1,5 @@
 """Causal availability and flag fitting from explicit historical observations."""
 
-from datetime import timedelta
 from zoneinfo import ZoneInfo
 
 from pydantic import JsonValue
@@ -9,7 +8,8 @@ from fba.contracts.base import DataError
 from fba.contracts.inseason import AdjustmentLedger, EffectiveProjection, InseasonParameters
 from fba.contracts.inseason_backtest import AvailabilityObservation, ProjectionStudySeason
 from fba.formulas.registry import evaluate
-from fba.inseason.projection import effective_projection, observed_boxes
+from fba.inseason.checkpoint_history import checkpoint_history
+from fba.inseason.projection import effective_projection
 
 
 def availability_samples(
@@ -76,24 +76,14 @@ def availability_fit(
 def production_trial(
     season: ProjectionStudySeason, params: InseasonParameters, checkpoints: tuple[int, ...]
 ) -> dict[str, JsonValue]:
-    boxes = observed_boxes(season.players, season.players.as_of + timedelta(microseconds=1))
     zone = ZoneInfo(season.league.timezone)
     errors: list[float] = []
     baseline: list[float] = []
     hits: list[float] = []
     projection: EffectiveProjection | None = None
     for checkpoint in checkpoints:
-        for pid, history in boxes.items():
-            current = tuple(
-                b
-                for b in history
-                if season.league.starts_on
-                <= b.played_at.astimezone(zone).date()
-                <= season.league.ends_on
-            )
-            if len(current) <= checkpoint:
-                continue
-            at = max(b.known_at for b in current[:checkpoint]) + timedelta(microseconds=1)
+        for trial in checkpoint_history(season, checkpoint):
+            pid, at, future = trial.player_id, trial.as_of, trial.future
             if projection is None or projection.as_of != at:
                 projection = effective_projection(
                     season.players,
@@ -105,7 +95,6 @@ def production_trial(
                     at.astimezone(zone).date(),
                 )
             player = next((p for p in projection.players if p.player.id == pid), None)
-            future = tuple(b for b in current[checkpoint:] if b.known_at > at and b.played_at > at)
             if player is None or not future:
                 continue
             minutes = sum(b.minutes for b in future)

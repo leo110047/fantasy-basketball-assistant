@@ -2178,7 +2178,7 @@
       "role": "composition",
       "owner": "fba.inseason.backtest.checkpoint_errors",
       "reason": "Ordered fsum aggregates observed exposure/counts; registered ratio, blend, absolute_error and mean compute the reported holdout errors. Dates select the observation partition.",
-      "signature": "e1fe3d694979206526e43dfda2b86c89aaee752e1f6b765ad4434cd9913b6935"
+      "signature": "f0fb9c696fb39c2b25300335a4e0050fc363b3f99cec55e55759e9c007e289fc"
     },
     "fba.inseason.backtest.run_study": {
       "role": "composition",
@@ -2190,7 +2190,7 @@
       "role": "composition",
       "owner": "fba.inseason.backtest.component_rows",
       "reason": "Ordered observed-count reductions feed registered ratio/blend/minutes/absolute_error/mean; no duplicate error equation.",
-      "signature": "4aa16622fe4f5f069cc49e53e4823f5d54284e4d095c1abbe23e277997e85128"
+      "signature": "da08d8c98aeb6bd4ee89c5fa530550507743284d9e5d7c1c16606460460ebb78"
     },
     "fba.inseason.backtest.component_error": {
       "role": "composition",
@@ -2201,8 +2201,8 @@
     "fba.inseason.backtest.flag_report": {
       "role": "composition",
       "owner": "fba.inseason.backtest.flag_report",
-      "reason": "Registered mean, ratio and absolute_error compare flagged and baseline predictions; timestamp maximum and positive exposure checks select causal future observations.",
-      "signature": "4b82a077e3c1ff07c5e9e4a85cf41872ee4194b98d1028e1158a113fe3242c5d"
+      "reason": "Registered mean, ratio and absolute_error compare flagged and baseline predictions; shared checkpoint_history fixes the decision time before examining future targets.",
+      "signature": "99cb5149460aa3f170fc099b288c4cdd07bb7afdf2542e680812695db62a1ae6"
     },
     "fba.inseason.drop_candidates.prioritized_drops": {
       "role": "composition",
@@ -2352,7 +2352,7 @@
       "role": "composition",
       "owner": "fba.inseason.parameter_fit.production_trial",
       "reason": "Observed-count reductions feed registered ratio and absolute_error; mean summarizes errors and hit indicators, timestamps select causal future records.",
-      "signature": "4750ab8b034b3d1dbb91ce9fe7ac2d9e042de461bc2cd2761e08b85eef8738b0"
+      "signature": "40ff349abd30f3717041e25bcbd7014fc88b30032a4290d65a62cccc6efc9fd6"
     },
     "fba.inseason.priority.classify_matchup": {
       "role": "composition",
@@ -2417,14 +2417,14 @@
     "fba.inseason.recommendations.quick_score": {
       "role": "composition",
       "owner": "fba.inseason.recommendations.quick_score",
-      "reason": "Registered product/nonnegative_samples/category_values/z/normal/difference compose approximate gain; sums aggregate contributions, date counts games and reciprocal tolerance bounds z.",
-      "signature": "352a80be3470f46bb98d787b4e0adbe394c86fce46600e2fb52daa5eb07024e9"
+      "reason": "Registered product/nonnegative_samples/category_values/z/normal/difference compose the complete-prefix screening approximation against one unchanged baseline; date counts and sums aggregate expected game contributions, reciprocal tolerance bounds z.",
+      "signature": "02ae59af53ec10c238c169fa6001ad4b4c0d13a25c3844ebab54f8834410c2e8"
     },
     "fba.inseason.recommendations.search_add_plans": {
       "role": "composition",
       "owner": "fba.inseason.recommendations.search_add_plans",
       "reason": "Searches unchanged legal shortlist/beam using registered plan scores; arithmetic is add allowance, date iteration, tolerance sort and progress fraction.",
-      "signature": "c9be110f6aef277b7253bbca940f58b6ddc67c88c73834f7f1ba91bf9e0f8d24"
+      "signature": "c3611a122632746a9241d4f2847cc024e5b98695ca7ba8de1fe3ba4ebaa5aa7a"
     },
     "fba.inseason.recommendations.evaluate_plan": {
       "role": "composition",
@@ -2436,7 +2436,7 @@
       "role": "structure",
       "owner": "fba.inseason.recommendations.candidate_moves",
       "reason": "Roster tuple changes and waiver release date; quick_score owns candidate numerical estimates.",
-      "signature": "7209fd7a736c5b35ab8a832a918926994dd2c576cee0c77c8b203914a1603a35"
+      "signature": "94de3268ee1700e7d2dacac7dd02bbd4cef7bd2be3b85e9657dec7153a2e2984"
     },
     "fba.inseason.recommendations.admissible_plan": {
       "role": "validation",
@@ -2453,8 +2453,8 @@
     "fba.inseason.replay.replay_case": {
       "role": "composition",
       "owner": "fba.inseason.replay.replay_case",
-      "reason": "Existing forecast/add-plan/season-value owners produce policies; add capacity, date iteration and tolerance quantization control paired oracle comparison.",
-      "signature": "ca9a41e1f61ccdf8944c8c284a0095fd4004320e82892f5e474cd8a53c8fd936"
+      "reason": "Existing forecast and plan evaluation owners produce paired policies; complete legal one-add plans define the reference pool, identity membership checks actual drop/z screening and tolerance quantization compares scores.",
+      "signature": "a18b89cfb57b9f310cbaef5035337a56028e40679dacd076baf5898d5319c55d"
     },
     "fba.inseason.replay.run_policy_replay": {
       "role": "composition",
@@ -2466,7 +2466,7 @@
       "role": "composition",
       "owner": "fba.inseason.replay_oracle.exhaustive_plans",
       "reason": "Enumerates every legal prefix within oracle cap and compares existing plan scores; max/round select best at configured tolerance, not a forecast equation.",
-      "signature": "46d83d1f8c3bf891e7c4dfe394fa858c59b59e98689ed5b4ed29f71a6952187c"
+      "signature": "7d19ca172a5755c26f220f1e1fa4ca0c01183c598d0b4052a1992b72809f2b6a"
     },
     "fba.inseason.review.calibration_bins": {
       "role": "composition",
@@ -2821,6 +2821,18 @@
       "owner": "fba.inseason.weekly_lineups.WeeklySearch.visit",
       "reason": "Depth-first complete search; product counts only determine direct-enumeration threshold. Certified score ceiling and optimistic tie key determine safe pruning; no candidate truncation.",
       "signature": "db6f928c27d1687081c3ac54f5ec59b3aed47cc553c9b18186dcdf1749ff922e"
+    },
+    "fba.inseason.checkpoint_history.checkpoint_history": {
+      "role": "structure",
+      "owner": "fba.inseason.checkpoint_history.checkpoint_history",
+      "reason": "First-publication min and order select a fixed decision instant; existing observed_boxes resolves versions separately at that instant and at final capture. Date/count checks enforce season, prior availability and future-target boundaries.",
+      "signature": "60a064cd064dc6d0dac72a9299f7e959e78e3ba367b49131cb72fd696d733e27"
+    },
+    "fba.inseason.recommendations.search_context": {
+      "role": "composition",
+      "owner": "fba.inseason.recommendations.search_context",
+      "reason": "Reuses season_value for the objective shared by live and replay search; category selection and must-win branching contain no new forecast equation.",
+      "signature": "b18af7811caca4fb82fb63fb2f3ae48bc0f9a18e1a7a0a2bb3c696c8d8e629b2"
     }
   },
   "source_files": {

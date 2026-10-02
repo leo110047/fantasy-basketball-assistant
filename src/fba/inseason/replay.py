@@ -5,7 +5,7 @@ from datetime import timedelta
 import numpy as np
 
 from fba.contracts.base import DataError
-from fba.contracts.inseason import InseasonParameters, WeekForecast
+from fba.contracts.inseason import CalculationTimeout, InseasonParameters, WeekForecast
 from fba.contracts.inseason_replay import (
     PolicyOutcome,
     PolicyReplayReport,
@@ -26,9 +26,9 @@ from fba.inseason.recommendations import (
     earliest_move,
     evaluate_plan,
     search_adds,
+    search_context,
 )
 from fba.inseason.replay_oracle import exhaustive_plans
-from fba.inseason.season import season_value
 
 
 def simulation_for(case: ReplayCase, params: InseasonParameters) -> Simulation:
@@ -150,13 +150,22 @@ def replay_case(
     plans = search_adds(sim, prefs, case.week_id, lambda _progress: None)
     best = plans[0] if plans and plans[0].score > params.tolerance.value else None
     recommended = best.after if best else before
-    keys = tuple(c.id for c in before.categories if c.strategy == "key")
+    keys, future = search_context(sim, before)
     candidates: list[tuple[float, tuple[RosterMove, ...]]] = []
+    full: list[tuple[float, tuple[RosterMove, ...]]] = []
     remaining = max(0, sim.league.adds_per_week - team.adds_used - prefs.reserve_adds)
     on = max(earliest_move(sim), week.start)
     if remaining and keys:
         while on <= week.end:
             candidates.extend(candidate_moves(sim, prefs, team.players, (), on, week.end, keys))
+            full.extend(
+                candidate_moves(sim, prefs, team.players, (), on, week.end, (), exhaustive=True)
+            )
+            if len(full) > study.oracle_max_plans:
+                raise CalculationTimeout(
+                    "replay.oracle_max_plans: complete one-add pool exceeds configured limit; "
+                    "no recall result can be certified"
+                )
             on += timedelta(days=1)
     candidates.sort(
         key=lambda row: (
@@ -165,17 +174,22 @@ def replay_case(
         )
     )
     retained: bool | None = None
-    future = season_value(sim, mine, after=week.end + timedelta(days=1))
-    if candidates:
-        evaluated = [evaluate_plan(sim, prefs, moves, before, future) for _, moves in candidates]
-        eligible = [p for p in evaluated if admissible_plan(p, params.tolerance.value)]
-        if eligible:
-            maximum = max(round(p.score / params.tolerance.value) for p in eligible)
-            retained = any(
-                admissible_plan(p, params.tolerance.value)
-                and round(p.score / params.tolerance.value) == maximum
-                for p in evaluated[: params.shortlist.value]
-            )
+    if full:
+        screened = {
+            tuple((m.add, m.drop, m.effective_on) for m in moves)
+            for _, moves in candidates[: params.shortlist.value]
+        }
+        maximum: int | None = None
+        for _, moves in full:
+            plan = evaluate_plan(sim, prefs, moves, before, future)
+            if not admissible_plan(plan, params.tolerance.value):
+                continue
+            score = round(plan.score / params.tolerance.value)
+            included = tuple((m.add, m.drop, m.effective_on) for m in moves) in screened
+            if maximum is None or score > maximum:
+                maximum, retained = score, included
+            elif score == maximum:
+                retained = bool(retained or included)
     plan_count, search_retained = exhaustive_plans(
         sim,
         prefs,
@@ -229,7 +243,7 @@ def replay_case(
         week_id=case.week_id,
         as_of=case.as_of,
         input_sha256=digest(canonical(case)),
-        full_candidates=len(candidates),
+        full_candidates=len(full),
         shortlist_retained_best=retained,
         full_plan_count=plan_count,
         search_retained_best=search_retained,

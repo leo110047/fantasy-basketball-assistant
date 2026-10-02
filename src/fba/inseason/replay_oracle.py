@@ -60,6 +60,6 @@ def exhaustive_plans(
     return count, (
         round(selected_score / sim.params.tolerance.value)
         >= round(best / sim.params.tolerance.value)
-        if count
+        if best > sim.params.tolerance.value
         else None
     )

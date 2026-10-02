@@ -40,6 +40,24 @@
         "score": 0.82
       },
       {
+        "id": "c8635ea1f0d4b3eedbb9091e7bb231e43e18dbd4fd4897a2a2094ad8eb112816",
+        "moves": [
+          {
+            "add": "p7",
+            "drop": "p0",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p6",
+            "drop": "p1",
+            "effective_on": "2025-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 0.82
+      },
+      {
         "id": "e4b43a612feeda887276a42b10cc8718c027b310d7874ef95e39607ba5d9d72e",
         "moves": [
           {
@@ -110,24 +128,6 @@
           }
         ],
         "score": 0.7999999999999999
-      },
-      {
-        "id": "240fb0d87c787b53a9b917a78f2529dff8b2dfc093a63b5a740b1ad6732aecb3",
-        "moves": [
-          {
-            "add": "p8",
-            "drop": "p1",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p6",
-            "drop": "p2",
-            "effective_on": "2025-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 0.7719999999999998
       },
       {
         "id": "2d4d2d38b8e063fbcf4526e24bc67043c4db6966fb641a389385b1136aaf6475",
@@ -671,53 +671,35 @@
     "parameters_sha256": "a787195fa9ef56bff5869926969c26aec8309cb972ed1dc36593d84b5b47d3c7",
     "plans": [
       {
-        "id": "101bba608f2034d6b45bb10f3dd7788ab6485770895ac1fd2eb0ed255affea81",
+        "id": "72d2707e150ae05148c0af461d9bc35a603e96d8d20e4da9034b091721107f41",
         "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p1",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 7.43945
-      },
-      {
-        "id": "432d81e36b8878034041300780225602e884040e5fa5baab15535163374da3e3",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p2",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          }
-        ],
-        "score": 7.43945
-      },
-      {
-        "id": "65ffe99e2c1730ce60089dce14518055e92f2755fb21f37d79065188e8e1bbd0",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
           {
             "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p31",
             "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          }
+        ],
+        "score": 7.43945
+      },
+      {
+        "id": "b5ba543de121d9d16e0bf444b7357d49a45b0b59020b208a549009e59c9aff4c",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p2",
             "effective_on": "2026-10-13",
             "starter_games": 1
           }
@@ -755,6 +737,78 @@
         "score": 7.41075
       },
       {
+        "id": "0af3a28a8b4832af1a203ba8db16f113833871c0b4f018376b44b77365b1dcc1",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p31",
+            "drop": "p1",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 7.41075
+      },
+      {
+        "id": "0e8633e5eeafd5a244b3be3f74073b57e5b6460faa0861360bdb2c3b93e9cce5",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p31",
+            "drop": "p2",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 7.41075
+      },
+      {
+        "id": "63ee04dcbaa51b330f052ae3f6f3bf90e23faedf528d92ebd351e50ada2fa438",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p1",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 7.41075
+      },
+      {
+        "id": "70f4bab835d0d22ab713dbee6394f6e6ca8e1e26a7a946cdb5149ac402417361",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p1",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p0",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 7.41075
+      },
+      {
         "id": "7d40b236fed94e532c0062c3e53cd908ea35ddfe3c5eb0ca49a51b026deb4451",
         "moves": [
           {
@@ -767,22 +821,58 @@
         "score": 7.41075
       },
       {
-        "id": "22d4f0e73646921cfe577b15d9db4bd3cb08b3154d7aff5ed82d0983b403978d",
+        "id": "ba8dfd1c822772885c95cc5988756ffae0ec1b112f547a9252262a5a181f83e2",
         "moves": [
           {
-            "add": "p30",
+            "add": "p32",
             "drop": "p0",
             "effective_on": "2026-10-13",
             "starter_games": 1
           },
           {
-            "add": "p32",
-            "drop": "p1",
+            "add": "p31",
+            "drop": "p32",
             "effective_on": "2026-10-14",
             "starter_games": 0
           }
         ],
-        "score": 7.25905
+        "score": 7.41075
+      },
+      {
+        "id": "ba8e9780e4b5507ed0ee1577c961515bc30c304c23bc804a7efff5eb90ef4c84",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p2",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 7.41075
+      },
+      {
+        "id": "ecdd30b760ab5882929c82f1780e4239a76649b03618e5b46c245685fb64b809",
+        "moves": [
+          {
+            "add": "p32",
+            "drop": "p0",
+            "effective_on": "2026-10-13",
+            "starter_games": 1
+          },
+          {
+            "add": "p30",
+            "drop": "p32",
+            "effective_on": "2026-10-14",
+            "starter_games": 0
+          }
+        ],
+        "score": 7.41075
       },
       {
         "id": "24ee17c3c3fa431484ad2bb4a02e14a51dced346656ee259760cf12a8a0ab3f2",
@@ -792,96 +882,6 @@
             "drop": "p0",
             "effective_on": "2026-10-13",
             "starter_games": 1
-          }
-        ],
-        "score": 7.25905
-      },
-      {
-        "id": "4ee90a27e91b88bc93aaee3effad1c1e5029c504a8054b6363fb8a20cd46ee35",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p2",
-            "effective_on": "2026-10-14",
-            "starter_games": 0
-          }
-        ],
-        "score": 7.25905
-      },
-      {
-        "id": "8e562f29bb3b44f0ebd0d6d22ee818b3bc4039e951438c8ea6dbdb0b546d2cbd",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p30",
-            "effective_on": "2026-10-14",
-            "starter_games": 0
-          }
-        ],
-        "score": 7.25905
-      },
-      {
-        "id": "a702e2d9cdee4e488c31e1b5fcc249ba8b26316aafb2477bc86cf7dae068f5cb",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p32",
-            "drop": "p30",
-            "effective_on": "2026-10-14",
-            "starter_games": 0
-          }
-        ],
-        "score": 7.25905
-      },
-      {
-        "id": "cc7a2bf3d7aec1753245e4f9d6eef84040d69d341f7148b9340dcfbef8ebb9d4",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p31",
-            "drop": "p1",
-            "effective_on": "2026-10-14",
-            "starter_games": 0
-          }
-        ],
-        "score": 7.25905
-      },
-      {
-        "id": "d7debc360efc4f7daefd5ba8a2664f115fdb00896079dff3f235beab9e07561c",
-        "moves": [
-          {
-            "add": "p30",
-            "drop": "p0",
-            "effective_on": "2026-10-13",
-            "starter_games": 1
-          },
-          {
-            "add": "p32",
-            "drop": "p2",
-            "effective_on": "2026-10-14",
-            "starter_games": 0
           }
         ],
         "score": 7.25905
