@@ -456,7 +456,7 @@
       "role": "structure",
       "owner": "fba.apps.inseason.server.SeasonHandler.do_GET",
       "reason": "Whitelisted static asset filesystem path.",
-      "signature": "7705886e0c99a2608c301fd7d71332355cbdc1d43514f1c310f00e893700ee24"
+      "signature": "b777e1ef58d5a4c11ba9a6e0974849aca8273f95ba1b7d5e402c782c7e7260d5"
     },
     "fba.apps.inseason.server.serve_inseason": {
       "role": "structure",
@@ -2972,19 +2972,19 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/forms.js": {
-      "sha256": "0b8d19b44abfd254eba915f4cda93a484d67329794957c02372362a7ef18963a",
+      "sha256": "1d7f0ad140046dd62a3de959f0271370be3e967f9605729d4536b0da8de26b58",
       "role": "structure",
       "reason": "Percent conversion and Intl rounding present backend numbers; minutes/calibration charts map values/dates to SVG coordinates and do not recompute model estimates.",
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/app.js": {
-      "sha256": "0a3a4f334a73e117ed5445763acb4ccd1f1d51817bbf0420f716f99e0b9b20f6",
+      "sha256": "d2674623d6d04a67a91e95a976a32fc3fc9d7ff2b01d656309f4b1d553921c1e",
       "role": "structure",
       "reason": "Local API orchestration, stale seconds to milliseconds and UTC return-date minus one day for user-entered ranges; no forecast equation.",
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "b6320c524d01e0dd47eb47a92523a7bb72f62576d63c44ae8c7aa9e64a79b2d1",
+      "sha256": "84d562b45f7f43d94432711826416f8c780bf0d9443a1e8a4463832f5caa8ebc",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
       "formula_ids": [

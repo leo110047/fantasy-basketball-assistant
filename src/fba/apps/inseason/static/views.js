@@ -1,4 +1,4 @@
-import { el, field, select, form, table, number, percent, formula, empty, minutesChart, calibrationChart } from "/forms.js";
+import { el, field, select, form, table, number, percent, formula, empty, minutesChart, calibrationChart, disclosure, playerLabel, scoreText, slotText } from "/forms.js";
 
 const section = (title, ...children) => el("section", {}, el("h2", {}, title), children);
 const jsonDetails = (title, value) => el("details", {}, el("summary", {}, title), el("pre", {}, JSON.stringify(value, null, 2)));
@@ -135,7 +135,8 @@ export function weekView(ctx) {
   const weeks = ctx.data.state.league.matchups.filter(w => w.end >= day);
   const result = ctx.results.week;
   const selector = form([select("對戰週", "week_id", weeks.map(w => [w.id, `${w.id} · ${w.start} — ${w.end}`]), result?.week_id)], async v => { ctx.results.week = await ctx.run("week", Object.fromEntries(v)); ctx.render(); }, "計算對戰", ctx.error);
-  const nodes = [section("每週對戰", selector)];
+  selector.className = "inline-form";
+  const nodes = [selector];
   if (!result) return el("div", {}, nodes, empty("選擇對戰週，計算已打完的實際值與剩餘合法先發。"));
   nodes.push(forecastCard(ctx, result));
   nodes.push(section("自由球員計畫", el("p", { class: "muted" }, "假設對手名單不變；所有加人與丟人都由你在 Yahoo 操作。"), !ctx.data.calibration.enabled ? el("p", { class: "warning" }, ctx.data.calibration.reason) : null, el("button", { class: "primary", onClick: async () => { try { ctx.results.plans = await ctx.run("recommendations", { week_id: result.week_id }); ctx.render(); } catch (e) { ctx.error(e); } } }, "搜尋換人建議"), ctx.results.plans?.length === 0 ? empty("目前沒有同時符合本週目標與整季保護規則的換人計畫。") : null, (ctx.results.plans ?? []).slice(0, 10).map(plan => el("section", { class: "plan" }, el("h3", {}, plan.moves.map(m => `${m.effective_on}：${playerName(ctx, m.add)} ↔ ${playerName(ctx, m.drop)}`).join("；")), planValue(plan), plan.traces.map(t => formula(t, ctx.data.formulas)), table(["加人", "可先發場次"], plan.moves.map(m => [playerName(ctx, m.add), m.starter_games])), tradeCategories(ctx, "本週各類別勝率前後", [plan.before], [plan.after], plan.category_changes), el("button", { onClick: () => { ctx.results.selectedPlan = plan.id; ctx.navigate("today"); } }, "放入今日待辦"), el("label", {class:"checklist"}, el("input", {type:"checkbox", checked:ctx.data.notes?.adopted?.[plan.id] === true, onChange:e => ctx.run("adopt", {id:plan.id, completed:e.target.checked}).catch(ctx.error)}), "我已在 Yahoo 採納這個計畫")))));
@@ -144,16 +145,23 @@ export function weekView(ctx) {
 
 function forecastCard(ctx, result) {
   const opponent = ctx.data.snapshot?.teams.find(t=>t.id===result.away)?.name ?? result.away;
+  const strategy = {safe:"維持優勢", key:"關鍵類別", abandon:"暫不優先"};
+  const value = (category, side) => category[`${side}_denominator`] === null ? number(category[side]) : `${number(category[`${side}_numerator`])} / ${number(category[`${side}_denominator`])} = ${number(category[side])}`;
   return section("這週怎麼贏",
+    el("div", {class:"scoreline"}, el("div", {}, el("p", {class:"eyebrow"}, `VS. ${opponent}`), el("strong", {class:"large-number"}, scoreText(result.score, result.scoring)), el("p", {class:"muted"}, result.scoring === "h2h_one_win" ? "預測整週勝率" : "預期贏的類別數")), el("div", {class:"matchup-meta"}, el("p", {}, `剩餘可先發 ${result.remaining_games?.[result.home] ?? "未知"} 場 / 對手 ${result.remaining_games?.[result.away] ?? "未知"} 場`), el("p", {}, `剩餘加人 ${result.adds_remaining ?? "未知"} · 已過 ${result.elapsed_days} 天`))),
     matchupPolicy(result.priority),
     el("p", {}, `維持優勢：${result.categories.filter(c=>c.strategy==="safe").map(c=>c.label).join("、") || "目前沒有"} · 爭取關鍵類別：${result.categories.filter(c=>c.strategy==="key").map(c=>c.label).join("、") || "目前沒有"} · 暫不優先投入：${result.categories.filter(c=>c.strategy==="abandon").map(c=>c.label).join("、") || "目前沒有"}`),
-    el("p", {}, `對手 ${opponent} · 已過 ${result.elapsed_days} 天 · 剩餘可先發場次 ${result.remaining_games?.[result.home] ?? "未知"} / 對手 ${result.remaining_games?.[result.away] ?? "未知"} · 剩餘加人 ${result.adds_remaining ?? "未知"}`),
-    el("p", {}, `整週未校準值 ${result.scoring === "h2h_one_win" ? percent(result.raw_score) : number(result.raw_score)} · 不另加退／不交易基準 ${result.scoring === "h2h_one_win" ? percent(result.no_moves_score) : number(result.no_moves_score)}（保留手調與 IL 回歸情境、最佳化每日排陣）`),
     el("p", {class:"muted"}, result.lineup_search === "joint_exact" ? "我方本週合法排陣已完整搜尋；對手維持固定基準排陣。" : "每日排陣使用精確窮舉；整週採逐日反覆改善，不保證聯合全域最優。"),
     result.prior_players?.length ? el("p",{class:"warning"}, `無逐場歷史，以先驗抽樣：${result.prior_players.map(p=>playerName(ctx,p)).join("、")}；不確定性尚未經真實 holdout 校準。`) : null,
     result.injury_returns?.length ? table(["IL 回歸假設","生效日","必要丟人","日期依據"],result.injury_returns.map(m=>[
       playerName(ctx,m.player_id),m.effective_on,m.drop ? playerName(ctx,m.drop) : "有空名額",m.estimated ? "來源估計，仍可能更改" : "最新狀態已不符 IL 資格"
-    ])) : null, el("div", { class: "scoreline" }, el("div", {}, el("span", { class: "large-number" }, result.scoring === "h2h_one_win" ? percent(result.score) : number(result.score, 2)), el("span", { class: "muted" }, result.scoring === "h2h_one_win" ? " 整週勝率" : " 預期贏的類別數")), el("p", { class: "muted" }, `模擬 ${result.simulations} 次 · 誤差 ±${number(result.standard_error, 4)} · 整週校準 c=${result.scoring === "h2h_one_win" ? ctx.data.parameters.week_calibration.value : ctx.data.parameters.calibration.value} · 類別 c=${ctx.data.parameters.calibration.value}`)), table(["類別", "我方", "對手", "原始勝率", "校準後", "判斷", "核對"], result.categories.map(c => [c.label, c.home_denominator === null ? number(c.home) : `${number(c.home_numerator)} / ${number(c.home_denominator)} = ${number(c.home)}`, c.away_denominator === null ? number(c.away) : `${number(c.away_numerator)} / ${number(c.away_denominator)} = ${number(c.away)}`, percent(c.raw_probability), percent(c.probability), { safe: "穩贏", key: "關鍵", abandon: "放掉" }[c.strategy], el("div", {}, c.traces.map(t => formula(t, ctx.data.formulas)), c.value_traces?.length ? el("details", {}, el("summary", {}, "我方／對手總量的計算"), el("p", {class:"muted"}, `資料列：我方、對手；模擬平均數據欄位：${c.value_axes.join("、")}`), c.value_traces.map(t => formula(t, ctx.data.formulas))) : null)])), result.traces.map(t => formula(t, ctx.data.formulas)), jsonDetails("逐日合法先發", result.lineups));
+    ])) : null,
+    table(["類別", "我方預測總量", "對手預測總量", "調整後勝率", "策略"], result.categories.map(c => [c.label, value(c,"home"), value(c,"away"), percent(c.probability), el("span", {class:`badge strategy-${c.strategy}`}, strategy[c.strategy])])),
+    disclosure("預測依據與完整算式",
+      el("p", {}, `整週未校準值 ${scoreText(result.raw_score,result.scoring)} · 不另加退／不交易基準 ${scoreText(result.no_moves_score,result.scoring)}（保留手調與 IL 回歸情境、最佳化每日排陣）`),
+      el("p", {class:"muted"}, `模擬 ${result.simulations} 次 · 誤差 ±${number(result.standard_error,4)} · 整週校準 c=${result.scoring === "h2h_one_win" ? ctx.data.parameters.week_calibration.value : ctx.data.parameters.calibration.value} · 類別 c=${ctx.data.parameters.calibration.value}`),
+      table(["類別", "原始勝率", "調整後", "核對計算"], result.categories.map(c => [c.label,percent(c.raw_probability),percent(c.probability),el("div", {},c.traces.map(t=>formula(t,ctx.data.formulas)),c.value_traces?.length ? disclosure("我方／對手總量的計算",el("p",{class:"muted"},`資料列：我方、對手；模擬平均數據欄位：${c.value_axes.join("、")}`),c.value_traces.map(t=>formula(t,ctx.data.formulas))) : null)])),
+      result.traces.map(t=>formula(t,ctx.data.formulas)),jsonDetails("逐日合法先發",result.lineups)));
 }
 
 function matchupPolicy(priority) {
@@ -242,52 +250,50 @@ function proposalsSection(ctx) {
 
 export function todayView(ctx) {
   const result = ctx.results.today;
-  const selector = form([
-    field("日期", "on", result?.on ?? ctx.data.projection.on, "date")
-  ], async v => {
-    ctx.results.today = await ctx.run("today", {
-      on: v.get("on"), plan_id: ctx.results.selectedPlan ?? null
-    });
+  const selector = form([field("日期", "on", result?.on ?? ctx.data.projection.on, "date", {required:true})], async v => {
+    ctx.results.today = await ctx.run("today", {on:v.get("on"), plan_id:ctx.results.selectedPlan ?? null});
     ctx.render();
-  }, "計算今日安排", ctx.error);
-  const heading = section("今日排陣", selector);
-  if (!result) return el("div", {}, heading, empty("依本週對戰目標求解合法先發。"));
-  const actions = result.actions.map(a => el("li", {}, el("label", {},
-    el("input", {
-      type: "checkbox", checked: a.completed,
-      onChange: e => ctx.run("complete", {id: a.id, completed: e.target.checked}).catch(ctx.error)
-    }),
-    el("span", {}, `${playerName(ctx, a.player_id)} · ${a.slot ?? a.kind}`,
-      el("small", {}, `　${a.reason}`))
-  )));
-  const locks = Object.entries(result.locks).map(([p, lock]) => [
-    playerName(ctx, p), dateText(lock, ctx.data.preferences.timezone),
-    new Date(lock) <= new Date() ? "已鎖定" : `${number((new Date(lock) - new Date()) / 60000, 0)} 分鐘`
-  ]);
-  return el("div", {}, heading, result.injury_pending?.length ? el("p", {class:"warning"}, `IL 回歸待確認或尚缺可沿用的釋出計畫：${result.injury_pending.map(p=>playerName(ctx,p)).join("、")}。目前排陣與本週預測不含這些啟用；請先確認最新傷病狀態，必要時到本週頁計算釋出計畫。`) : null, result.recommendation?.moves.some(m=>m.effective_on<=result.on) ? el("p", {class:"warning"}, "以下排陣以完成這份換人計畫為前提；請先在 Yahoo 換人，再同步確認名單。") : null, result.week_forecast ? forecastCard(ctx, result.week_forecast) : matchupPolicy(result.priority), section("今天要做的事",
-    el("p", {}, `本週分數 ${number(result.score_before)} → ${number(result.score_after)}`),
-    result.traces.map(t => formula(t, ctx.data.formulas)),
-    el("ul", {class: "checklist"}, actions),
-    table(["球員", "今日對手", "開賽時間", "狀態", "建議位置", "理由", "本週影響"], result.players.map(p => [
-      playerName(ctx,p.player_id), p.opponents.join("、") || "—",
-      p.tipoffs.map(t=>dateText(t,ctx.data.preferences.timezone)).join("、") || "—",
-      p.status, p.slot ?? "板凳", p.reason,
-      p.marginal ? el("div", {}, formula(p.marginal, ctx.data.formulas),
-        Object.entries(p.category_traces ?? {}).map(([label, traces]) => el("details", {},
-          el("summary", {}, `${label} Δ ${number(p.category_changes[label])}`),
-          traces.map(t => formula(t, ctx.data.formulas))))) : "—"
+  }, result ? "重新計算安排" : "計算今日安排", ctx.error);
+  selector.className = "inline-form";
+  if (!result) return el("div", {},
+    el("div", {class:"welcome"}, el("p", {class:"eyebrow"}, "MAKE EVERY GAME COUNT"), el("h2", {}, "先把今天的陣容排好。"),
+      el("p", {}, "依你的名單、球員開賽時間與本週對戰目標，整理今天要做的事。"),
+      ctx.results.selectedPlan ? el("p", {class:"badge"}, "已帶入本週換人計畫，計算後查看安排。") : null, selector),
+    el("div", {class:"next-steps"}, el("button", {onClick:()=>ctx.navigate("week")}, "查看本週對戰 →"), el("button", {onClick:()=>ctx.navigate("teams")}, "查看球員與預測 →")));
+  const actions = result.actions.map(a => el("li", {class:a.completed ? "completed" : ""},
+    el("label", {}, el("input", {type:"checkbox", checked:a.completed, onChange:async event => {
+      const checked = event.target.checked;
+      event.target.disabled = true;
+      try { await ctx.run("complete", {id:a.id, completed:checked}); a.completed = checked; ctx.render(); }
+      catch (error) { event.target.checked = a.completed; ctx.error(error); }
+      finally { event.target.disabled = false; }
+    }}), playerLabel(ctx,a.player_id), el("span", {class:"task-destination"}, a.slot ? slotText(ctx,a.slot) : ({add:"加入名單",drop:"釋出球員",activate:"移出傷兵席",bench:"板凳",start:"先發"}[a.kind] ?? a.kind))),
+    el("p", {class:"task-reason"}, a.reason)));
+  const scoring = ctx.data.state.league.scoring;
+  return el("div", {}, selector,
+    result.injury_pending?.length ? el("p", {class:"flag"}, `IL 回歸待確認或尚缺可沿用的釋出計畫：${result.injury_pending.map(p=>playerName(ctx,p)).join("、")}。目前排陣與本週預測不含這些啟用；請先確認最新傷病狀態，必要時到本週頁計算釋出計畫。`) : null,
+    result.recommendation?.moves.some(m=>m.effective_on<=result.on) ? el("p", {class:"flag"}, "以下排陣以完成這份換人計畫為前提；請先在 Yahoo 換人，再同步確認名單。") : null,
+    section("今天要做的事", el("div", {class:"task-summary"},
+      el("p", {}, el("strong", {}, `${result.actions.filter(a=>!a.completed).length} 項待辦`), " · 勾選代表你已在 Yahoo 完成操作。"),
+      el("p", {class:"muted"}, `本週預測 ${scoreText(result.score_before,scoring)} → ${scoreText(result.score_after,scoring)}`)),
+      actions.length ? el("ul", {class:"checklist task-list"}, actions) : empty("今天沒有需要調整的位置。請留意開賽前的傷病消息。"),
+      disclosure("這份安排的計算依據", result.traces.map(t=>formula(t,ctx.data.formulas)))),
+    section("今日名單與開賽時間", table(["球員", "對手／開賽", "狀態", "建議位置", "決策依據"], result.players.map(p => [
+      playerLabel(ctx,p.player_id), el("div", {}, p.opponents.join("、") || "無賽程", el("small", {}, p.tipoffs.map(t=>dateText(t,ctx.data.preferences.timezone)).join("、") || "—")),
+      p.status, slotText(ctx,p.slot), disclosure(p.reason,
+        p.marginal ? el("div", {}, formula(p.marginal,ctx.data.formulas), Object.entries(p.category_traces ?? {}).map(([label,traces])=>disclosure(`${label} Δ ${number(p.category_changes[label])}`,traces.map(t=>formula(t,ctx.data.formulas))))) : "尚無影響計算")
     ])),
-    table(["球員", "鎖定時間", "距離鎖定"], locks),
-    result.recommendation ? section("已計算的 F3 換人計畫",
-      planValue(result.recommendation),
-      table(["生效日", "加入", "釋出"], result.recommendation.moves.map(m => [m.effective_on, playerName(ctx, m.add), playerName(ctx, m.drop)])),
-      table(["釋出球員", "Yahoo 持有率", "走勢", "資料時間"], [...new Set(result.recommendation.moves.map(m=>m.drop))].map(id=>{
-        const owned = ctx.data.snapshot?.ownership?.[id];
-        return [playerName(ctx,id), owned?.value == null ? "未知" : percent(owned.value), owned?.change == null ? "未知" : percent(owned.change), dateText(owned?.as_of,ctx.data.preferences.timezone)];
-      })),
-      result.recommendation.traces.map(t => formula(t, ctx.data.formulas)))
-      : section("換人建議", empty("尚無可沿用的已計算計畫；請到本週頁計算換人建議。"))
-  ));
+      disclosure("查看各球員鎖定時間", table(["球員", "鎖定時間", "距離鎖定"], Object.entries(result.locks).map(([p,lock])=>[
+        playerName(ctx,p),dateText(lock,ctx.data.preferences.timezone),new Date(lock)<=new Date() ? "已鎖定" : `${number((new Date(lock)-new Date())/60000,0)} 分鐘`
+      ])))),
+    result.week_forecast ? forecastCard(ctx,result.week_forecast) : matchupPolicy(result.priority),
+    result.recommendation ? section("已計算的換人計畫", planValue(result.recommendation),
+      table(["生效日", "加入", "釋出"],result.recommendation.moves.map(m=>[m.effective_on,playerLabel(ctx,m.add),playerLabel(ctx,m.drop)])),
+      disclosure("釋出風險與完整依據", table(["釋出球員", "Yahoo 持有率", "走勢", "資料時間"],[...new Set(result.recommendation.moves.map(m=>m.drop))].map(id=>{
+        const owned=ctx.data.snapshot?.ownership?.[id];
+        return [playerName(ctx,id),owned?.value==null ? "未知" : percent(owned.value),owned?.change==null ? "未知" : percent(owned.change),dateText(owned?.as_of,ctx.data.preferences.timezone)];
+      })),result.recommendation.traces.map(t=>formula(t,ctx.data.formulas))))
+      : el("div", {class:"next-steps"}, el("p", {class:"muted"}, "還沒有已計算的換人計畫。"),el("button", {onClick:()=>ctx.navigate("week")}, "到本週對戰搜尋換人 →")));
 }
 
 export function reviewView(ctx) {

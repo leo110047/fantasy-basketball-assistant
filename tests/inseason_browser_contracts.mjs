@@ -32,13 +32,13 @@ function environment({hasResults=true, failed=false}={}) {
   const document=new Element('document');
   document.createElement=tag=>new Element(tag);
   document.createTextNode=text=>{const n=new Element('#text');n.textContent=text;return n;};
-  for(const id of ['error','dialog','dialogContent','leagueName','freshness','notice','syncButton','navigation','content','busy','phase','progress','closeDialog','quitButton']) {
+  for(const id of ['error','dialog','dialogContent','leagueName','freshness','notice','syncButton','navigation','content','busy','phase','progress','closeDialog','quitButton','skipLink','pageTitle','pageEyebrow']) {
     const node=new Element('div');node.setAttribute('id',id);document.append(node);
   }
   const data={availability:{enabled:true},selected:'league',preferences:{trade_value_min_ratio:0.7,timezone:'UTC'},parameters:{tolerance:{value:1e-9}},preference_controls:{trade_value_min_ratio:{minimum:0.5,maximum:1,default:0.7}},snapshot:{mine:'mine',teams:[{id:'mine',name:'Mine',players:[]},{id:'other',name:'Other',players:[]}]}};
   const trades=[{opponent:'other',send:['p1'],receive:['p3'],mine_delta:0.1,opponent_delta:0.1,acceptance:0.5,expected_gain:0.5},{opponent:'other',send:['p2'],receive:['p4'],mine_delta:0.9,opponent_delta:0.2,acceptance:0.6,expected_gain:0.2}];
   let action, submits=0;
-  const sandbox=createContext({document,Node:Element,console,Intl,Date,setTimeout:fn=>fn(),location:{hash:''},sessionStorage:{getItem:()=>''},history:{replaceState(){}},fetch:async(path,options)=>{
+  const sandbox=createContext({document,Node:Element,console,Intl,Date,URL,URLSearchParams,setTimeout:fn=>fn(),location:{hash:''},sessionStorage:{getItem:()=>''},history:{replaceState(){}},fetch:async(path,options)=>{
     if(path==='/api/action') { action=JSON.parse(options.body).action;submits++;return {ok:true,json:async()=>({job:'job'})}; }
     if(path==='/api/bootstrap') return {ok:true,json:async()=>data};
     assert.equal(path,'/api/job');

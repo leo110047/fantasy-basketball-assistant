@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from time import monotonic
+from urllib.parse import urlsplit
 
 from fba.apps.inseason.api import Jobs, parse_body
 from fba.contracts.base import DataError
@@ -120,17 +121,19 @@ class SeasonHandler(BaseHTTPRequestHandler):
                     ).encode(),
                 )
             else:
+                path = urlsplit(self.path).path
                 assets = {
                     "/": ("index.html", "text/html"),
                     "/app.js": ("app.js", "text/javascript"),
                     "/views.js": ("views.js", "text/javascript"),
                     "/forms.js": ("forms.js", "text/javascript"),
                     "/style.css": ("style.css", "text/css"),
+                    "/court.jpg": ("court.jpg", "image/jpeg"),
                 }
-                if self.path not in assets:
+                if path not in assets:
                     self.reply(404, b'{"error":"route not found"}')
                     return
-                name, media = assets[self.path]
+                name, media = assets[path]
                 self.reply(200, (Path(__file__).parent / "static" / name).read_bytes(), media)
         except (DataError, ValueError) as exc:
             self.reply(400, json.dumps({"error": str(exc)}, ensure_ascii=False).encode())
