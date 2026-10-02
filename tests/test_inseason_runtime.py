@@ -2,6 +2,7 @@ import json
 import subprocess
 import sys
 from time import monotonic, sleep
+from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 import pytest
@@ -33,7 +34,8 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
     root = tmp_path / "季賽 測試資料"
     script = tmp_path / "launch.py"
     script.write_text(
-        "import sys, webbrowser\nfrom pathlib import Path\n"
+        "import os, sys, webbrowser\nfrom pathlib import Path\n"
+        "Path(sys.argv[2]).write_text(str(os.getpid()))\n"
         "from fba.apps.inseason.server import serve_inseason\n"
         "root = Path(sys.argv[1])\n"
         "def opened(url):\n    (root / 'browser-opened').write_text('opened')\n    return True\n"
@@ -41,13 +43,26 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
         "serve_inseason(root, open_browser=False)\n"
     )
     processes = []
+    pid_files = {}
 
     def start():
+        pid_file = tmp_path / f"interpreter-{len(processes)}.pid"
         process = subprocess.Popen(
-            [sys.executable, str(script), str(root)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [sys.executable, str(script), str(root), str(pid_file)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         processes.append(process)
+        pid_files[process.pid] = pid_file
         return process
+
+    def interpreter_pid(process):
+        # Windows venv python.exe is a launcher, not the actual interpreter.
+        # The child reports its own PID independently of the lock and health API.
+        try:
+            return int(pid_files[process.pid].read_text())
+        except (FileNotFoundError, ValueError):
+            return None
 
     try:
         first, second = start(), start()
@@ -58,13 +73,17 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
         assert running.poll() is None
         assert (root / "browser-opened").read_text() == "opened"
         instance = InstanceLock(root / "inseason.lock").read()
-        assert instance.pid == running.pid
+        assert instance.pid == interpreter_pid(running)
         origin = f"http://127.0.0.1:{instance.port}"
         with urlopen(
             Request(origin + "/health", headers={"Authorization": "Bearer " + instance.token})
         ) as response:
-            assert json.load(response)["pid"] == running.pid
+            assert json.load(response)["pid"] == interpreter_pid(running)
         if force:
+            # Deliberately terminate the launcher: its native job must also
+            # terminate the interpreter, release the lock and close its pipes.
+            # CPython v3.13.7 PC/venvlauncher.c uses KILL_ON_JOB_CLOSE;
+            # uv 0.9.18 uv-virtualenv/src/virtualenv.rs copies that launcher.
             running.kill()
         else:
             with urlopen(
@@ -80,17 +99,44 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
             ) as response:
                 assert json.load(response)["stopping"]
         running.communicate(timeout=5)
+        with (
+            pytest.raises(URLError) as stopped,
+            urlopen(
+                Request(origin + "/health", headers={"Authorization": "Bearer " + instance.token}),
+                timeout=1,
+            ),
+        ):
+            pass  # The old authenticated HTTP service must be gone before restart.
+        assert isinstance(stopped.value.reason, ConnectionRefusedError)
         restarted = start()
-        wait_until(lambda: published_pid(root / "inseason.lock") == restarted.pid)
+        wait_until(
+            lambda: (
+                (pid := interpreter_pid(restarted)) is not None
+                and published_pid(root / "inseason.lock") == pid
+            )
+        )
         new = InstanceLock(root / "inseason.lock").read()
         assert new.port == instance.port
         assert new.token != instance.token
         assert restarted.poll() is None
+        with urlopen(
+            Request(origin + "/health", headers={"Authorization": "Bearer " + new.token}),
+            timeout=2,
+        ) as response:
+            assert json.load(response)["pid"] == interpreter_pid(restarted)
     finally:
         for process in processes:
             if process.poll() is None:
                 process.kill()
             process.communicate(timeout=5)
+    with (
+        pytest.raises(URLError) as stopped,
+        urlopen(
+            Request(origin + "/health", headers={"Authorization": "Bearer " + new.token}), timeout=1
+        ),
+    ):
+        pass  # Cleanup must terminate the restarted interpreter as well.
+    assert isinstance(stopped.value.reason, ConnectionRefusedError)
 
 
 @pytest.mark.parametrize("error", [10013, 10048])
