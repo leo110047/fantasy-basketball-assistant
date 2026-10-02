@@ -186,7 +186,9 @@ export function tradesView(ctx) {
   const search = el("div", { class: "actions" }, el("button", { onClick: () => searchTrade(ctx, null, 1) }, "全聯盟 1 換 1"), el("button", { onClick: () => searchTrade(ctx, selected.id, 2) }, "此隊最多 2 換 2"), el("button", { onClick: async () => { try { const rows = await ctx.run("partners", {}); ctx.open(section("互補交易對象", table(["對象", "互補分數", "類別", "算式"], rows.map(r => [snapshot.teams.find(t => t.id === r.team_id)?.name ?? r.team_id, number(r.score), r.categories.join("、"), el("div", {}, r.traces.map(t => formula(t, ctx.data.formulas)))])))); } catch (e) { ctx.error(e); } } }, "找互補對象"));
   const trade = ctx.results.trade;
   const sort = ctx.tradeSort ?? "expected_gain";
-  const sorts = el("div", {class:"actions"}, [["expected_gain", "期望值"], ["mine_delta", "增益最大"], ["acceptance", "最可能成交"]].map(([key, label]) => el("button", {class: sort === key ? "selected" : "", onClick: () => {ctx.tradeSort = key; ctx.render();}}, label)));
+  const sorts = el("div", {class:"actions", role:"group", "aria-label":"交易結果排序"}, el("span", {class:"muted"}, "結果排序"), [["expected_gain", "期望值"], ["mine_delta", "增益最大"], ["acceptance", "最可能成交"]].map(([key, label]) => el("button", {"aria-pressed": String(sort === key), disabled: !ctx.results.trades?.length || ctx.pending, onClick: () => {ctx.tradeSort = key; ctx.render();}}, label)));
+  const feedback = ctx.jobFeedback && ["trade-search", "partners", "preferences"].includes(ctx.jobFeedback.action) ? ctx.jobFeedback : null;
+  const searchFeedback = el("p", {class:feedback?.state === "failed" ? "negative" : "muted", role:"status", "aria-live":"polite", "data-job-actions":"trade-search,partners,preferences", "aria-busy":String(feedback?.state === "running")}, feedback?.message ?? "選擇上方的搜尋方式，結果會列在下方。");
   const rankedTrades = [...(ctx.results.trades ?? [])].sort((a,b) => (a[sort] === null)-(b[sort] === null) || Math.round((b[sort] ?? 0)/ctx.data.parameters.tolerance.value) - Math.round((a[sort] ?? 0)/ctx.data.parameters.tolerance.value) || a.opponent.localeCompare(b.opponent) || a.send.join().localeCompare(b.send.join()) || a.receive.join().localeCompare(b.receive.join()));
   const audit = ctx.results.tradeAudit;
   const searchStatus = audit ? el("div", {},
@@ -194,7 +196,7 @@ export function tradesView(ctx) {
     audit.unknown_value ? el("p", {class:"warning"}, `${audit.unknown_value} 組缺少公開排名，無法判斷交易價值，已略過；仍可手動評估。`) : null,
     ctx.results.trades.length === 0 ? empty("目前沒有符合搜尋條件的合法交易。") : null
   ) : null;
-  return el("div", {}, section("交易分析", manual), trade ? tradeCard(ctx, trade) : null, section("自動搜尋", tradeValueControl(ctx), search, searchStatus, sorts, ctx.results.trades?.length ? el("div", {}, el("p", {class:"muted"}, "點選期望值，可用目前資料查看完整交易評估。"), table(["對象", "送出", "收到", "我方增益", "對方 ΔN", "接受率", "期望值"], rankedTrades.slice(0, 30).map(t => [t.opponent, t.send.map(p => playerName(ctx, p)).join("、"), t.receive.map(p => playerName(ctx, p)).join("、"), number(t.mine_delta), number(t.opponent_delta), percent(t.acceptance), el("button", { class: "small", onClick: () => openSearchedTrade(ctx, t) }, number(t.expected_gain))]))) : null), proposalsSection(ctx));
+  return el("div", {}, section("交易分析", manual), trade ? tradeCard(ctx, trade) : null, section("自動搜尋", tradeValueControl(ctx), search, searchFeedback, searchStatus, sorts, !ctx.results.trades?.length ? el("p", {class:"muted"}, "取得搜尋結果後，才能切換排序。") : el("div", {}, el("p", {class:"muted"}, "點選期望值，可用目前資料查看完整交易評估。"), table(["對象", "送出", "收到", "我方增益", "對方 ΔN", "接受率", "期望值"], rankedTrades.slice(0, 30).map(t => [t.opponent, t.send.map(p => playerName(ctx, p)).join("、"), t.receive.map(p => playerName(ctx, p)).join("、"), number(t.mine_delta), number(t.opponent_delta), percent(t.acceptance), el("button", { class: "small", onClick: () => openSearchedTrade(ctx, t) }, number(t.expected_gain))])))), proposalsSection(ctx));
 }
 async function openSearchedTrade(ctx, trade) {
   try {

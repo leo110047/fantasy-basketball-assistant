@@ -353,7 +353,11 @@ def week_points(inputs: Inputs) -> Array:
     # The same tie credits occur on both sides and cancel exactly. Compute
     # signed category wins once instead of allocating category-point tensors.
     margin = (differences > 0).sum(axis=-1) - (differences < 0).sum(axis=-1)
-    return np.asarray((margin > 0).astype(np.float64) + (margin == 0) * inputs["week_tie"])
+    return week_outcome(margin, inputs["week_tie"])
+
+
+def week_outcome(margin: Array, week_tie: Array) -> Array:
+    return np.asarray((margin > 0).astype(np.float64) + (margin == 0) * week_tie)
 
 
 def scoring_axes(inputs: Inputs, width: int) -> tuple[int, Array]:

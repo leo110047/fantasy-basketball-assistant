@@ -1836,7 +1836,7 @@
       "role": "structure",
       "owner": "fba.formulas.simulation_catalog.<module>",
       "reason": "Signed formula example constants; registered owners implement evaluation.",
-      "signature": "bc376576e3a32f5d3fa8125d6fc2695b5e7570de437b5dc8d571b1580a35c87b"
+      "signature": "379df094f5c7edb861b72c98b550156b76affcda72b1dd0fcf63e141aa312fd0"
     },
     "fba.formulas.team_minutes.member_minutes": {
       "role": "composition",
@@ -2130,7 +2130,7 @@
       "role": "registered",
       "owner": "week_points",
       "reason": "Unique registered numerical implementation; metadata, independent answer and immutable replay are checked.",
-      "signature": "618aa5e3c96b84892855bad30f6bb1b1f7083ef19ccc5004e8a5e64d58eb0333"
+      "signature": "00fd0278f5ba97130da58defca88f3fafb13914f5b635101ef1ff34e9fdb5c9e"
     },
     "fba.formulas.vector.scoring_axes": {
       "role": "validation",
@@ -2784,7 +2784,7 @@
       "role": "composition",
       "owner": "fba.inseason.weekly_lineups.day_choices",
       "reason": "Enumerates all legal daily subsets. Per-slot minimum and maximum of available draws relax uniqueness to bound every ordered completion; date selection and eligibility remain structural.",
-      "signature": "617577f9adfad7f66496e52c32660a81e67c628b06037a0321c794d15bd52793"
+      "signature": "c076ec75ffeeff8464231400e1f1dd94f3883cfe9e0e4fb3f71b897f81ad7062"
     },
     "fba.inseason.weekly_lineups.lineup_key": {
       "role": "structure",
@@ -2851,6 +2851,108 @@
       "owner": "fba.inseason.recommendations.ordered_candidates",
       "reason": "Legal date traversal and priority ordering by low-contribution drop membership, existing z score and move identity; all legal candidates remain.",
       "signature": "911328e7f57ae188d8c88f89ac4a25198160fe8a8bea502fb1f123af5503c6ad"
+    },
+    "fba.formulas.lineup.comparison_thresholds": {
+      "role": "registered",
+      "owner": "comparison_thresholds",
+      "reason": "Authoritative conservative lineup bound equation; independently checked rounded edges and complete legal subsets.",
+      "signature": "9b09e4451fd417f5b53ed8919f893895db2b555a56853650ee28ceb52c74667e"
+    },
+    "fba.formulas.lineup.linear_roundoff": {
+      "role": "registered",
+      "owner": "linear_roundoff",
+      "reason": "Authoritative conservative lineup bound equation; independently checked rounded edges and complete legal subsets.",
+      "signature": "527206b501265723d7466fb3a690a67f57099f286ef48185e93ef7d32968968f"
+    },
+    "fba.formulas.lineup.threshold_margin": {
+      "role": "registered",
+      "owner": "threshold_margin",
+      "reason": "Authoritative conservative lineup bound equation; independently checked rounded edges and complete legal subsets.",
+      "signature": "8cc3c9a57473f837431171eaadad7ece373004efaceea66b5ae9158f35707fea"
+    },
+    "fba.formulas.lineup.threshold_error": {
+      "role": "registered",
+      "owner": "threshold_error",
+      "reason": "Authoritative conservative lineup bound equation; independently checked rounded edges and complete legal subsets.",
+      "signature": "d064eacfd4224789b38280ecd2f03ff81866d9796d20a6f018d8ee27f999c56c"
+    },
+    "fba.formulas.lineup.threshold_votes": {
+      "role": "registered",
+      "owner": "threshold_votes",
+      "reason": "Authoritative conservative lineup bound equation; independently checked rounded edges and complete legal subsets.",
+      "signature": "c0f32670f17e13642c48a41d1897d7f1e00a78a9ac81180da0ae109172c4ad2b"
+    },
+    "fba.formulas.lineup.accumulation_error": {
+      "role": "registered",
+      "owner": "accumulation_error",
+      "reason": "Authoritative conservative lineup bound equation; independently checked rounded edges and complete legal subsets.",
+      "signature": "b9fe97fe4bf2861ff68f6d69195d96106f493f80ed2dd1a5d3db62d37135743d"
+    },
+    "fba.formulas.lineup.threshold_accumulate": {
+      "role": "registered",
+      "owner": "threshold_accumulate",
+      "reason": "Authoritative conservative lineup bound equation; independently checked rounded edges and complete legal subsets.",
+      "signature": "6f7ff6a1192e5c589dee2b185abbb3a004d59e96e8dac4a28bf9a490b790b700"
+    },
+    "fba.formulas.vector.week_outcome": {
+      "role": "component",
+      "owner": "fba.formulas.vector.week_points",
+      "reason": "Shared strict-win and week-tie conversion of the signed category margin; both regular scoring and certified bounds use this owner.",
+      "signature": "ef73f019333ed1b1aa3b7b30b7210477824b599ae8265c8981f4d917e149e36d"
+    },
+    "fba.inseason.weekly_bounds.ThresholdBounds.create": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_bounds.ThresholdBounds.create",
+      "reason": "Validate applicability and prepare fixed-opponent thresholds and certified numerical error bounds.",
+      "signature": "791edf7606bc798d579c49164e9476df70ff65cdf3bb75ce0be6c3e7ed41d1b7"
+    },
+    "fba.inseason.weekly_bounds.ThresholdBounds.contribution": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_bounds.ThresholdBounds.contribution",
+      "reason": "Map configured signed terms and ratio denominators to registered conservative margin equations.",
+      "signature": "6b508ac75c60cd4483812e220a347b5c6fb15fb31f2f1dead8d481391795e474"
+    },
+    "fba.inseason.weekly_bounds.ThresholdBounds.ceiling": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_bounds.ThresholdBounds.ceiling",
+      "reason": "Compose threshold vote bounds with existing category/week scoring and calibration.",
+      "signature": "89283d79353e74e9cb2258bb533f1c0858d51bca178dd6f30845b89e7b6828c7"
+    },
+    "fba.inseason.weekly_lineups.WeeklySearch.pruned": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_lineups.WeeklySearch.pruned",
+      "reason": "Preserve incumbent tolerance and canonical full-lineup tie ordering when certifying a subtree.",
+      "signature": "4d7841746890fef2d33787e836dbded8ea5556e1714fcaf82934112978f77753"
+    },
+    "fba.inseason.weekly_players.PlayerSearch.create": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_players.PlayerSearch.create",
+      "reason": "Order all player appearances without truncation, encode legal daily domains and compose conservative suffix bounds.",
+      "signature": "ff4440b0988469ee19573babf97f7891058bee5923b1cb0b4ae70da7a654d591"
+    },
+    "fba.inseason.weekly_players.PlayerSearch.run": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_players.PlayerSearch.run",
+      "reason": "Initialize complete legal domains and the actual-score contribution.",
+      "signature": "67aab5cf216641198933ea98788424a8df4dca2933616030784038d4993d2225"
+    },
+    "fba.inseason.weekly_players.PlayerSearch.seed_removals": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_players.PlayerSearch.seed_removals",
+      "reason": "Try canonical legal removals to improve the incumbent; all original search domains remain intact.",
+      "signature": "6cf0fc42feb5d456cbd05c0f27bd12c126689f11cf01ae50b1bb8fec05ad82ac"
+    },
+    "fba.inseason.weekly_players.PlayerSearch.preferred": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_players.PlayerSearch.preferred",
+      "reason": "Select the fullest then lexical legal daily row from the remaining domain.",
+      "signature": "50a9d7958f3e80bcdca24b1543a1acd2c2d814de28e422c371674b7019b9117b"
+    },
+    "fba.inseason.weekly_players.PlayerSearch.visit": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_players.PlayerSearch.visit",
+      "reason": "Visit every legal include/exclude branch unless its certified score and tie bound cannot improve the incumbent.",
+      "signature": "cc34acf3b33653e30c8c04dbf3a831574f3274a0dced5c4c5db25f1f39f256b8"
     }
   },
   "source_files": {
@@ -2876,13 +2978,13 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/app.js": {
-      "sha256": "d282d6602f16249e2586376b1e7bb0f963df05813388119799f806f0c70922c5",
+      "sha256": "0a3a4f334a73e117ed5445763acb4ccd1f1d51817bbf0420f716f99e0b9b20f6",
       "role": "structure",
       "reason": "Local API orchestration, stale seconds to milliseconds and UTC return-date minus one day for user-entered ranges; no forecast equation.",
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "e76397a188a06cf05cdc04482958e90b7d7eb0ef63205ee6b78d907ffc0dedfb",
+      "sha256": "b6320c524d01e0dd47eb47a92523a7bb72f62576d63c44ae8c7aa9e64a79b2d1",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
       "formula_ids": [

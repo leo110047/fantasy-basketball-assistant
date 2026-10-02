@@ -6,6 +6,7 @@ if (fragment) { sessionStorage.setItem("inseason-session", fragment); history.re
 const token = sessionStorage.getItem("inseason-session") ?? "";
 const context = { data: {}, results: {}, tab: "sync", nbaTeam: null, tradeTeam: null };
 const tabs = [["sync", "資料與同步", syncView], ["teams", "球隊與手調", teamsView], ["week", "每週對戰", weekView], ["trades", "交易", tradesView], ["today", "今日", todayView], ["review", "每週回顧", reviewView]];
+const actionLabels = { "trade-search": "搜尋交易", partners: "尋找互補對象", trade: "評估交易", week: "計算每週對戰", recommendations: "搜尋換人建議", preferences: "儲存設定", sync: "同步資料" };
 
 async function request(path, payload) {
   const options = { headers: { Authorization: `Bearer ${token}` } };
@@ -18,6 +19,18 @@ async function request(path, payload) {
 function showError(error) {
   const node = document.querySelector("#error"); node.hidden = false;
   node.textContent = `${error.message ?? error}。資料時間：${context.data.state?.sync.last_success ?? "尚未同步"}`;
+}
+function jobFeedback(state, action, error = null) {
+  const label = actionLabels[action] ?? "處理資料";
+  const reason = error?.message ?? String(error ?? "");
+  const message = state === "running" ? `正在${label}，請稍候…` : state === "completed" ? `${label}完成。` : reason.includes("CalculationTimeout") || reason.includes("time budget exceeded") ? `${label}逾時，尚未完成；未產生新的結果。` : `${label}失敗：${reason}`;
+  context.jobFeedback = { action, state, message };
+  for (const node of document.querySelectorAll("[data-job-actions]")) {
+    if (!node.dataset.jobActions.split(",").includes(action)) continue;
+    node.textContent = message;
+    node.classList.toggle("negative", state === "failed");
+    node.setAttribute("aria-busy", String(state === "running"));
+  }
 }
 function open(content) {
   document.querySelector("#dialogContent").replaceChildren(content);
@@ -41,7 +54,7 @@ function render() {
   document.querySelector("#content").replaceChildren(view);
 }
 function navigate(tab) { context.tab = tab; render(); }
-async function refresh() {
+async function refresh(redraw = true) {
   context.data = await request("/api/bootstrap");
   if (context.data.projection) {
     const ignored = context.data.notes?.ignored ?? {};
@@ -49,30 +62,47 @@ async function refresh() {
       player.flags = player.flags.filter(flag => !ignored[flag.id] || ignored[flag.id] < context.data.projection.on);
     }
   }
-  render();
+  if (redraw) render();
 }
 async function run(action, payload, reload = true) {
+  if (context.pending) throw new Error("已有計算進行中，請等待完成後再操作。");
+  context.pending = true;
+  let refreshed = false;
+  const controls = [...document.querySelectorAll("#content button, #syncButton")].map(node => [node, node.disabled]);
+  for (const [node] of controls) node.disabled = true;
   document.querySelector("#error").hidden = true;
   const busy = document.querySelector("#busy"); busy.hidden = false;
-  document.querySelector("#phase").textContent = action;
+  document.querySelector("#phase").textContent = actionLabels[action] ?? "處理資料";
+  document.querySelector("#progress").removeAttribute("value");
+  jobFeedback("running", action);
   try {
     const started = await request("/api/action", { action, payload });
     while (true) {
       await new Promise(resolve => setTimeout(resolve, 200));
       const job = await request("/api/job");
       if (job.id !== started.job) throw new Error("工作狀態已變更，請重新整理確認");
-      document.querySelector("#progress").value = job.progress;
+      if (job.progress > 0) document.querySelector("#progress").value = job.progress;
       if (job.status === "failed") throw new Error(job.error);
       if (job.status === "completed") {
+        jobFeedback("completed", action);
         if (reload) {
           if (action === "preferences") context.tradeValueRatio = null;
           if (["sync", "select", "settings", "sources", "mapping", "preferences", "adjustments", "revoke", "refit-acceptance", "validation"].includes(action)) context.results = {};
-          await refresh();
+          await refresh(false);
+          refreshed = true;
         }
         return job.result;
       }
     }
-  } finally { busy.hidden = true; }
+  } catch (error) {
+    jobFeedback("failed", action, error);
+    throw error;
+  } finally {
+    context.pending = false;
+    for (const [node, disabled] of controls) node.disabled = disabled;
+    busy.hidden = true;
+    if (refreshed) render();
+  }
 }
 
 function edit(player, flag = null) {

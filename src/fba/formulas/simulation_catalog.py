@@ -1,9 +1,97 @@
 """Simulation formula metadata, examples and units."""
 
-from fba.formulas import simulation
+from fba.formulas import lineup, simulation
 from fba.formulas.array_catalog import ArrayFormula
 
 ARRAY_FORMULAS = (
+    ArrayFormula(
+        "accumulation_error",
+        "固定加總浮點誤差上界",
+        r"E=n\,ulp(2\sum_i |x_i|)\quad\text{(outward rounded)}",
+        "input units",
+        (),
+        lineup.accumulation_error,
+        {"magnitude": (1.0, 8.0), "additions": 4.0},
+        {"magnitude": "absolute sum upper bound", "additions": "maximum additions"},
+    ),
+    ArrayFormula(
+        "threshold_accumulate",
+        "有固定誤差界限的門檻差累加",
+        r"M'=M+X",
+        "numerator units",
+        (),
+        lineup.threshold_accumulate,
+        {"base": (1.0, -2.0), "draw": (2.0, 3.0)},
+        {"base": "accumulated margin bound", "draw": "margin contribution"},
+    ),
+    ArrayFormula(
+        "comparison_thresholds",
+        "捨入比較的必要門檻",
+        r"T_{tie},T_{win}: round(x,k)<round(a,k),\;round(x,k)\le round(a,k)",
+        "directed category units",
+        (),
+        lineup.comparison_thresholds,
+        {"away": (0.45, 0.8), "decimals": 3.0},
+        {"away": "directed opponent value", "decimals": "comparison decimal places"},
+    ),
+    ArrayFormula(
+        "linear_roundoff",
+        "樣本累加與類別加權的浮點誤差上界",
+        r"E\ge\sum_s |w_s|n\,ulp(2U_s)+(2m+1)ulp(\sum_s|w_s|2U_s)",
+        "category total units",
+        (),
+        lineup.linear_roundoff,
+        {"upper": ((5.0, 8.0),), "additions": 4.0, "indices": (0.0, 1.0), "weights": (2.0, -1.0)},
+        {
+            "upper": "nonnegative total bound",
+            "additions": "addition count",
+            "indices": "statistic axis indices",
+            "weights": "configured coefficients",
+        },
+    ),
+    ArrayFormula(
+        "threshold_margin",
+        "保留比率相關性的門檻差上界",
+        r"M=N_u-\min(TD_l,TD_u)\quad\text{(outward rounded)}",
+        "numerator units",
+        (),
+        lineup.threshold_margin,
+        {"upper": (4.0,), "dlower": (6.0,), "dupper": (6.0,), "threshold": ((0.4, 0.5),)},
+        {
+            "upper": "directed numerator upper bound",
+            "dlower": "denominator lower bound",
+            "dupper": "denominator upper bound",
+            "threshold": "tie and win thresholds",
+        },
+    ),
+    ArrayFormula(
+        "threshold_error",
+        "比率門檻差的浮點誤差上界",
+        r"E=E_N+|T|E_D\quad\text{(outward rounded)}",
+        "numerator units",
+        (),
+        lineup.threshold_error,
+        {"numerator": (1e-12,), "denominator": (2e-12,), "threshold": ((0.4, 0.5),)},
+        {
+            "numerator": "numerator error",
+            "denominator": "denominator error",
+            "threshold": "tie and win thresholds",
+        },
+    ),
+    ArrayFormula(
+        "threshold_votes",
+        "完整搜尋的類別結果上界",
+        r"V=\max(V_0,1\;(M_w+E_w\ge0),0\;(M_t+E_t\ge0),-1)",
+        "category sign",
+        (),
+        lineup.threshold_votes,
+        {"upper": ((1.0, -1.0),), "error": ((0.0, 0.0),), "zero_votes": (-1.0,)},
+        {
+            "upper": "tie and win margin upper bounds",
+            "error": "margin error bounds",
+            "zero_votes": "zero denominator outcome bound",
+        },
+    ),
     ArrayFormula(
         "strict_win",
         "整週嚴格勝出的樣本",

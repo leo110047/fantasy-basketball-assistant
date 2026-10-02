@@ -17,6 +17,7 @@ from fba.formulas.categories import sample_scores
 from fba.formulas.simulation import mean_array, outward_interval
 from fba.inseason.lineup_bounds import score_ceiling
 from fba.inseason.lineup_space import cached_subsets
+from fba.inseason.weekly_players import PlayerSearch
 
 if TYPE_CHECKING:
     from fba.inseason.matchup import Simulation
@@ -51,6 +52,7 @@ def day_choices(
         {**fixed, **{slots[s].id: ids[p] for s, p in enumerate(assigned) if p is not None}}
         for _, assigned in legal
     )
+    rows = tuple(sorted(rows, key=lambda row: (-len(row), tuple(sorted(row.values())))))
     zero = np.zeros((sim.samples, len(sim.axes)))
     bounds = [(draws[p], draws[p]) for p in fixed.values()]
     for slot in slots:
@@ -116,9 +118,23 @@ class WeeklySearch:
     def run(self) -> tuple[Array, tuple[Assignment, ...]]:
         zero = np.zeros_like(self.actual)
         self.consider((), zero, (self.preferred,))
-        self.visit((), zero)
+        players = PlayerSearch.create(self) if self.can_prune else None
+        if players is None:
+            self.visit((), zero)
+        elif not self.pruned(
+            completion_ceiling(self.sim, zero, self.days, self.actual, self.opponent),
+            self.preferred,
+        ):
+            players.run()
         self.sim.check_limits()
         return self.best_total, self.best
+
+    def pruned(self, ceiling: float, possible: tuple[Assignment, ...]) -> bool:
+        return ceiling < self.best_value - self.sim.params.tolerance.value or (
+            ceiling <= self.best_value + self.sim.params.tolerance.value
+            and self.best_key is not None
+            and lineup_key(possible) >= self.best_key
+        )
 
     def consider(
         self,

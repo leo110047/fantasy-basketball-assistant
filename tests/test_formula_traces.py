@@ -63,6 +63,13 @@ def simulation_example_answers():
         "category_ratio": [3, 3],
         "game_threshold": [1, 0],
         "comparison_margin": [0, 2],
+        "comparison_thresholds": [[0.4495, 0.4505], [0.7995, 0.8005]],
+        "accumulation_error": [4 * 2**-51, 4 * 2**-48],
+        "threshold_accumulate": [3, 1],
+        "linear_roundoff": [4 * (2 * 2**-49 + 2**-48) + 5 * 2**-47],
+        "threshold_margin": [[1.6, 1.0]],
+        "threshold_error": [[1.8e-12, 2e-12]],
+        "threshold_votes": [0],
         "linear_interval": [[-2], [4]],
         "ratio_interval": [[0.5], [3]],
         "standings_credit": [4, 4.5],
@@ -138,7 +145,7 @@ def test_vector_examples_have_independent_answers_and_immutable_replay_inputs():
         r.implementation.__name__
         for r in ARRAY_FORMULAS
         if r.implementation.__module__ == "fba.formulas.vector"
-    } == functions - {"scoring_axes"}
+    } == functions - {"scoring_axes", "week_outcome"}
     simulation_source = source.with_name("simulation.py")
     simulation_functions = {
         node.name

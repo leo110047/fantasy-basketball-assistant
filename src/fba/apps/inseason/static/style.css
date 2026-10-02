@@ -6,3 +6,6 @@
 .formula:not([open]) > :not(summary){display:none}
 .formula td{white-space:normal;overflow-wrap:anywhere}
 .calibration { display:block; width:340px; max-width:100%; margin:1rem 0; }
+.actions button[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:white}
+#busy{position:fixed;right:20px;bottom:20px;z-index:20;width:min(480px,calc(100% - 40px));padding:12px 18px;border:1px solid var(--line);border-radius:8px;background:var(--surface);box-shadow:0 4px 18px #24352d22}
+#busy label,#phase{white-space:nowrap}#busy progress{min-width:40px}

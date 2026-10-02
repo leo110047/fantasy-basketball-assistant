@@ -2,7 +2,7 @@
 
 更新日期：2026-10-02。專案：`/Users/leo/fantasy-basketball-assistant`。
 
-**整份規格尚未完成。** 接手時已核對本機與遠端 main 均為 `8d72a3bdd9c41b8f1d5f7540891432c14480b98a`，本輪使用者確認 ScoreTape receipt 與 Yahoo 核准尚未取得。下列歷史平台實測另標候選；公式所有權／UI trace 本機驗收及三平台合成資料 CI 已通過。真實 NBA／公開排名來源、真實 Yahoo、因果歷史校準、搜尋品質與部分實際交付情境仍缺證據，效能工作依使用者指示暫停。
+**整份規格尚未完成。** 接手時已核對本機與遠端 main 均為 `8d72a3bdd9c41b8f1d5f7540891432c14480b98a`，本輪使用者確認 ScoreTape receipt 與 Yahoo 核准尚未取得。下列歷史平台實測另標候選；公式所有權／UI trace 本機驗收及三平台合成資料 CI 已通過。真實 NBA／公開排名來源、真實 Yahoo、因果歷史校準、搜尋品質與部分實際交付情境仍缺證據。使用者最新指示已恢復阻塞網站操作的搜尋效能修補；不再沿用先前的暫停指示阻擋這項工作。
 
 已移除完成用途的 Windows 暫時診斷，scripts policy 回歸檢查必要的三平台 verify 入口。後續修補多 IL 的完整合法釋出路徑比較，並保留以下未完成條件。提交序列以 `git log` 為準；最新本機審查／CI 證據入口是 `/private/tmp/fba-continuation-report/current-status.md`，暫存資產可能清除，並不隨 clone 交付。
 
@@ -44,6 +44,10 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 新 replay 報告標記 `search_method=complete`，單步 recall 量測完整搜尋後的發布清單，多步沿用相容欄位 `beam_recall`。舊報告缺少方法欄位時保持 `z_beam`。仍以完整合法參考作分母、排除無獲益控制，原 95% 與最少案例門檻不變；故意漏回最佳解的測試仍必須得到 recall 0。兩季 portability 新參考僅改 F3 清單及搜尋參數的政策出處雜湊，共同方案分數與其他功能相同；獨立核對全部 388 次整週呼叫、115,546 組排陣後更新，原始證據在 `complete-f3-portable-oracle.json`。本輪完整檢查、獨立審查與交付狀態以最新 `current-status.md` 為準，不沿用前版綠燈。
 
 `f02a18c` 的 Windows CI 有一個 F3 完整枚舉品質案例因內層單週 wall-clock deadline 失敗（1 failed、1,469 passed）；Linux／macOS 通過，不能宣稱該批三平台全部通過。品質測試改用只限該測試的固定預算時鐘，保留全部候選、抽樣數、最佳分數斷言與產品參數；另有確定性逾時／取消測試驗證中斷且不發布部分結果。完整品質與實際時間預算的完成率仍分別報告，不以此修改宣稱 Windows 效能改善。
+
+該品質測試修正已提交 `4ee355cf4873323996d56cef889fac7e871f5996` 並核對遠端相同；Goldband `9fa760a8-d2a1-478c-adf8-6c986855d951` 完整 1,472 passed／687.26 秒、兩 required fresh verified-pass、0 findings／gaps，completion-authorized=true。[Inseason source 37010083078](https://github.com/leo110047/fantasy-basketball-assistant/actions/runs/37010083078) 三平台與 Check 37010082951 全部成功，下載產物共 3,363 次數值比較最大差 0。
+
+最新本機搜尋修補仍在進行：以瀏覽器擷取的聯盟資料重建 Yahoo 格式回應，經原 adapter 同步，再經原球員來源／forecast 入口載入既有研究資料；私人輸入僅在 Git 忽略的 `evidence/yahoo-browser-2026-10-02/`，沒有寫入產品程式。這是 API 輸入重播，不是 Yahoo API 核准或 live wire 證據。固定原始抽樣與產品期限，第一週原 300 秒診斷未完成的完整排陣已可在本機 API／Chrome 顯示結果。新的界限保留比率分子分母關係、浮點保守誤差、合法位置域與原同分順序；不支援的數值域沿用既有完整搜尋，沒有截短候選。擴大至 19 個常規對戰週的最近本機測量為 15 完成、4 逾時（第 9、13、17、19 週），交易搜尋仍會被後續週阻塞，不能宣稱整套網站已可用或效能驗收完成。瀏覽器另已實測搜尋執行中／失敗就地回饋、無結果時停用排序；初審完整 1,531 測試通過，但指出工作完成後新渲染的排序按鈕仍停用；已用實際出貨 JS 的 partners／trade handlers 重現兩個失敗案例，改為清除 pending 後再渲染。成功／失敗／空結果／防重複提交共五個瀏覽器元件回歸通過；此證據控制 DOM 與 HTTP 邊界，不當作真實交易計算成功。最新獨立複審、效能與提交狀態仍以 `current-status.md` 為準。
 
 兩季 portability 參考只更新 F3 候選及排序，其他功能與共同方案分數相同，兩季最佳分數不變；獨立核對 124 次整週呼叫、98,076 組合法排陣後才更新。原始失敗、差異與完整 oracle 保留在 `causal-f3-full-verify.log`／`causal-f3-portable-diff.json`／`causal-f3-portable-oracle.json`。
 
