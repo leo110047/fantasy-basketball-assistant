@@ -165,3 +165,79 @@ def test_interrupted_complete_il_search_never_publishes_its_first_candidate(
     with pytest.raises(CalculationTimeout, match="cancelled|time budget"):
         return_plan(sim, "team0", ("p0", "p1", "p2"))
     assert completed
+
+
+def simulation_with_three_returns(seed, staggered, mode):
+    sim = simulation_with_two_returns(seed, 1 if staggered else 0, mode)
+    on = sim.as_of.date()
+    sim.league = sim.league.model_copy(
+        update={
+            "injury_slots": (InjurySlot(id="IL", label="IL", count=3, eligible_statuses=("INJ",)),),
+        }
+    )
+    sim.players = sim.players.model_copy(
+        update={
+            "players": tuple(
+                p.model_copy(
+                    update={
+                        "status": "INJ" if staggered else "healthy",
+                        "return_on": on + timedelta(days=2 if staggered else 0),
+                    }
+                )
+                if p.id == "p8"
+                else p
+                for p in sim.players.players
+            )
+        }
+    )
+    sim.snapshot = sim.snapshot.model_copy(
+        update={
+            "teams": tuple(
+                t.model_copy(update={"injury_players": {"p6": "IL", "p7": "IL", "p8": "IL"}})
+                if t.id == "team0"
+                else t
+                for t in sim.snapshot.teams
+            ),
+            "free_agents": tuple(f for f in sim.snapshot.free_agents if f.player_id != "p8"),
+        }
+    )
+    return sim
+
+
+def three_return_paths():
+    # Independent list transitions: 3 choices at each activation, including
+    # releasing a player activated earlier on the same day.
+    paths = [((), ("p0", "p1", "p2"))]
+    for returning in ("p6", "p7", "p8"):
+        paths = [
+            ((*drops, drop), (*tuple(p for p in active if p != drop), returning))
+            for drops, active in paths
+            for drop in active
+        ]
+    return tuple(drops for drops, _ in paths)
+
+
+@pytest.mark.parametrize("seed", range(19000, 19003))
+@pytest.mark.parametrize("staggered", (False, True))
+@pytest.mark.parametrize("mode", ("h2h_one_win", "h2h_each_category"))
+def test_three_il_returns_match_all_27_legal_complete_release_paths(seed, staggered, mode):
+    sim = simulation_with_three_returns(seed, staggered, mode)
+    paths = three_return_paths()
+    assert len(set(paths)) == 27
+    on = sim.as_of.date()
+
+    def score(drops):
+        events = tuple(
+            (on + timedelta(days=i if staggered else 0), i, pid, drop)
+            for i, (pid, drop) in enumerate(zip(("p6", "p7", "p8"), drops, strict=True))
+        )
+        oracle = ExplicitTimelineSimulation(sim, events)
+        oracle.draws = sim.draws
+        return season_value(oracle, "team0", include_playoffs=True)
+
+    best = max(map(score, paths))
+    plan = return_plan(sim, "team0", ("p0", "p1", "p2"))
+    assert tuple(p.player_id for p in plan) == ("p6", "p7", "p8")
+    assert score(tuple(p.drop for p in plan)) == pytest.approx(
+        best, abs=sim.params.tolerance.value, rel=0
+    )

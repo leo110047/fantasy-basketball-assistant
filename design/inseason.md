@@ -139,7 +139,7 @@ uv run --locked fba inseason-calibrate /path/calibration-history.json \
 - 正式 NBA／公開排名來源與真實 Yahoo OAuth／錄製回應尚未取得。使用者已送出 Yahoo API 申請，等待審核／核發。
 - 公式 owner 已持續抽取與盤點；拍賣 JavaScript 及最終 UI trace／全產品隨機手算仍待完成，見 [公式所有權](formula-ownership.md)。
 - 原研究資產已重播；新跨季單欄位診斷仍不是因果引擎回測。傷情、當時排名／先驗公開時點、旗標、出賽、校準及策略的真實 holdout 未通過。參數保留未校準／Assumption 標示。
-- 小空間有聯合排陣與 top-10 交易 oracle；大空間逐日精確、整週反覆改善及 F3 篩選／beam 的品質仍未全面驗證。對手保持固定名單及合法基準排陣，不模擬串流反應。
+- 整週排陣使用完整搜尋與保守上界剪枝，只有完成搜尋才發布結果；逾時明確失敗。合成四天／六天排陣已與完整窮舉比對，top-10 交易也有小規模 oracle；F3 篩選／beam 的真實召回率仍未驗證。對手保持固定名單及合法基準排陣，不模擬串流反應。
 - ROS 抽樣、共同亂數、跨請求失效與保存計畫沿用已有本機證據；效能驗收依使用者決定暫停，樣本、候選與 budgets 不降低。
 - 同步比分進度與更正仍需實際 Yahoo 核對；不猜歷史先發、不用事後資料補造事前預測。
 - 原生 Windows、無 Python 的乾淨 macOS／Windows clone、三平台實際 CI／數值比較及完整逐條整合驗收未完成。

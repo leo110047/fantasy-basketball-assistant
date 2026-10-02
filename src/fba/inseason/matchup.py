@@ -422,37 +422,10 @@ class Simulation:
         opponent_total: Array,
         roster: tuple[str, ...] | None = None,
     ) -> tuple[Array, tuple[DayLineup, ...]]:
-        own, initial = self.total(team, week, roster)
-        own = own.copy()
-        _, through = self.actual(team, week)
-        started = monotonic()
-        joint = joint_lineup(self, team, week, opponent_total, roster, initial, through)
-        if joint is not None:
-            return joint
-        current = initial
-        while True:
-            result: list[DayLineup] = []
-            for day in current:
-                active = roster if roster is not None else self.roster(team)
-                active = self.projected_roster(team, day.on, active)
-                draws = self.daily_draws(active, day.on, max(self.as_of, through))
-                rest = own - sum((draws[p] for p in day.slots.values()), start=np.zeros_like(own))
-                assignment, _ = self.optimize_assignment(
-                    team, day.on, draws, rest, opponent_total, started
-                )
-                own = rest + sum((draws[p] for p in assignment.values()), start=np.zeros_like(rest))
-                result.append(
-                    DayLineup(
-                        on=day.on,
-                        team_id=team,
-                        slots=assignment,
-                        bench=tuple(p for p in active if p not in assignment.values()),
-                    )
-                )
-            updated = tuple(result)
-            if updated == current:
-                return own, updated
-            current = updated
+        with self.budget("week"):
+            _, initial = self.total(team, week, roster)
+            _, through = self.actual(team, week)
+            return joint_lineup(self, team, week, opponent_total, roster, initial, through)
 
     def lineup_constraints(
         self, team: str, on: date, draws: dict[str, Array]
@@ -542,8 +515,8 @@ class Simulation:
         changed = rosters or {}
         # The opponent keeps a deterministic legal baseline lineup. Optimize
         # our daily choices against that fixed forecast, including future days.
-        # Revisiting days until stable makes F3 and F5 use the same conditional
-        # whole-week optimum; it does not claim a global multi-day optimum.
+        # F3, F4 and F5 share the complete conditional weekly search. The
+        # opponent forecast is fixed; this is not an adversarial equilibrium.
         key = (
             home,
             away,

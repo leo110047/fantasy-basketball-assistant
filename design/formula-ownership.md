@@ -37,7 +37,7 @@ Today 的類別影響現在保留「raw 機率差 → 類別校準乘數」兩�
 
 `tests/formula_ownership_support.py` 每次掃描全部 `src/fba/**/*.py`，包含 module／class 內容、method、nested function、lambda 內的算術及數值正負號；排除型別註記與位元旗標運算。它只找候選，沒有宣稱能從 AST 自動判斷業務語意。
 
-目前 142 個 Python 檔有 464 個候選 owner：129 `registered`、1 `component`、130 `composition`、17 `validation`、187 `structure`、0 `pending`。數字不是公式總數。Paths、字串、集合、日期與 solver constraint arithmetic 也會被掃到。本輪讀完剩餘 87 個函式本體，抽取業務算式後逐條記錄具體分類理由。合法名單／現金保留、搜尋順序與停止條件不當成預測公式；使用既有登錄公式的編排保留在引擎。
+目前 142 個 Python 檔有 470 個候選 owner：129 `registered`、1 `component`、132 `composition`、17 `validation`、191 `structure`、0 `pending`。數字不是公式總數。Paths、字串、集合、日期與 solver constraint arithmetic 也會被掃到。本輪讀完剩餘 87 個函式本體，抽取業務算式後逐條記錄具體分類理由。合法名單／現金保留、搜尋順序與停止條件不當成預測公式；使用既有登錄公式的編排保留在引擎。
 
 另逐檔核對 1 個 C++ 與 10 個 JavaScript 來源，保存完整檔案 SHA-256、分類、理由與所用登錄 ID。測試檢查新增／刪除／改寫來源時必須更新這份人工盤點，不能自動判斷語意。拍賣頁的價差／折扣、cap 對市場價的空間、全場現金／名額與買／不買餘額已移回後端，使用既有 `difference`、`ratio`、`linear`。重點價差門檻沿用 5／0.2，改由 `model.market.focus_difference`／`focus_discount` 設定；舊模型保持相同行為，範例與受影響 schema 同步。Python／C++／JavaScript 的 pending 均為 0。拍賣候選完整通過 1,185 項測試（292.59 秒）與獨立審查 `2ad24675-08fc-48f9-92ec-73935d864e2a`，0 findings、兩項 required verified-pass；304 檔提交前 0 drift，分批提交 `ad00944`、`3980741`，未推送。
 
@@ -92,3 +92,7 @@ Git 外 `random-20-handcheck.json` 保存 seed 20261002、拍賣 66／Today 111 
 本輪逐條分類 464 個 Python 候選並核對 C++／JavaScript，129 條登錄有一對一、domain、獨立答案與 replay 檢查。跨競標桌／季賽助手隨機 20 個實際 DOM 數字完成手算，另補每週總量／比率、分箱、手調乘數及接受模型 loss 的正式程式合成 UI 整合，完整候選通過 1,193 項測試與 `8341a8ab-9167-4f54-86a8-5939de335d26` 獨立審查（candidate `85ee5773798d505c8403ea919b526097d7fc6a935615ba793643878a30c35467`）。E/F1 的本機範圍結案；自動盤點本身不宣稱能證明語意。
 
 使用者已授權直接推至 main；`49e9bc9825235ba66ea66ac5b8eb308a920d268b` 已推送並以遠端 SHA 讀回。三平台 CI 正在執行，結果另記 Git 外最新狀態。這次後續只更新文件與驗收狀態，程式／設定／測試沒有更動；不沿用本機證據宣稱平台或供應商通過。
+
+## 整週搜尋的所有權接續
+
+`weekly_lineups` 新增完整分支搜尋：合法候選、子樹大小、同分 key 與成功標記屬結構；既有 draw 的原順序加總、逐格上下界與 outward rounding 屬既有公式編排。計分仍唯一使用 `sample_scores`／`sample_mean`／校準，保守分數仍由 `lineup_bounds.score_ceiling` 擁有。已逐條核對八個新增／變更候選；`Simulation.optimize_total` 移除座標算術後不再是數值候選。登錄公式維持 129 條，沒有新增預測方程。畫面只修改完整搜尋的說明文字。

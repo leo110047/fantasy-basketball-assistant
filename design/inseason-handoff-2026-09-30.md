@@ -2,7 +2,7 @@
 
 更新日期：2026-10-02。專案：`/Users/leo/fantasy-basketball-assistant`。
 
-**整份規格尚未完成。** 下列平台實測對應已推送基準 `fba7fdc19781e42023c5b14a0341161268ad7d35`；公式所有權／UI trace 本機驗收及三平台合成資料 CI 已通過。真實 NBA／公開排名來源、真實 Yahoo、因果歷史校準、搜尋品質與部分實際交付情境仍缺證據，效能工作依使用者指示暫停。
+**整份規格尚未完成。** 接手時已核對本機與遠端 main 均為 `8d72a3bdd9c41b8f1d5f7540891432c14480b98a`，本輪使用者確認 ScoreTape receipt 與 Yahoo 核准尚未取得。下列歷史平台實測另標候選；公式所有權／UI trace 本機驗收及三平台合成資料 CI 已通過。真實 NBA／公開排名來源、真實 Yahoo、因果歷史校準、搜尋品質與部分實際交付情境仍缺證據，效能工作依使用者指示暫停。
 
 已移除完成用途的 Windows 暫時診斷，scripts policy 回歸檢查必要的三平台 verify 入口。後續修補多 IL 的完整合法釋出路徑比較，並保留以下未完成條件。提交序列以 `git log` 為準；最新本機審查／CI 證據入口是 `/private/tmp/fba-continuation-report/current-status.md`，暫存資產可能清除，並不隨 clone 交付。
 
@@ -33,7 +33,7 @@
 
 原 2025–26 研究資產已找回，五份 players／schedule 資料 SHA 與 manifest 一致；318 位球員、1,446 案例重播≤1e-12 零差。另做跨季「公式」驗證：325 人／1,473 訓練案例、317 人／1,446 驗證案例，11 欄位×5 checkpoint 共55項通過基準。季後擷取資料缺 DNP／傷情／排名／prior 當時公開時間，也不是目前引擎的因果策略回放；不可倒填 known_at。目前124參數葉值仍為 initial-uncalibrated／Assumption，沒有安裝新係數。官方 NBA 資料的可用性／用途限制另記 Git 外 `official-nba-history-readback.md`；不當成已取得合法兩季完整歷史。
 
-B2 有具體未解品質反例：production defaults 不變，30 固定種子、100 samples、1先發／3候選／4天、256合法整週組合；獨立 strict-win oracle 包含 TO 反向及投罰3位小數。13/30 的 daily_exact_coordinate 低於完整枚舉，最大4pp；seed12012 現有 `[p0,p1,p0,p0]` 為0.51，oracle `[p0,p0,p2,p0]` 為0.55。見 Git 外 `weekly-coordinate-quality.json`。這是合成條件式反例，不是 recall≥95%、歷史 holdout 或效能驗收；尚未套用新搜尋策略。M5 多 IL 已改為完整合法釋出路徑比較，以同一 ROS 起點估值；原 30 例9例落後、最大0.08的反例修正後均與9條完整路徑的獨立名單 oracle 相符。另核對同日／分日及兩計分模式；另補多名回歸與明確未來換人並存的完整路徑 oracle。初審 5ffb1269 的唯一失敗是未變的競標 solver deadline；原條件單獨競標重播通過，但相同 digest 正式 closure 被工具拒絕，不能當成已結案。完整候選審查／提交狀態以最新入口為準，不沿用前版 CI。此最優限於既有回歸日期政策及目前每週估值模型，B2 的整週品質缺口仍在。不能以外部資料尚缺概括所有未完成項。
+B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發／三候選／四天、256 合法整週組合，舊 daily_exact_coordinate 有 13/30 低於全枚舉，最大 4pp；seed12012 由 `[p0,p1,p0,p0]` 的 0.51 改為 `[p0,p0,p2,p0]` 的 0.55。新 `weekly_lineups` 完整搜尋所有合法組合，以保守上界及平手規則剪枝；不再因空間超過 64 退回逐日近似。64 改作每節點直接列舉門檻，抽樣／候選／產品期限不變，逾時不發布部分結果。新增 `tests/test_inseason_weekly_quality.py` 涵蓋兩計分模式、四天 256 與六天 4,096 完整組合、TO 反向、投罰三位小數、鎖定／未來換人、同分／零校準、浮點上下界與中斷。這是固定對手及模型下的搜尋正確性；不等於 recall≥95%、歷史 holdout、真實勝率或效能驗收。兩季跨功能參考值的變更另以獨立計分／完整枚舉核對全部 124 個實際整週呼叫、96,843 組合法排陣，最大空間 2,401 組，原始分數與最優值差≤1e-12；核對後才更新 portable reference。新批完整檢查／獨立審查與提交狀態以 Git 外 current-status.md 為準。M5 多 IL 已改為完整合法釋出路徑比較，以同一 ROS 起點估值；原 30 例9例落後、最大0.08的反例修正後均與9條完整路徑的獨立名單 oracle 相符。另核對同日／分日及兩計分模式；另補多名回歸與明確未來換人並存的完整路徑 oracle。本輪再補三名 IL 回歸：同日／分日 × 兩模式 × 三 seeds 的 12 例，每例均與 27 條完整合法釋出路徑一致。初審 5ffb1269 的唯一失敗是未變的競標 solver deadline；原條件單獨競標重播通過，但相同 digest 正式 closure 被工具拒絕，不能當成已結案。完整候選審查／提交狀態以最新入口為準，不沿用前版 CI。此最優限於既有回歸日期政策及目前每週估值模型，B2 現改用完整條件式整週搜尋，F3 篩選／beam 的真實 recall 及來源／歷史品質仍未完成。不能以外部資料尚缺概括所有未完成項。
 
 ## 4. 完整追蹤清單
 
@@ -56,7 +56,7 @@ B2 有具體未解品質反例：production defaults 不變，30 固定種子、
 | ID | 現況／後果 | 接手位置 | 完成條件 |
 | --- | --- | --- | --- |
 | B1 | 每日精確枚舉／批次／重用有獨立 oracle；效能驗收暫停。 | `core/lineups.py`、`inseason/matchup.py`、`formulas/categories.py` | 先 profile；消除重複工作、適當批次化與重用合法組合。保留 ≤15 人與窮舉一致的正確性證據，不能只縮小搜尋或放寬 timeout。 |
-| B2 | 小整週空間有聯合 exact oracle；四天 coordinate 診斷30例中13例低於全枚舉，最大4pp，整體品質仍未驗收。 | `inseason/matchup.py::optimize_total` | 已取得合成反例；繼續比較整週排陣品質及規格要求的每日精確解，所有 F3/F4/F5 共用結果。若用近似策略，須清楚說明並有品質證據，不能稱全域最優。 |
+| B2 | 舊30例13例落後已修；改為完整整週搜尋及保守剪枝，四天／六天獨立窮舉與中斷回歸通過。真實資料品質／效能仍未驗。 | `inseason/matchup.py::optimize_total` | F3/F4/F5 共用完整條件式整週結果；上界／同分規則與獨立全枚舉一致。成功只代表固定對手、名單政策及抽樣下的最優；真實品質與效能需另驗。 |
 | B3 | ROS 抽樣、共同亂數、跨請求失效與冷算一致已驗；長季效能暫停。 | `inseason/season.py`、`Simulation`、`session.simulation` | 使用明確的 ROS 抽樣契約與共同亂數；快取按同步、聯盟、參數、帳本、名單／生效日等正確失效。抽樣數不同不能直接共用不相容的 draws。 |
 | B4 | 保守上界與完整枚舉 top-10 一致有證據；真實規模效能暫停。 | `inseason/trades.py::search_trade_bundles` | 可驗證的上界／候選篩選；小聯盟多換多前十名與完整窮舉一致，記錄真正省略的昂貴計算數，不只統計最後呼叫 `evaluate_trade` 的次數。 |
 | B5 | 新今日契約與沿用已修；F3／交易／Today 真實 p50/p95 未驗，效能暫停。 | `inseason/recommendations.py`、`inseason/trades.py`、`inseason/today.py` | 固定 14×13／10 starters／150 FA 與真實聯盟 p50/p95，F3／交易／Today 分別達 15／30／1 秒。Today 依後續指示只沿用有效 F3／IL 決策，涵蓋 API 讀取／計算／序列化／保存，不重新逐名 ROS。指定一隊 2 換 2 仍需 ≤30 秒；效能驗收目前暫停。 |
@@ -70,7 +70,7 @@ B2 有具體未解品質反例：production defaults 不變，30 固定種子、
 | M2 | 雙位置去重、零／部分出賽分鐘分配已修；prior groups 仍粗且為 Assumption。 | `inseason/projection.py::fallback_prior`、`inseason/adjustments.py::redistribute`、參數檔 | 位置／分鐘 peer 分組與資料依據、無 peer 明確失敗、雙位置去重；補部分傷病與隊伍分鐘分配的情境驗收。不要把粗群組描述成已校準先驗。 |
 | M3 | 缺完賽比分涵蓋時明確不可算；真實 Yahoo 不漏算／不重複仍未完成。 | `inseason/matchup.py::actual/total/daily_draws` | 核對 `through` 與來源比分的真正語義；覆蓋已完成、進行中、當天多場、官方更正。不漏算、不重複加入部分已含的比分，不猜歷史 Yahoo 先發。 |
 | M4 | 無 history 的隨機 frozen prior 本機已補；相關性及樣本外品質未驗。 | `inseason/matchup.py::game_draw`、來源歷史資料契約 | 開季、新秀／新升上來球員可計算；補足歷史或明確定義先驗預測抽樣與不確定性。不能用全零／確定常數偷偷代替未知，也不能把未來資料帶入回測。 |
-| M5 | 本機已修 IL／未來換人合併事件、完整合法後續、容量／保護／鎖定延期、再取得與冷啟動 Today 沿用；本批已補同日連續換人的合成 Chrome 流程。多 IL 完整合法釋出路徑比較已補獨立合成 oracle，使用共同 ROS 起點；日期政策及每週估值模型的品質邊界仍保留，真實 Yahoo 未驗。 | `inseason/matchup.py::roster`、`inseason/season.py`、`inseason/today.py` | 包含預計回歸、移出 IL、容量、保護及必要丟人的合法轉換；與未來換人共用時間軸，動作與條件排陣一致，不把球星 ROS 當零。合成 oracle 不能替代真實來源與完整搜尋品質驗收。 |
+| M5 | 本機已修 IL／未來換人合併事件、完整合法後續、容量／保護／鎖定延期、再取得與冷啟動 Today 沿用；本批已補同日連續換人的合成 Chrome 流程。多 IL 完整合法釋出路徑比較已補獨立合成 oracle，另補三 IL／27 路徑的 12 例，使用共同 ROS 起點；日期政策及每週估值模型的品質邊界仍保留，真實 Yahoo 未驗。 | `inseason/matchup.py::roster`、`inseason/season.py`、`inseason/today.py` | 包含預計回歸、移出 IL、容量、保護及必要丟人的合法轉換；與未來換人共用時間軸，動作與條件排陣一致，不把球星 ROS 當零。合成 oracle 不能替代真實來源與完整搜尋品質驗收。 |
 | M6 | 類別／整週參數、匯出及擬合分開本機已修；holdout 未完成。 | 參數契約／defaults、`inseason/matchup.py`、`inseason/review.py::calibration_history/refit_history`、backtest | 分開類別 0.82／整週 0.80 的規格初值及出處；匯出兩層級的預測與結果，分開擬合、展示與樣本外驗證。舊版積分不可當新整週勝率訓練資料。 |
 | M7 | 自建接受模型案例、分離／不識別檢查及求解已驗；真實提案機率未校準。 | `formulas/fitting.py`、`inseason/operations.py::refit_acceptance`、保存的 acceptance-fits | 自行建立正常、分離與不識別案例，驗證係數／需求方向、殘差、log loss、顯示與既有報告處理；真實提案樣本另作驗收。不要把合成訓練擬合說成真實接受機率校準。 |
 
@@ -110,7 +110,7 @@ B2 有具體未解品質反例：production defaults 不變，30 固定種子、
 
 1. 核對 git／遠端 main、最新證據入口與本文件。完成已審查候選的分批 commit 與推送，讀回遠端 SHA；審查期間固定候選。未變更範圍沿用相同候選證據，新增範圍做相符驗證及 Goldband 獨立審查。
 2. 取得 ScoreTape wire receipt 後核對欄位與合法存取範圍，補 A1/A7 的真實 adapter。Yahoo 核准後以使用者提供的本機設定完成唯讀 OAuth／refresh／同步及去識別 fixture，補 A2/A6/M3/V1。必要秘密只由使用者在設定流程輸入。
-3. 取得當時公開且可用的歷史後，跑實際引擎的因果 holdout／策略比較及校準；保留資料限制。B2 整週排陣、F3 recall 及更大多 IL 情境品質仍需處理，不能只重新標為外部 blocker。
+3. 取得當時公開且可用的歷史後，跑實際引擎的因果 holdout／策略比較及校準；保留資料限制。B2 程式已改完整條件式搜尋；繼續驗證 F3 recall 與真實策略品質，不以合成 oracle 代替歷史驗收。
 4. V2–V4 仍需 Windows 11 保留 port／GUI 共存、無 Python 的乾淨兩平台 clone 與實際雙擊全情境；CI runner 及 --help 不替代此證據。V6 依原規格逐條整合驗收，效能項目依暫停指示保留，未達標不結案。
 
 ```sh

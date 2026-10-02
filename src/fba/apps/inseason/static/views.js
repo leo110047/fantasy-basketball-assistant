@@ -149,7 +149,7 @@ function forecastCard(ctx, result) {
     el("p", {}, `維持優勢：${result.categories.filter(c=>c.strategy==="safe").map(c=>c.label).join("、") || "目前沒有"} · 爭取關鍵類別：${result.categories.filter(c=>c.strategy==="key").map(c=>c.label).join("、") || "目前沒有"} · 暫不優先投入：${result.categories.filter(c=>c.strategy==="abandon").map(c=>c.label).join("、") || "目前沒有"}`),
     el("p", {}, `對手 ${opponent} · 已過 ${result.elapsed_days} 天 · 剩餘可先發場次 ${result.remaining_games?.[result.home] ?? "未知"} / 對手 ${result.remaining_games?.[result.away] ?? "未知"} · 剩餘加人 ${result.adds_remaining ?? "未知"}`),
     el("p", {}, `整週未校準值 ${result.scoring === "h2h_one_win" ? percent(result.raw_score) : number(result.raw_score)} · 不另加退／不交易基準 ${result.scoring === "h2h_one_win" ? percent(result.no_moves_score) : number(result.no_moves_score)}（保留手調與 IL 回歸情境、最佳化每日排陣）`),
-    el("p", {class:"muted"}, result.lineup_search === "joint_exact" ? "我方本週合法組合已聯合窮舉；對手維持固定基準排陣。" : "每日排陣使用精確窮舉；整週採逐日反覆改善，不保證聯合全域最優。"),
+    el("p", {class:"muted"}, result.lineup_search === "joint_exact" ? "我方本週合法排陣已完整搜尋；對手維持固定基準排陣。" : "每日排陣使用精確窮舉；整週採逐日反覆改善，不保證聯合全域最優。"),
     result.prior_players?.length ? el("p",{class:"warning"}, `無逐場歷史，以先驗抽樣：${result.prior_players.map(p=>playerName(ctx,p)).join("、")}；不確定性尚未經真實 holdout 校準。`) : null,
     result.injury_returns?.length ? table(["IL 回歸假設","生效日","必要丟人","日期依據"],result.injury_returns.map(m=>[
       playerName(ctx,m.player_id),m.effective_on,m.drop ? playerName(ctx,m.drop) : "有空名額",m.estimated ? "來源估計，仍可能更改" : "最新狀態已不符 IL 資格"

@@ -2312,12 +2312,6 @@
       "reason": "Batches ordered draw sums and registered category_values; final sum combines configured category scores.",
       "signature": "9a7cfa2be2d7a7b4276edfbb8cf8dc92e647aacbebba70ca4abd0be3b208cc5c"
     },
-    "fba.inseason.matchup.Simulation.optimize_total": {
-      "role": "composition",
-      "owner": "fba.inseason.matchup.Simulation.optimize_total",
-      "reason": "Removes/replaces already computed draws for one date, holding other dates fixed; objective remains optimize_assignment scoring owner.",
-      "signature": "72596c7ed8d7b6e9fae321c6f48b7ab9bf9658fd097f0b039e4f77920bbeeb01"
-    },
     "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objective": {
       "role": "composition",
       "owner": "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objective",
@@ -2709,10 +2703,10 @@
       "signature": "89e5d2299138b432f85a8120cf5a6aaec2f88f5a27dc5e31b97fcbab06677377"
     },
     "fba.inseason.weekly_lineups.joint_lineup": {
-      "role": "composition",
+      "role": "structure",
       "owner": "fba.inseason.weekly_lineups.joint_lineup",
-      "reason": "Enumerates legal weekly assignments within exact-space cap; registered sample_scores/mean/calibration own objective. Product counts combinations, ordered sums combine draws and tolerance/ID keys select best.",
-      "signature": "c037fa0ab4d9f60d2dd9cf7c15cfb5eb5ea4c8ff8c0d057c73c4421dee11768b"
+      "reason": "Builds complete legal weekly search, records successful exact completion, and assembles active-roster bench output. Dates and ID sorting are structural.",
+      "signature": "2acb232d9561febb1875c7f964a2beb7f9c0ef14b42b2adf084aa9fbfebc3c07"
     },
     "fba.projection.preparation.game_samples": {
       "role": "structure",
@@ -2785,6 +2779,48 @@
       "owner": "fba.runtime.processes.ExtendedLimits.<class>",
       "reason": "Windows ABI fixed-width IO-counter array layout; no model equation.",
       "signature": "fd7e61ee3d90be5e475f104dab17138426a2a3f0f837f7c75fb98f5ef10afd23"
+    },
+    "fba.inseason.weekly_lineups.day_choices": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_lineups.day_choices",
+      "reason": "Enumerates all legal daily subsets. Per-slot minimum and maximum of available draws relax uniqueness to bound every ordered completion; date selection and eligibility remain structural.",
+      "signature": "617577f9adfad7f66496e52c32660a81e67c628b06037a0321c794d15bd52793"
+    },
+    "fba.inseason.weekly_lineups.lineup_key": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_lineups.lineup_key",
+      "reason": "Uses existing most-starters then lexical player-ID tie order over complete weekly assignments; no score formula.",
+      "signature": "6a5eec8249514f360f50e2185e4eafc1211e6ff6abb0f07a8a495b4ef6cf2eae"
+    },
+    "fba.inseason.weekly_lineups.add_assignment": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_lineups.add_assignment",
+      "reason": "Combines existing draws in fixed-player then starter-slot order, preserving the original weekly floating-point accumulation.",
+      "signature": "a530716354d45a5716862867c6404c048b6357230bf98e20f114b734823fc2d2"
+    },
+    "fba.inseason.weekly_lineups.completion_ceiling": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_lineups.completion_ceiling",
+      "reason": "Adds relaxed per-slot intervals in original accumulation order and uses registered outward_bound plus existing score_ceiling; no separate scoring or calibration equation.",
+      "signature": "07ff40d35e9c3bb19b1dc3365754db0b5e07edcaab3d922acf16eeafaa1021f1"
+    },
+    "fba.inseason.weekly_lineups.WeeklySearch.__post_init__": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_lineups.WeeklySearch.__post_init__",
+      "reason": "Selects the optimistic most-starters lexical completion for tie pruning and disables pruning for required zero-denominator failures.",
+      "signature": "7a453360e4aa97dbf148fc631abfa38ee6ca0eeb1fd9345a7544308d93da199f"
+    },
+    "fba.inseason.weekly_lineups.WeeklySearch.consider": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_lineups.WeeklySearch.consider",
+      "reason": "Batches complete weekly assignments through registered sample_scores, sample_mean and score calibration. Compares the existing tolerance and ID tie order; no new objective formula.",
+      "signature": "45f329d6e47597676a6aa0362d4d3f4c70b5c5c321972a560aa0552ddcaa7993"
+    },
+    "fba.inseason.weekly_lineups.WeeklySearch.visit": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_lineups.WeeklySearch.visit",
+      "reason": "Depth-first complete search; product counts only determine direct-enumeration threshold. Certified score ceiling and optimistic tie key determine safe pruning; no candidate truncation.",
+      "signature": "db6f928c27d1687081c3ac54f5ec59b3aed47cc553c9b18186dcdf1749ff922e"
     }
   },
   "source_files": {
@@ -2816,7 +2852,7 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "9996d377b3b8980a1aa35d642772d8d302ce9ecf2411ca53cc0db12a23dc33ab",
+      "sha256": "6dd10eab7f3a77aad35c388d8625ec13e41c9b27d8cc75e16aac31b4f6f60d3e",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
       "formula_ids": [

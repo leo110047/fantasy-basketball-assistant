@@ -667,7 +667,7 @@
       "kind": "Assumption",
       "reference": "design/inseason-remediation-2026-09-30.md",
       "as_of": "2026-09-30T00:00:00Z",
-      "reason": "Bound exact joint enumeration to 64 legal weekly combinations; larger schedules retain disclosed exact-per-day coordinate search. This is a resource policy, not a calibrated quality guarantee."
+      "reason": "Directly enumerate at most 64 legal completions per search node; larger spaces use complete branch-and-bound with certified score ceilings. Candidate coverage is unchanged by this threshold; existing time budgets still fail explicitly. This is an uncalibrated resource policy."
     }
   },
   "lineup_batch": {
