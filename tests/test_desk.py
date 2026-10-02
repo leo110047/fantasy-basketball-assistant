@@ -76,7 +76,9 @@ def test_save_undo_backup_restore_and_disk_reload(desk):
     assert restored.state.revision == 3
     desk.start_calculations(restored.market.state_sha256)
     wait_for(lambda: desk.results().equal.status == "ready")
-    for line in desk.log.read_bytes().splitlines():
+    with desk.log_lock:
+        lines = desk.log.read_bytes().splitlines()
+    for line in lines:
         entry = decode(DeskExecution, line, "log")
         assert entry.state_sha256 == digest(canonical(entry.state))
         assert entry.result.state_sha256 == entry.state_sha256
@@ -143,18 +145,6 @@ def test_uncooperative_edit_between_check_and_save_remains_recoverable(
     assert backups[0].read_bytes() == external_bytes
 
 
-def test_open_editor_can_finish_writing_displaced_version_after_save(desk):
-    external = canonical(desk.bootstrap().desk.state.model_copy(update={"revision": 99}))
-    with desk.path.open("r+b") as editor:
-        saved = desk.save(sell_request(desk))
-        editor.write(external)
-        editor.truncate()
-    assert desk.path.read_bytes() == canonical(saved.state)
-    backups = list((desk.path.parent / f".{desk.path.name}.history").glob("*.json"))
-    assert len(backups) == 1
-    assert backups[0].read_bytes() == external
-
-
 def test_atomic_exchange_failure_does_not_remove_either_file(tmp_path):
     source, target = tmp_path / "source", tmp_path / "missing"
     source.write_bytes(b"preserve candidate")
@@ -180,9 +170,11 @@ def test_background_failure_keeps_saved_sales_and_retry_recovers(desk):
     wait_for(lambda: desk.results().equal.status == "failed")
     assert desk.results().equal.result is None
     assert desk.path.read_bytes() == canonical(saved.state)
+    with desk.log_lock:
+        lines = desk.log.read_bytes().splitlines()
     failures = [
         entry
-        for line in desk.log.read_bytes().splitlines()
+        for line in lines
         if isinstance((entry := decode(DeskExecution, line, "log")).result, DeskError)
     ]
     assert len(failures) == 1

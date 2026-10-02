@@ -135,6 +135,8 @@ def windows_exchange(source: Path, target: Path) -> None:
     the old target in a sibling backup as part of replacement; a failure after
     installation retains that backup and reports an unconfirmed save.
     """
+    # Existing editor handles must allow FILE_SHARE_DELETE. Otherwise Windows
+    # refuses replacement before installation and the caller preserves both files.
     library = ctypes.WinDLL("kernel32", use_last_error=True)
     function = library.ReplaceFileW
     function.argtypes = [ctypes.c_wchar_p] * 3 + [ctypes.c_ulong, ctypes.c_void_p, ctypes.c_void_p]
