@@ -43,6 +43,8 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 
 新 replay 報告標記 `search_method=complete`，單步 recall 量測完整搜尋後的發布清單，多步沿用相容欄位 `beam_recall`。舊報告缺少方法欄位時保持 `z_beam`。仍以完整合法參考作分母、排除無獲益控制，原 95% 與最少案例門檻不變；故意漏回最佳解的測試仍必須得到 recall 0。兩季 portability 新參考僅改 F3 清單及搜尋參數的政策出處雜湊，共同方案分數與其他功能相同；獨立核對全部 388 次整週呼叫、115,546 組排陣後更新，原始證據在 `complete-f3-portable-oracle.json`。本輪完整檢查、獨立審查與交付狀態以最新 `current-status.md` 為準，不沿用前版綠燈。
 
+`f02a18c` 的 Windows CI 有一個 F3 完整枚舉品質案例因內層單週 wall-clock deadline 失敗（1 failed、1,469 passed）；Linux／macOS 通過，不能宣稱該批三平台全部通過。品質測試改用只限該測試的固定預算時鐘，保留全部候選、抽樣數、最佳分數斷言與產品參數；另有確定性逾時／取消測試驗證中斷且不發布部分結果。完整品質與實際時間預算的完成率仍分別報告，不以此修改宣稱 Windows 效能改善。
+
 兩季 portability 參考只更新 F3 候選及排序，其他功能與共同方案分數相同，兩季最佳分數不變；獨立核對 124 次整週呼叫、98,076 組合法排陣後才更新。原始失敗、差異與完整 oracle 保留在 `causal-f3-full-verify.log`／`causal-f3-portable-diff.json`／`causal-f3-portable-oracle.json`。
 
 本機兩季原檔共 147,201 筆逐場資料，0 筆含 `known_at`；`historical-causal-readiness.json` 列出兩季來源 SHA、欄位、擷取時間與缺少的先驗／傷情／Yahoo 名單及比分。上述修補不是已完成真實因果 holdout、策略優勢或參數校準。完整檢查／獨立審查、提交與三平台 CI 以最新 `current-status.md` 為準。

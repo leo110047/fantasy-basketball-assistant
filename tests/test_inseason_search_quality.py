@@ -23,11 +23,14 @@ from fba.inseason.recommendations import search_add_plans
         ("h2h_each_category", 2, 2, 4.30336),
     ],
 )
-def test_search_recovers_best_legal_plan(mode, seed, adds, maximum):
+def test_search_recovers_best_legal_plan(monkeypatch, mode, seed, adds, maximum):
     sim, prefs = search_scenario(seed, mode, adds)
     # Complete engine quality is separate from the product's unchanged time
     # budget. Deadline/cancellation and refusal to publish partial results
     # are tested below; this offline enumeration may exceed that budget.
+    # Freeze only the budget clock: nested week calls otherwise turn this
+    # quality assertion into a machine-speed gate on slower CI runners.
+    monkeypatch.setattr("fba.inseason.matchup.monotonic", lambda: 0.0)
     plans = search_add_plans(sim, prefs, "2", lambda _: None)
     assert plans
     assert plans[0].score == pytest.approx(maximum, abs=sim.params.tolerance.value, rel=0)
