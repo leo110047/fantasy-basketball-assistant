@@ -20,17 +20,53 @@ function showError(error) {
   const node = document.querySelector("#error"); node.hidden = false;
   node.textContent = `${error.message ?? error}。資料時間：${context.data.state?.sync.last_success ?? "尚未同步"}`;
 }
-function jobFeedback(state, action, error = null) {
+function searchStage(search) {
+  return {screening:"篩選候選交易", baseline:`準備球隊基準 ${search.baseline_completed} / ${search.baseline_total} 隊`, playoffs:"準備季後賽基準", evaluating:"逐筆評估交易"}[search.phase] ?? "準備搜尋";
+}
+function jobFeedback(state, action, error = null, search = null) {
   const label = actionLabels[action] ?? "處理資料";
   const reason = error?.message ?? String(error ?? "");
-  const message = state === "running" ? `正在${label}，請稍候…` : state === "completed" ? `${label}完成。` : reason.includes("CalculationTimeout") || reason.includes("time budget exceeded") ? `${label}逾時，尚未完成；未產生新的結果。` : `${label}失敗：${reason}`;
+  const count = search?.total != null ? `已完成 ${search.completed} / ${search.total} 筆` : "尚未完成候選篩選";
+  const message = state === "cancelled" ? `搜尋已取消 · ${count}，顯示部分結果。` : state === "cancelling" ? `正在取消搜尋 · ${count}，保留已完成結果。` : state === "running" ? search ? `${searchStage(search)} · ${count}` : `正在${label}，請稍候…` : state === "completed" ? `${label}完成。` : reason.includes("CalculationTimeout") || reason.includes("time budget exceeded") ? `${label}逾時，尚未完成；未產生新的結果。` : `${label}失敗：${reason}`;
   context.jobFeedback = { action, state, message };
   for (const node of document.querySelectorAll("[data-job-actions]")) {
     if (!node.dataset.jobActions.split(",").includes(action)) continue;
     node.textContent = message;
     node.classList.toggle("negative", state === "failed");
-    node.setAttribute("aria-busy", String(state === "running"));
+    node.setAttribute("aria-busy", String(["running", "cancelling"].includes(state)));
   }
+}
+function updateJob(job, action) {
+  context.jobId = job.id;
+  const search = job.search;
+  const cancelling = job.status === "cancelling" || context.cancelRequested;
+  document.querySelector("#jobLabel").textContent = actionLabels[action] ?? "處理資料";
+  document.querySelector("#phase").textContent = cancelling ? "正在取消，保留已完成結果" : search ? searchStage(search) : "正在處理";
+  const count = document.querySelector("#jobCount");
+  count.hidden = search?.total == null;
+  count.textContent = search?.total != null ? `已完成 ${search.completed} / ${search.total} 筆` : "";
+  const bar = document.querySelector("#progress");
+  if (search?.total > 0) bar.value = search.completed / search.total;
+  else if (job.progress > 0) bar.value = job.progress;
+  else bar.removeAttribute("value");
+  const cancel = document.querySelector("#cancelJob");
+  cancel.hidden = action !== "trade-search";
+  cancel.disabled = !job.can_cancel || cancelling;
+  cancel.textContent = cancelling ? "正在取消…" : "取消搜尋";
+  if (["running", "cancelling"].includes(job.status)) jobFeedback(cancelling ? "cancelling" : "running", action, null, search);
+}
+function rememberSearch(result, savedAt = null) {
+  context.results.trades = result.trades;
+  context.results.tradeAudit = result.counts;
+  context.results.tradeRatio = result.minimum_value_ratio;
+  context.results.tradeStatus = result.status;
+  context.results.tradeCompleted = result.completed;
+  context.results.tradeSavedAt = savedAt;
+  context.tradeResultOpponent = "";
+  context.tradeResultPlayer = "";
+  context.tradeSort = "expected_gain";
+  context.tradeSortDirection = "desc";
+  context.tradeVisible = 10;
 }
 function open(content) {
   document.querySelector("#dialogContent").replaceChildren(content);
@@ -38,6 +74,18 @@ function open(content) {
   if (!dialog.open) dialog.showModal();
 }
 function close() { document.querySelector("#dialog").close(); }
+function setJobControlsDisabled(disabled) {
+  for (const node of document.querySelectorAll("#content button, #syncButton")) {
+    if (node.dataset.localControl) continue;
+    if (disabled) {
+      if (node.dataset.jobDisabled === undefined) node.dataset.jobDisabled = String(node.disabled);
+      node.disabled = true;
+    } else if (node.dataset.jobDisabled !== undefined) {
+      node.disabled = node.dataset.jobDisabled === "true";
+      delete node.dataset.jobDisabled;
+    }
+  }
+}
 function render() {
   const data = context.data;
   const available = data.availability?.enabled ?? false;
@@ -55,6 +103,7 @@ function render() {
   document.querySelector("#pageEyebrow").textContent = {today:"YOUR DAILY GAME PLAN", week:"THE WEEK AHEAD", teams:"PLAYER INTELLIGENCE", trades:"BUILD A BETTER TEAM", review:"LOOK BACK, MOVE FORWARD", sync:"YOUR WORKSPACE"}[context.tab];
   const view = !["sync", "teams"].includes(context.tab) && !available ? empty(`${data.availability.reason}；${data.availability.repair}`) : selected[2](context);
   document.querySelector("#content").replaceChildren(view);
+  if (context.pending) setJobControlsDisabled(true);
 }
 function navigate(tab) {
   context.tab = tab;
@@ -74,27 +123,31 @@ async function refresh(redraw = true) {
   }
   if (redraw) render();
 }
-async function run(action, payload, reload = true) {
+async function run(action, payload, reload = true, existingJob = null) {
   if (context.pending) throw new Error("已有計算進行中，請等待完成後再操作。");
   context.pending = true;
+  context.cancelRequested = false;
   let refreshed = false;
-  const controls = [...document.querySelectorAll("#content button, #syncButton")].map(node => [node, node.disabled]);
-  for (const [node] of controls) node.disabled = true;
+  setJobControlsDisabled(true);
   document.querySelector("#error").hidden = true;
   const busy = document.querySelector("#busy"); busy.hidden = false;
   document.querySelector("#phase").textContent = actionLabels[action] ?? "處理資料";
+  document.querySelector("#jobLabel").textContent = actionLabels[action] ?? "處理資料";
+  document.querySelector("#jobCount").hidden = true;
+  document.querySelector("#cancelJob").hidden = true;
   document.querySelector("#progress").removeAttribute("value");
   jobFeedback("running", action);
   try {
-    const started = await request("/api/action", { action, payload });
+    const started = existingJob == null ? await request("/api/action", { action, payload }) : {job:existingJob};
     while (true) {
       await new Promise(resolve => setTimeout(resolve, 200));
       const job = await request("/api/job");
       if (job.id !== started.job) throw new Error("工作狀態已變更，請重新整理確認");
-      if (job.progress > 0) document.querySelector("#progress").value = job.progress;
+      updateJob(job, action);
       if (job.status === "failed") throw new Error(job.error);
-      if (job.status === "completed") {
-        jobFeedback("completed", action);
+      if (["completed", "cancelled"].includes(job.status)) {
+        jobFeedback(job.status, action, null, job.search);
+        if (action === "trade-search") rememberSearch(job.result);
         if (reload) {
           if (action === "preferences") context.tradeValueRatio = null;
           if (["sync", "select", "settings", "sources", "mapping", "preferences", "adjustments", "revoke", "refit-acceptance", "validation"].includes(action)) context.results = {};
@@ -109,7 +162,9 @@ async function run(action, payload, reload = true) {
     throw error;
   } finally {
     context.pending = false;
-    for (const [node, disabled] of controls) node.disabled = disabled;
+    context.jobId = null;
+    context.cancelRequested = false;
+    setJobControlsDisabled(false);
     busy.hidden = true;
     if (refreshed) render();
   }
@@ -181,8 +236,22 @@ Object.assign(context, { run, refresh, render, navigate, open, close, error: sho
 document.querySelector("#closeDialog").addEventListener("click", close);
 document.querySelector("#skipLink").addEventListener("click", event => { event.preventDefault(); document.querySelector("#content").focus(); });
 document.querySelector("#syncButton").addEventListener("click", () => run("sync", {}).catch(showError));
+document.querySelector("#cancelJob").addEventListener("click", async () => {
+  if (context.jobId == null || context.cancelRequested) return;
+  context.cancelRequested = true;
+  document.querySelector("#cancelJob").disabled = true;
+  try { await request("/api/cancel", {job:context.jobId}); }
+  catch (error) { context.cancelRequested = false; showError(error); }
+});
 document.querySelector("#quitButton").addEventListener("click", async () => {
   try { await request("/api/quit", {}); document.querySelector("#content").replaceChildren(empty("助手已結束，可以關閉此分頁。")); document.querySelector("#navigation").replaceChildren(); } catch (error) { showError(error); }
 });
+async function initialize() {
+  const job = await request("/api/job");
+  await refresh();
+  const saved = context.data.last_trade_search;
+  if (saved) { rememberSearch(saved.result, saved.saved_at); render(); }
+  if (["running", "cancelling"].includes(job.status)) await run(job.action, {}, true, job.id);
+}
 if (!token) showError(new Error("請從季賽助手啟動器開啟瀏覽器，取得本次啟動的存取權限"));
-else refresh().catch(showError);
+else initialize().catch(showError);

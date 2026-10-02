@@ -253,19 +253,51 @@ export function tradesView(ctx) {
   const manual = form([picker, el("div", { class: "two-col" }, section("我方送出", checks(ctx, mine.players, "send")), section("我方收到", checks(ctx, selected.players, "receive")))], async v => { ctx.results.trade = await ctx.run("trade", { opponent: v.get("opponent"), send: v.getAll("send"), receive: v.getAll("receive") }); ctx.render(); }, "評估交易", ctx.error);
   const search = el("div", { class: "actions" }, el("button", { onClick: () => searchTrade(ctx, null, 1) }, "全聯盟 1 換 1"), el("button", { onClick: () => searchTrade(ctx, selected.id, 2) }, "此隊最多 2 換 2"), el("button", { onClick: async () => { try { const rows = await ctx.run("partners", {}); ctx.open(section("互補交易對象", table(["對象", "互補分數", "類別", "算式"], rows.map(r => [snapshot.teams.find(t => t.id === r.team_id)?.name ?? r.team_id, number(r.score), r.categories.join("、"), el("div", {}, r.traces.map(t => formula(t, ctx.data.formulas)))])))); } catch (e) { ctx.error(e); } } }, "找互補對象"));
   const trade = ctx.results.trade;
-  const sort = ctx.tradeSort ?? "expected_gain";
-  const sorts = el("div", {class:"actions", role:"group", "aria-label":"交易結果排序"}, el("span", {class:"muted"}, "結果排序"), [["expected_gain", "期望值"], ["mine_delta", "增益最大"], ["acceptance", "最可能成交"]].map(([key, label]) => el("button", {"aria-pressed": String(sort === key), disabled: !ctx.results.trades?.length || ctx.pending, onClick: () => {ctx.tradeSort = key; ctx.render();}}, label)));
   const feedback = ctx.jobFeedback && ["trade-search", "partners", "preferences"].includes(ctx.jobFeedback.action) ? ctx.jobFeedback : null;
   const searchFeedback = el("p", {class:feedback?.state === "failed" ? "negative" : "muted", role:"status", "aria-live":"polite", "data-job-actions":"trade-search,partners,preferences", "aria-busy":String(feedback?.state === "running")}, feedback?.message ?? "選擇上方的搜尋方式，結果會列在下方。");
-  const rankedTrades = [...(ctx.results.trades ?? [])].sort((a,b) => (a[sort] === null)-(b[sort] === null) || Math.round((b[sort] ?? 0)/ctx.data.parameters.tolerance.value) - Math.round((a[sort] ?? 0)/ctx.data.parameters.tolerance.value) || a.opponent.localeCompare(b.opponent) || a.send.join().localeCompare(b.send.join()) || a.receive.join().localeCompare(b.receive.join()));
-  const audit = ctx.results.tradeAudit;
-  const searchStatus = audit ? el("div", {},
-    el("p", {class:"muted"}, `價值門檻 ${percent(ctx.results.tradeRatio)} · 原組合 ${audit.candidates} · 價值差過大 ${audit.value_filtered} · 進入比較 ${audit.eligible} · 完整評估 ${audit.full_effects}`),
-    audit.unknown_value ? el("p", {class:"warning"}, `${audit.unknown_value} 組缺少公開排名，無法判斷交易價值，已略過；仍可手動評估。`) : null,
-    ctx.results.trades.length === 0 ? empty("目前沒有符合搜尋條件的合法交易。") : null
-  ) : null;
-  return el("div", {}, section("交易分析", manual), trade ? tradeCard(ctx, trade) : null, section("尋找交易機會", search, disclosure("調整交易價值範圍", tradeValueControl(ctx)), searchFeedback, searchStatus, sorts, !ctx.results.trades?.length ? el("p", {class:"muted"}, "取得搜尋結果後，才能切換排序。") : el("div", {}, el("p", {class:"muted"}, "點選期望值，可用目前資料查看完整交易評估。"), table(["對象", "送出", "收到", "我方增益", "對方 ΔN", "接受率", "期望值"], rankedTrades.slice(0, 30).map(t => [t.opponent, t.send.map(p => playerName(ctx, p)).join("、"), t.receive.map(p => playerName(ctx, p)).join("、"), number(t.mine_delta), number(t.opponent_delta), percent(t.acceptance), el("button", { class: "small", onClick: () => openSearchedTrade(ctx, t) }, number(t.expected_gain))])))), disclosure(`提案紀錄（${(ctx.data.proposals ?? []).length}）`,proposalsSection(ctx)));
+  return el("div", {}, section("交易分析", manual), trade ? tradeCard(ctx, trade) : null, section("尋找交易機會", search, disclosure("調整交易價值範圍", tradeValueControl(ctx)), searchFeedback), tradeSearchResults(ctx), disclosure(`提案紀錄（${(ctx.data.proposals ?? []).length}）`,proposalsSection(ctx)));
 }
+function tradeSearchResults(ctx) {
+  const tolerance = ctx.data.parameters.tolerance.value;
+  const recommended = (ctx.results.trades ?? []).filter(t => t.mine_delta > tolerance && t.expected_gain != null && t.expected_gain > tolerance);
+  const teams = ctx.data.snapshot.teams.filter(team => recommended.some(t => t.opponent === team.id));
+  const players = [...new Set(recommended.flatMap(t => t.send))].sort((a,b)=>playerName(ctx,a).localeCompare(playerName(ctx,b),'zh-Hant'));
+  const opponent = select("對象", "trade_result_opponent", [["", "全部對象"], ...teams.map(t=>[t.id,t.name])], ctx.tradeResultOpponent ?? "");
+  const send = select("送出球員", "trade_result_player", [["", "全部送出球員"], ...players.map(id=>[id,playerName(ctx,id)])], ctx.tradeResultPlayer ?? "");
+  for (const [control,key] of [[opponent,"tradeResultOpponent"],[send,"tradeResultPlayer"]]) {
+    control.className = "table-filter";
+    control.setAttribute("data-active",String(Boolean(ctx[key])));
+    control.querySelector('select').addEventListener('change',event=>{ctx[key]=event.target.value;ctx.tradeVisible=10;ctx.render();});
+  }
+  const filtered = recommended.filter(t => (!ctx.tradeResultOpponent || t.opponent === ctx.tradeResultOpponent) && (!ctx.tradeResultPlayer || t.send.includes(ctx.tradeResultPlayer)));
+  const key = ctx.tradeSort ?? "expected_gain", direction = ctx.tradeSortDirection ?? "desc";
+  const ranked = [...filtered].sort((a,b) => (a[key] == null)-(b[key] == null) || (direction === "desc" ? -1 : 1)*((a[key] ?? 0)-(b[key] ?? 0)) || a.opponent.localeCompare(b.opponent) || a.send.join().localeCompare(b.send.join()) || a.receive.join().localeCompare(b.receive.join()));
+  const audit = ctx.results.tradeAudit, partial = ctx.results.tradeStatus === "cancelled", visible = ctx.tradeVisible ?? 10;
+  const results = section("搜尋結果",
+    ctx.results.tradeSavedAt ? el("p", {class:"muted"}, `上次搜尋結果 · ${dateText(ctx.results.tradeSavedAt,ctx.data.preferences.timezone)}。這是已保存的計算；資料或設定更新後，請重新搜尋。`) : null,
+    partial ? el("p", {class:"flag", role:"status"}, `部分結果 · 搜尋已取消，已完成 ${ctx.results.tradeCompleted} / ${audit?.eligible ?? "尚未確定"} 筆。推薦與排序僅涵蓋已完成的交易。`) : null,
+    el("p", {class:"muted"}, "只推薦我方增益與期望值皆為正的交易。直接在表頭篩選、排序，查看分析可了解交易對整隊的影響。"),
+    recommended.length ? el("div", {}, el("div", {class:"result-summary"}, el("p", {class:"muted",role:"status"}, `${ranked.length} 筆正收益推薦 · 顯示 ${Math.min(visible,ranked.length)} 筆`),
+      ctx.tradeResultOpponent || ctx.tradeResultPlayer ? el("button",{class:"clear-filters","data-local-control":"true",onClick:()=>{ctx.tradeResultOpponent="";ctx.tradeResultPlayer="";ctx.tradeVisible=10;ctx.render();}},"清除篩選") : null),
+      tradeResultsTable(ctx,ranked.slice(0,visible),opponent,send),
+      ranked.length > visible ? el("button", {"data-local-control":"true",onClick:()=>{ctx.tradeVisible=visible+10;ctx.render();}}, `顯示更多推薦（還有 ${ranked.length-visible} 筆）`) : null) : empty(!audit && !ctx.results.trades ? "搜尋後，正收益推薦會列在這裡。" : partial ? "已完成的部分尚無正收益推薦；搜尋尚未完成。" : "這次搜尋沒有符合條件的正收益推薦。"),
+    audit ? disclosure("搜尋範圍與篩選明細", el("p", {class:"muted"}, `價值門檻 ${percent(ctx.results.tradeRatio)} · 原組合 ${audit.candidates ?? "—"} · 價值差過大 ${audit.value_filtered ?? 0} · 進入比較 ${audit.eligible ?? "—"} · 完整評估 ${audit.full_effects ?? 0}`), audit.unknown_value ? el("p", {class:"warning"}, `${audit.unknown_value} 組缺少公開排名，無法判斷交易價值，已略過。`) : null) : null);
+  results.setAttribute("id", "tradeSearchResults");
+  return results;
+}
+function tradeResultsTable(ctx, rows, opponent, send) {
+  const columns = [["mine_delta","我方增益"],["opponent_delta","對方增益"],["acceptance","接受率"],["expected_gain","期望值"]];
+  const active = ctx.tradeSort ?? "expected_gain", direction = ctx.tradeSortDirection ?? "desc";
+  const headers = columns.map(([key,label])=>el("button", {class:"table-sort","data-local-control":"true","aria-label":`依${label}排序`,onClick:()=>{ctx.tradeSort=key;ctx.tradeSortDirection=active===key && direction==='desc'?'asc':'desc';ctx.tradeVisible=10;ctx.render();}},label,el("span",{class:"sort-arrow","aria-hidden":"true"},active===key?(direction==='desc'?'↓':'↑'):'↕')));
+  const grid = table([opponent, send, "收到", ...headers, "分析"], rows.map(t=>[ctx.data.snapshot.teams.find(team=>team.id===t.opponent)?.name ?? t.opponent,t.send.map(p=>playerName(ctx,p)).join("、"),t.receive.map(p=>playerName(ctx,p)).join("、"),number(t.mine_delta),number(t.opponent_delta),percent(t.acceptance),number(t.expected_gain),el("button",{class:"small view-trade",onClick:()=>openSearchedTrade(ctx,t)},"查看分析")]));
+  grid.className = "table-scroll trade-results-table";
+  grid.querySelector('table').setAttribute('aria-label','交易推薦');
+  grid.querySelector('thead').setAttribute('aria-label','交易結果排序');
+  grid.querySelectorAll('th').forEach((th,index)=>{if(index>=3 && index<7) th.setAttribute('aria-sort',columns[index-3][0]===active?(direction==='desc'?'descending':'ascending'):'none');});
+  if (!rows.length) grid.querySelector('tbody').append(el('tr',{},el('td',{colspan:8},empty("沒有符合這組篩選條件的推薦，可在表頭調整對象或送出球員。"))));
+  return grid;
+}
+
 async function openSearchedTrade(ctx, trade) {
   try {
     const details = await ctx.run("trade", {opponent:trade.opponent, send:trade.send, receive:trade.receive});
@@ -292,7 +324,10 @@ async function searchTrade(ctx, opponent, size) {
     }
     const result = await ctx.run("trade-search", { opponent, size });
     ctx.results.trades = result.trades; ctx.results.tradeAudit = result.counts; ctx.results.tradeRatio = result.minimum_value_ratio;
+    ctx.results.tradeStatus = result.status; ctx.results.tradeCompleted = result.completed;
+    ctx.tradeVisible = 10;
     ctx.render();
+    if (ctx.tab === "trades") document.querySelector("#tradeSearchResults")?.scrollIntoView({block:"start"});
   } catch (e) { ctx.error(e); }
 }
 function tradeCategories(ctx, label, before, after, changes) {

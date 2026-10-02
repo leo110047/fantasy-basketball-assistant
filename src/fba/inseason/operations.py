@@ -15,7 +15,13 @@ from fba.contracts.inseason import (
 )
 from fba.contracts.inseason_app import AdjustmentsRequest, ProposalRequest, RevokeRequest
 from fba.contracts.inseason_backtest import BacktestReport
-from fba.contracts.inseason_results import AddPlan, PredictionRecord, WeekForecast, WeeklyReview
+from fba.contracts.inseason_results import (
+    AddPlan,
+    PredictionRecord,
+    TradeSearchResult,
+    WeekForecast,
+    WeeklyReview,
+)
 from fba.core.inseason import validate_inseason, validate_ledger
 from fba.core.proposals import latest_proposals
 from fba.data.codec import canonical, decode, digest
@@ -104,6 +110,15 @@ def bootstrap(session: InseasonSession) -> JsonValue:
     result["snapshot"] = (
         store.load_snapshot(state.normalized_sha256).payload
         if state.normalized_sha256 and status.enabled
+        else None
+    )
+    searches = store.history("trade-searches", limit=1)
+    result["last_trade_search"] = (
+        {
+            "saved_at": searches[0].as_of.isoformat(),
+            "result": snapshot_record(searches[0], TradeSearchResult).model_dump(mode="json"),
+        }
+        if searches
         else None
     )
     reviews = store.history("reviews")

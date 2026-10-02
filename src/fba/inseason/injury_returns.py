@@ -97,6 +97,7 @@ def reuse_return_plans(
     child.priority_cache = sim.priority_cache
     child.transitions = sim.transitions.copy()
     child.cancelled, child.deadline = sim.cancelled, sim.deadline
+    child.enforce_time_targets = sim.enforce_time_targets
     child.injury_plan_cache = sim.injury_plan_cache.copy()
     for team_id, recorded in (saved or {}).items():
         cache_saved_returns(child, team_id, recorded)
@@ -307,4 +308,5 @@ def return_scenario(sim: Simulation, team: str, planned: tuple[InjuryReturn, ...
         team: merge_changes(sim.transitions.get(team, ()), planned),
     }
     child.cancelled, child.deadline = sim.cancelled, sim.deadline
+    child.enforce_time_targets = sim.enforce_time_targets
     return child

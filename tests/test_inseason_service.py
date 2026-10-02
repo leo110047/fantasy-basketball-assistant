@@ -1,6 +1,6 @@
 import json
 import threading
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from http.client import HTTPConnection
 
 import pytest
@@ -12,6 +12,7 @@ from fba.apps.inseason.server import SeasonServer
 from fba.contracts.base import DataError
 from fba.contracts.inseason import SyncState
 from fba.contracts.inseason_app import ConfirmSettingsRequest, LeagueState
+from fba.contracts.inseason_results import TradeSearchResult
 from fba.contracts.yahoo import DiscoveredLeague, LeagueDraft
 from fba.data.codec import canonical, digest
 from fba.inseason.session import InseasonSession
@@ -86,6 +87,49 @@ def test_bootstrap_exposes_sync_times_and_safe_credential_status(tmp_path):
     encoded = json.dumps(result)
     for secret in ("synthetic-secret", "synthetic-old-access", "synthetic-refresh"):
         assert secret not in encoded
+
+
+@pytest.mark.parametrize("status,completed", [("completed", 4), ("cancelled", 1)])
+@pytest.mark.parametrize("latest_action", ["trade", "partners"])
+def test_bootstrap_restores_latest_saved_search_independently_of_job(
+    tmp_path, monkeypatch, status, completed, latest_action
+):
+    session = selected_session(tmp_path)
+    jobs = Jobs(session)
+    assert jobs.bootstrap()["last_trade_search"] is None
+    at = datetime.now(UTC)
+    result = TradeSearchResult(
+        trades=(),
+        counts={"eligible": 4, "bounded": completed, "full_effects": 0},
+        minimum_value_ratio=0.7,
+        status=status,
+        completed=completed,
+    ).model_dump(mode="json")
+    store = session.league_store()
+    store.append_snapshot("trade-searches", "previous search", at - timedelta(days=1), {})
+    store.append_snapshot("trade-searches", "trade search", at, result)
+    # Other league history must never leak into this league's bootstrap.
+    session.league_store("another-league").append_snapshot(
+        "trade-searches", "another league", at + timedelta(days=1), {}
+    )
+    monkeypatch.setattr("fba.apps.inseason.api.basic_action", lambda *_: {"detail": True})
+    try:
+        jobs.start(latest_action, b"{}")
+        jobs.thread.join(timeout=3)
+        assert jobs.read()["status"] == "completed"
+        assert jobs.read()["action"] == latest_action
+        assert jobs.bootstrap()["last_trade_search"] == {
+            "saved_at": at.isoformat(),
+            "result": result,
+        }
+        # A fresh process must recover from disk, without running a calculation.
+        restarted = InseasonSession(tmp_path, DEFAULTS, Vault())
+        assert (
+            Jobs(restarted).bootstrap()["last_trade_search"]
+            == jobs.bootstrap()["last_trade_search"]
+        )
+    finally:
+        jobs.stop(3)
 
 
 def test_http_security_and_job_errors_are_visible_and_secret_free(tmp_path):
@@ -335,3 +379,107 @@ def test_new_yahoo_labels_reach_existing_catalog_without_overwriting_user_mappin
     custom = old.model_copy(update={"stat_labels": {**old.stat_labels, "ST": ("CUSTOM",)}})
     session.store.write("yahoo-catalog.json", custom)
     assert InseasonSession(tmp_path, DEFAULTS, Vault()).catalog.stat_labels["ST"] == ("CUSTOM",)
+
+
+def test_cancelled_search_persists_partial_results_then_allows_another_job(tmp_path, monkeypatch):
+    from test_inseason_trade_workers import ranked_case
+
+    from fba.apps.inseason.trade_workers import TradeWorkers
+
+    session = selected_session(tmp_path)
+    monkeypatch.setattr(session, "simulation", lambda **_: ranked_case("h2h_one_win"))
+    jobs = Jobs(session)
+    finished = TradeWorkers.completed_candidate
+    cancelled = False
+
+    def cancel_after_first(owner, trade):
+        nonlocal cancelled
+        finished(owner, trade)
+        if not cancelled:
+            cancelled = True
+            jobs.cancel(jobs.identifier)
+
+    monkeypatch.setattr(TradeWorkers, "completed_candidate", cancel_after_first)
+    try:
+        jobs.start("trade-search", b'{"opponent":null,"size":1}')
+        jobs.thread.join(timeout=20)
+        assert not jobs.thread.is_alive()
+        result = jobs.read()
+        assert result["status"] == "cancelled"
+        assert result["error"] is None
+        assert result["result"]["status"] == "cancelled"
+        assert result["result"]["completed"] == 1
+        assert len(result["result"]["trades"]) == 1
+        stored = session.league_store().history("trade-searches")[-1].payload
+        assert stored == result["result"]
+        assert jobs.bootstrap()["last_trade_search"]["result"] == result["result"]
+        assert not result["can_cancel"]
+        jobs.start("trade-search", b'{"opponent":null,"size":1}')
+        jobs.thread.join(timeout=20)
+        assert not jobs.thread.is_alive()
+        result = jobs.read()
+        assert result["status"] == "completed"
+        assert result["result"]["completed"] == result["search"]["total"]
+        assert not session.cancelled.is_set()
+    finally:
+        jobs.stop(3)
+
+
+def test_cancel_endpoint_requires_authority_and_current_job_and_keeps_busy_until_drained(
+    tmp_path, monkeypatch
+):
+    session = InseasonSession(tmp_path, DEFAULTS, Vault())
+    session.preferences = session.preferences.model_copy(update={"preferred_port": 0})
+    started, release = threading.Event(), threading.Event()
+
+    def search(*_):
+        started.set()
+        assert release.wait(5)
+        return {"status": "cancelled"}
+
+    monkeypatch.setattr("fba.apps.inseason.api.basic_action", search)
+    with SeasonServer(session) as server:
+        thread = threading.Thread(target=server.run)
+        thread.start()
+
+        def cancel(identifier, headers=None):
+            conn = HTTPConnection("127.0.0.1", server.server_port, timeout=3)
+            conn.request(
+                "POST",
+                "/api/cancel",
+                json.dumps({"job": identifier}),
+                {
+                    "Authorization": "Bearer " + server.token,
+                    "Origin": server.origin,
+                    "Content-Type": "application/json",
+                    **(headers or {}),
+                },
+            )
+            response = conn.getresponse()
+            status = response.status
+            response.read()
+            conn.close()
+            return status
+
+        try:
+            identifier = server.jobs.start("trade-search", b"{}")
+            assert started.wait(3)
+            assert cancel(identifier, {"Authorization": "Bearer wrong"}) == 403
+            assert cancel(identifier, {"Origin": "null"}) == 403
+            assert cancel(identifier + 1) == 400
+            assert cancel(True) == 400
+            assert not session.cancelled.is_set()
+            assert cancel(identifier) == 202
+            assert cancel(identifier) == 202
+            assert server.jobs.read()["status"] == "cancelling"
+            with pytest.raises(DataError, match="目前仍在執行"):
+                server.jobs.start("week", b"{}")
+            release.set()
+            server.jobs.thread.join(timeout=3)
+            assert server.jobs.read()["status"] == "cancelled"
+            assert cancel(identifier) == 400
+        finally:
+            release.set()
+            server.jobs.stop(3)
+            server.stopping.set()
+            thread.join(timeout=3)

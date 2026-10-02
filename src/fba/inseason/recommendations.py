@@ -52,6 +52,7 @@ def changed_simulation(sim: Simulation, team: str, moves: tuple[RosterMove, ...]
     child.project_injury_returns = sim.project_injury_returns
     child.cancelled = sim.cancelled
     child.deadline = sim.deadline
+    child.enforce_time_targets = sim.enforce_time_targets
     if sim.season_engine is not None:
         # Reuse the existing ROS pool without mixing it with weekly draws.
         # Forecast/lineup caches remain private to this transition scenario.

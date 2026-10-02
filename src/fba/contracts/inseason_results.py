@@ -70,6 +70,16 @@ class TradeSearchResult(Record):
     trades: tuple[TradeSummary, ...]
     counts: dict[Text, Natural]
     minimum_value_ratio: Annotated[float, Field(ge=0.5, le=1.0)]
+    status: Literal["completed", "cancelled"] = "completed"
+    completed: Natural = 0
+
+
+class TradeSearchProgress(Record):
+    phase: Literal["screening", "baseline", "playoffs", "evaluating"] = "screening"
+    total: Natural | None = None
+    completed: Natural = 0
+    baseline_total: Natural = 0
+    baseline_completed: Natural = 0
 
 
 class TodayAction(Record):

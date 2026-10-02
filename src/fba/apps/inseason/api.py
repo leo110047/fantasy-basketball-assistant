@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import CancelledError
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock, Thread
@@ -7,8 +8,8 @@ from time import monotonic
 from pydantic import JsonValue
 
 from fba.apps.inseason.trade_workers import TradeWorkers
-from fba.contracts.base import ConfigError, DataError, Record
-from fba.contracts.inseason import InseasonPreferences
+from fba.contracts.base import ConfigError, DataError, Natural, Record
+from fba.contracts.inseason import CalculationTimeout, InseasonPreferences
 from fba.contracts.inseason_app import (
     AdjustmentsRequest,
     CodeRequest,
@@ -45,7 +46,7 @@ from fba.inseason.operations import (
 from fba.inseason.review import calibration_history
 from fba.inseason.session import InseasonSession, json_value, snapshot_record
 from fba.inseason.today import today
-from fba.inseason.trades import complementary_teams, evaluate_trade, search_trades
+from fba.inseason.trades import complementary_teams, evaluate_trade, rank_trades, search_trades
 
 
 class RedistributionRequest(Record):
@@ -55,6 +56,46 @@ class RedistributionRequest(Record):
 
 class FileRequest(Record):
     path: str
+
+
+class CancelJobRequest(Record):
+    job: Natural
+
+
+def trade_search(session: InseasonSession, data: bytes, workers: TradeWorkers | None) -> JsonValue:
+    request = decode(TradeSearchRequest, data, "trade-search")
+
+    def progress(value: float) -> None:
+        session.progress = value
+
+    sim = session.simulation(season=True)
+    args = (sim, session.preferences, request.opponent, request.size, progress)
+    status = "completed"
+    try:
+        rows = workers.search(*args, session.cancelled) if workers else search_trades(*args)
+    except (CancelledError, CalculationTimeout):
+        if not session.cancelled.is_set() or workers is None:
+            raise
+        rows = rank_trades(sim, workers.completed_trades)
+        status = "cancelled"
+    result = TradeSearchResult(
+        trades=rows,
+        counts=sim.trade_search_counts,
+        minimum_value_ratio=session.preferences.trade_value_min_ratio,
+        status="cancelled" if status == "cancelled" else "completed",
+        completed=workers.progress.completed if workers else sim.trade_search_counts["eligible"],
+    )
+    payload = json_value(result.model_dump(mode="json"))
+    session.league_store().append_snapshot(
+        "trade-searches", "trade search", datetime.now(UTC), payload
+    )
+    session.league_store().append_snapshot(
+        "trade-search-audits",
+        "full simulation and sound bound counts",
+        sim.as_of,
+        json_value({"status": result.status, "completed": result.completed, **result.counts}),
+    )
+    return payload
 
 
 def basic_action(
@@ -141,35 +182,7 @@ def calculation_action(
         )
         return json_value(result.model_dump(mode="json"))
     if action == "trade-search":
-        request = decode(TradeSearchRequest, data, action)
-
-        def progress(value: float) -> None:
-            session.progress = value
-
-        sim = session.simulation(season=True)
-        args = (sim, session.preferences, request.opponent, request.size, progress)
-        rows = (
-            trade_workers.search(*args, session.cancelled)
-            if trade_workers is not None
-            else search_trades(*args)
-        )
-        result = json_value(
-            TradeSearchResult(
-                trades=rows,
-                counts=sim.trade_search_counts,
-                minimum_value_ratio=session.preferences.trade_value_min_ratio,
-            ).model_dump(mode="json")
-        )
-        session.league_store().append_snapshot(
-            "trade-searches", "trade search", datetime.now(UTC), result
-        )
-        session.league_store().append_snapshot(
-            "trade-search-audits",
-            "full simulation and sound bound counts",
-            sim.as_of,
-            json_value(sim.trade_search_counts),
-        )
-        return result
+        return trade_search(session, data, trade_workers)
     if action == "partners":
         return json_value(
             [
@@ -268,6 +281,7 @@ class Jobs:
         self.error: str | None = None
         self.identifier = 0
         self.status = "idle"
+        self.action = ""
         self.accepting = True
         self.trade_workers = TradeWorkers()
 
@@ -278,12 +292,25 @@ class Jobs:
             if self.thread is not None and self.thread.is_alive():
                 raise DataError("job: 目前仍在執行，請等待完成")
             self.identifier += 1
+            self.action = action
             self.status, self.error, self.result = "running", None, None
+            self.session.cancelled.clear()
+            if action == "trade-search":
+                self.trade_workers.reset_progress()
             self.session.progress = 0.0
             self.session.phase = action
             self.thread = Thread(target=self.run, args=(action, data), daemon=True)
             self.thread.start()
             return self.identifier
+
+    def cancel(self, identifier: int) -> None:
+        with self.lock:
+            if identifier != self.identifier:
+                raise DataError("job: 工作已變更，不能取消其他工作")
+            if self.action != "trade-search" or self.status not in {"running", "cancelling"}:
+                raise DataError("job: 這項工作目前無法取消")
+            self.status = "cancelling"
+            self.session.cancelled.set()
 
     def run(self, action: str, data: bytes) -> None:
         started, at = monotonic(), datetime.now(UTC)
@@ -301,7 +328,8 @@ class Jobs:
                     inputs = [workspace.players_sha256, workspace.priors_sha256]
             inputs.append(digest(canonical(self.session.ledger())))
             self.result = basic_action(self.session, action, data, self.trade_workers)
-            status = "completed"
+            cancelled = isinstance(self.result, dict) and self.result.get("status") == "cancelled"
+            status = "cancelled" if action == "trade-search" and cancelled else "completed"
         except Exception as exc:
             self.error = f"{type(exc).__name__}: {exc}"
             self.result = None
@@ -325,10 +353,11 @@ class Jobs:
             self.error = f"operation-log: {type(exc).__name__}: {exc}"
             status = "failed"
             self.result = None
-        self.status = status
-        self.session.last_error = self.error
-        self.session.phase = "idle" if status == "completed" else "failed"
-        self.session.progress = 1.0 if status == "completed" else self.session.progress
+        with self.lock:
+            self.status = status
+            self.session.last_error = self.error
+            self.session.phase = "idle" if status == "completed" else status
+            self.session.progress = 1.0 if status == "completed" else self.session.progress
 
     def read(self) -> JsonValue:
         return {
@@ -338,6 +367,11 @@ class Jobs:
             "result": self.result,
             "error": self.error,
             "phase": self.session.phase,
+            "action": self.action,
+            "can_cancel": self.action == "trade-search" and self.status == "running",
+            "search": self.trade_workers.progress.model_dump(mode="json")
+            if self.action == "trade-search"
+            else None,
         }
 
     def bootstrap(self) -> JsonValue:

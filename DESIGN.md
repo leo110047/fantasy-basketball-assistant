@@ -43,6 +43,31 @@ Keyboard focus is clearly visible. Dialogs have a labelled close control. Suppor
 reduced motion. Loading and error status are announced without clearing user input
 or claiming that an unfinished calculation succeeded.
 
+Interactive trade searches show the eligible candidate total, completed candidates
+and current preparation/evaluation phase, without elapsed time or an ETA. Timing
+targets are performance goals, not automatic stop conditions for this workflow.
+Users can cancel a search; fully resolved candidates are retained as explicitly
+partial results, ranked only within the completed subset. The remaining work is
+drained before another calculation is accepted. Results have a named section and
+remain available when the user navigates or reloads the current search.
+The selected league's saved search is independent of the most recent job: opening
+an analysis or computing partners must not erase it on reload. Restored records
+show their saved time and identify themselves as a previous calculation; they do
+not imply that new data or settings have been applied to old results.
+
+Trade search results recommend only completed trades whose own gain and expected
+gain are positive beyond the configured numeric tolerance. Keep all completed
+results internally. Start with ten recommendations ordered by expected gain;
+users can reveal more, filter directly in the opponent and outgoing-player column
+headers, and toggle the four numeric headers between descending and ascending order.
+Filtering to zero rows preserves the table headers and offers a clear-filters action.
+Each row has an explicit analysis button, separate from its numeric values. Table
+browsing remains usable during calculation; actions that start another calculation
+stay disabled even after filtering redraws the view. An outgoing
+player filter includes multi-player bundles containing that player. New search
+results clear the previous filters and reset expected gain to descending order;
+incomplete searches remain visibly partial.
+
 ## Verification and delivery
 
 Inspect current source and synthetic live pages at desktop, split-window and narrow

@@ -6,9 +6,9 @@ from pathlib import Path
 from time import monotonic
 from urllib.parse import urlsplit
 
-from fba.apps.inseason.api import Jobs, parse_body
+from fba.apps.inseason.api import CancelJobRequest, Jobs, parse_body
 from fba.contracts.base import DataError
-from fba.data.codec import canonical
+from fba.data.codec import canonical, decode
 from fba.inseason.session import InseasonSession
 from fba.runtime.assets import court_image, formula_script, workspace_link_script
 from fba.runtime.local import (
@@ -45,7 +45,7 @@ class SeasonServer(LocalServer):
             if interval != self.session.preferences.sync_interval_seconds:
                 interval = self.session.preferences.sync_interval_seconds
                 next_sync = self.schedule(interval)
-            if monotonic() >= next_sync and self.jobs.status != "running":
+            if monotonic() >= next_sync and self.jobs.status not in {"running", "cancelling"}:
                 if self.session.preferences.selected_league is not None:
                     self.jobs.start("sync", b"{}")
                 next_sync = self.schedule(interval)
@@ -164,6 +164,9 @@ class SeasonHandler(BaseHTTPRequestHandler):
                 action, body = parse_body(data)
                 job = self.local.jobs.start(action, body)
                 self.reply(202, json.dumps({"job": job}).encode())
+            elif self.path == "/api/cancel":
+                self.local.jobs.cancel(decode(CancelJobRequest, data, "cancel").job)
+                self.reply(202, b'{"cancelling":true}')
             else:
                 self.reply(404, b'{"error":"route not found"}')
         except (DataError, ValueError, TimeoutError) as exc:

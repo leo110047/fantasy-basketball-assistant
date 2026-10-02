@@ -102,6 +102,7 @@ class Simulation:
         self.acceptance_fit: dict[str, float] | None = None
         self.cancelled: Callable[[], bool] | None = None
         self.deadline: tuple[float, str] | None = None
+        self.enforce_time_targets = True
         self.history = observed_boxes(players, as_of)
         self.zone = ZoneInfo(league.timezone)
         self.games = visible_games(players, as_of)
@@ -147,6 +148,7 @@ class Simulation:
         child.untouchable = self.untouchable
         child.transitions = self.transitions
         child.cancelled, child.deadline = self.cancelled, self.deadline
+        child.enforce_time_targets = self.enforce_time_targets
         child.acceptance_fit = self.acceptance_fit
         return child
 
@@ -159,10 +161,20 @@ class Simulation:
             )
 
     @contextmanager
+    def without_time_targets(self) -> Generator[None]:
+        previous = self.enforce_time_targets
+        self.enforce_time_targets = False
+        try:
+            yield
+        finally:
+            self.enforce_time_targets = previous
+
+    @contextmanager
     def budget(self, name: str) -> Generator[None]:
         previous = self.deadline
-        limit = (monotonic() + self.params.budgets[name].value, name)
-        self.deadline = min(previous, limit) if previous is not None else limit
+        if self.enforce_time_targets:
+            limit = (monotonic() + self.params.budgets[name].value, name)
+            self.deadline = min(previous, limit) if previous is not None else limit
         try:
             yield
             self.check_limits()

@@ -420,7 +420,7 @@
       "role": "structure",
       "owner": "fba.apps.inseason.api.calculation_action",
       "reason": "Bundle cardinality selects the configured calculation budget; dispatch delegates to the domain evaluator.",
-      "signature": "3c1a03c4b69b82e5b8be28a770fc9a990f19ef5ff4819450cc29e6915074f460"
+      "signature": "78a06a7593f78dd92914b65651534a59972f92b28d7e1e3b7819a1742128f110"
     },
     "fba.apps.inseason.api.today_result": {
       "role": "validation",
@@ -432,13 +432,13 @@
       "role": "structure",
       "owner": "fba.apps.inseason.api.Jobs.start",
       "reason": "Sequential local job identifier; no prediction/utility computation.",
-      "signature": "77b0209eea1a46d9d0310f011de82617d9a7564e2ab7d4a5ca7b798e413aa0d4"
+      "signature": "f39b93470cf0fafc917d230cdf1abd594104f4d5888611e334cb2e1edbed0838"
     },
     "fba.apps.inseason.api.Jobs.run": {
       "role": "structure",
       "owner": "fba.apps.inseason.api.Jobs.run",
       "reason": "Elapsed operation time and input hash/audit record; calculations delegate to basic_action.",
-      "signature": "f85b7cd24bfd42dbd84b7d354414a253c12e611c0d6365b4dbb8b3fe212f7c95"
+      "signature": "adf678bb95374a8725b4ea35c827aa370f0f72994a129002e2b2236c79c06d6b"
     },
     "fba.apps.inseason.server.SeasonServer.schedule": {
       "role": "structure",
@@ -474,7 +474,7 @@
       "role": "structure",
       "owner": "fba.apps.inseason.trade_workers.TradeWorkers.distribute",
       "reason": "Worker batch partitioning, completion counts and progress fraction; results are ranked by the domain owner.",
-      "signature": "6964d534a81d80caa3e65610cedbd6540e5e5903d093851750863cdb686b5d53"
+      "signature": "a67b4dd829ef795524999d5e3542eb95b0e09cea1b0a2cdb72632bb1a59363f2"
     },
     "fba.apps.server.DeskHandler.do_GET": {
       "role": "structure",
@@ -2226,7 +2226,7 @@
       "role": "structure",
       "owner": "fba.inseason.injury_returns.reuse_return_plans",
       "reason": "Caches/constructs IL scenarios using configured roster capacity; consumes existing projection probabilities.",
-      "signature": "99258225708f24c32b33ae73eddcae7a2fee9a529a3c89d6695d8fbebe9e6043"
+      "signature": "9ae89b2bc3b253b07dc61e047dc5248205fd56a6ab48cd3d70f74b1558f8a961"
     },
     "fba.inseason.injury_returns.cache_saved_returns": {
       "role": "validation",
@@ -2280,7 +2280,7 @@
       "role": "structure",
       "owner": "fba.inseason.matchup.Simulation.budget",
       "reason": "Monotonic calculation deadline and nested budget selection.",
-      "signature": "a68508da20a9b78d56c189117053eea889d9b9fa9dccf4b719f1deb914aad37b"
+      "signature": "5bf51394764673d0c9d4fb9b43163427658e0027849ed6f98a28da169fea9a9b"
     },
     "fba.inseason.matchup.Simulation.actual": {
       "role": "structure",
@@ -2682,7 +2682,7 @@
       "role": "composition",
       "owner": "fba.inseason.trades.evaluate_trade_bundles",
       "reason": "Existing gain_bound/trade_effects/trade_summary own values; tolerance pruning preserves top-ten contract and fractions report progress.",
-      "signature": "a398f893a96489e7a7a71a953322c44daac3955cff2624b7a6054dcd631aeff2"
+      "signature": "9a71c10c44fa72a4de6762b6d76470299c3ae7bf55c41a17dd318577fdfa5f0e"
     },
     "fba.inseason.trades.rank_trades": {
       "role": "structure",
@@ -3139,6 +3139,30 @@
       "owner": "fba.runtime.local.existing_url",
       "reason": "Loopback health probe deadline and validated instance URL composition.",
       "signature": "b5a2d2ee78ebbddfdcd43cf1070b56bb9cf8625f2a1d040757f5ba5cbe0f375f"
+    },
+    "fba.apps.inseason.trade_workers.TradeWorkers.completed_candidate": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.trade_workers.TradeWorkers.completed_candidate",
+      "reason": "Count fully resolved candidates and retain their domain-owned trade summaries.",
+      "signature": "a08962d6bc10a47cb67b2f316cfd682d56fbe6c5a54833f07cc9f0ad3b0ad285"
+    },
+    "fba.apps.inseason.trade_workers.TradeWorkers.search": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.trade_workers.TradeWorkers.search",
+      "reason": "Report baseline team preparation counts; domain functions retain all evaluation semantics.",
+      "signature": "8954e6a4adc086ee9c48bf0ee435db2afe39ac251f50a38cd55b65e6ff9f54dc"
+    },
+    "fba.apps.inseason.trade_workers.TradeWorkers.receive_updates": {
+      "role": "structure",
+      "owner": "fba.apps.inseason.trade_workers.TradeWorkers.receive_updates",
+      "reason": "Aggregate completed worker counters and report the completed/eligible progress fraction.",
+      "signature": "bb46146a245c63c3c830ced5b137491966ee36a5a2c4270986e273294dfa2213"
+    },
+    "fba.inseason.trades.evaluate_trade_bundles<locals>.finished": {
+      "role": "structure",
+      "owner": "fba.inseason.trades.evaluate_trade_bundles<locals>.finished",
+      "reason": "Count only fully resolved candidates and publish their progress fraction; no score computation.",
+      "signature": "ba1a77319aa7efa05da1f12b8be9d82a3659757c3cc47e397cec6dedd30fbd8c"
     }
   },
   "source_files": {
@@ -3164,13 +3188,13 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/app.js": {
-      "sha256": "95246652e885cb7b0ea1a37521e34314967993f5490b747ea688127b4db936a4",
+      "sha256": "50f5c9229350b7d026d3f5635d70ce1a5d8899014d56b7e53641e40ce80c899b",
       "role": "structure",
       "reason": "Local API orchestration, stale seconds to milliseconds and UTC return-date minus one day for user-entered ranges; no forecast equation.",
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "554223325f0fb1cf8259e6fae3bd46d5e05282608ee90e085f3c009c8533a7bc",
+      "sha256": "6ea8fd11c264d5229f3f5e89f8c7b17ae9935e44891a13528a78f120ac44bc40",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
       "formula_ids": [

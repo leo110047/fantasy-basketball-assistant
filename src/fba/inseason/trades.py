@@ -425,6 +425,7 @@ def evaluate_trade_bundles(
     progress: Callable[[float], None],
     *,
     details: Literal[True] = True,
+    on_candidate: Callable[[TradeSummary | None], None] | None = None,
 ) -> tuple[TradeResult, ...]: ...
 
 
@@ -436,6 +437,7 @@ def evaluate_trade_bundles(
     progress: Callable[[float], None],
     *,
     details: Literal[False],
+    on_candidate: Callable[[TradeSummary | None], None] | None = None,
 ) -> tuple[TradeSummary, ...]: ...
 
 
@@ -446,6 +448,7 @@ def evaluate_trade_bundles(
     progress: Callable[[float], None],
     *,
     details: bool = True,
+    on_candidate: Callable[[TradeSummary | None], None] | None = None,
 ) -> tuple[TradeSummary, ...]:
     candidates = list(bundles)
     sim.trade_search_counts.update(eligible=len(candidates), full_effects=0, bounded=0)
@@ -455,6 +458,14 @@ def evaluate_trade_bundles(
         progress(1.0)
         return ()
     result: list[TradeSummary] = []
+
+    def finished(index: int, trade: TradeSummary | None = None, *, bounded: bool = False) -> None:
+        # Publish only resolved candidates, never an interrupted trade's effects.
+        sim.trade_search_counts["bounded" if bounded else "full_effects"] += 1
+        if on_candidate is not None:
+            on_candidate(trade)
+        progress((index + 1) / len(candidates))
+
     before = season_forecasts(sim, mine) if size > 1 else ()
     opponent_before = {t.id: season_forecasts(sim, t.id) for t in teams} if size > 1 else {}
     own_limits = season_limits(sim, before) if size > 1 else None
@@ -493,17 +504,15 @@ def evaluate_trade_bundles(
             if upper is not None and (
                 upper <= 0 or (cutoff is not None and upper < cutoff - sim.params.tolerance.value)
             ):
-                sim.trade_search_counts["bounded"] += 1
-                progress((index + 1) / len(candidates))
+                finished(index, bounded=True)
                 continue
         try:
-            sim.trade_search_counts["full_effects"] += 1
             effects = trade_effects(sim, mine, team, send, receive, details=details)
             # These exact domain constraints can safely prune a completed bundle.
             # A losing smaller bundle cannot prune its supersets: category synergy
             # and unequal-roster replacement make that bound unsound.
             if size > 1 and (effects.own_delta.result <= 0 or effects.other_delta.result < 0):
-                progress((index + 1) / len(candidates))
+                finished(index)
                 continue
             trade = (
                 evaluate_trade(sim, mine, team, send, receive, effects=effects)
@@ -511,10 +520,10 @@ def evaluate_trade_bundles(
                 else trade_summary(sim, mine, team, send, receive, effects=effects)[0]
             )
         except IneligibleTrade:
-            progress((index + 1) / len(candidates))
+            finished(index)
             continue
         result.append(trade)
-        progress((index + 1) / len(candidates))
+        finished(index, trade)
     return rank_trades(sim, result)
 
 
