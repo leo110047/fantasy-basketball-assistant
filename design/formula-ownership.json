@@ -2237,8 +2237,8 @@
     "fba.inseason.injury_returns.return_plan": {
       "role": "composition",
       "owner": "fba.inseason.injury_returns.return_plan",
-      "reason": "Searches legal IL suffixes via existing season_value; tolerance compares computed results. Sequential search is not claimed jointly optimal.",
-      "signature": "279288f04351ee0fbba884956374d086f87019afa7db36d0d5795bf3752c854d"
+      "reason": "Enumerates complete legal IL release paths through the existing suffix validator and compares their remaining-season values from one fixed origin. Uses existing season_value and tolerance; does not change the underlying weekly lineup search policy or claim historical calibration.",
+      "signature": "06a68c7411d4fac004b93cd848db64bfe55c5d8f76ac7e28b8f91717031200cb"
     },
     "fba.inseason.injury_returns.release_options": {
       "role": "structure",

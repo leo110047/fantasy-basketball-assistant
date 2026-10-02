@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
@@ -160,40 +161,43 @@ def return_plan(
     team_id: str,
     roster: tuple[str, ...],
 ) -> tuple[InjuryReturn, ...]:
-    # Optimize chronological releases against a complete legal suffix, including
-    # every explicit move and later IL return. This remains a greedy IL policy,
-    # not a claim of a joint optimum across all release dates.
+    # Compare complete legal release paths using one remaining-season objective.
+    # The underlying weekly lineup model keeps its own disclosed search policy.
     from fba.inseason.season import season_value
 
     planned = feasible_returns(sim, team_id, roster, {})
-    fixed: dict[str, InjuryReturn] = {}
-    for index in range(len(planned)):
-        returning = planned[index]
+    if not planned:
+        return planned
+
+    def complete_plans(
+        trial: tuple[InjuryReturn, ...], fixed: dict[str, InjuryReturn]
+    ) -> Iterator[tuple[InjuryReturn, ...]]:
+        if len(fixed) == len(trial):
+            yield trial
+            return
+        returning = trial[len(fixed)]
         active = before_return(sim, team_id, roster, tuple(fixed.values()), returning.effective_on)
-        best: tuple[InjuryReturn, ...] | None = None
-        best_value = float("-inf")
         for drop in release_options(sim, team_id, active, returning.effective_on):
             sim.check_limits()
             forced = {**fixed, returning.player_id: returning.model_copy(update={"drop": drop})}
             try:
-                trial = feasible_returns(sim, team_id, roster, forced)
+                suffix = feasible_returns(sim, team_id, roster, forced)
+                yield from complete_plans(suffix, forced)
             except InvalidRosterChange:
                 continue  # A future explicit move or activation would be invalidated.
-            child = return_scenario(sim, team_id, trial)
-            value = season_value(
-                child,
-                team_id,
-                {team_id: roster},
-                after=returning.effective_on,
-                include_playoffs=True,
-            )
-            if value > best_value + sim.params.tolerance.value:
-                best, best_value = trial, value
-        if best is None:
-            raise InvalidRosterChange(f"injury_return.{returning.player_id}: no legal scenario")
-        planned = best
-        fixed[returning.player_id] = planned[index]
-    return planned
+
+    best: tuple[InjuryReturn, ...] | None = None
+    best_value = float("-inf")
+    for trial in complete_plans(planned, {}):
+        child = return_scenario(sim, team_id, trial)
+        value = season_value(
+            child, team_id, {team_id: roster}, after=planned[0].effective_on, include_playoffs=True
+        )
+        if value > best_value + sim.params.tolerance.value:
+            best, best_value = trial, value
+    if best is None:
+        raise InvalidRosterChange(f"injury_return.{team_id}: no legal scenario")
+    return best
 
 
 def release_options(
