@@ -1,10 +1,10 @@
 # 季賽助手交接：未完成工作與驗收缺口
 
-更新日期：2026-10-02。專案：`/Users/leo/fantasy-basketball-assistant`。
+更新日期：2026-10-03。專案：`/Users/leo/fantasy-basketball-assistant`。
 
-**整份規格尚未完成。** 接手時已核對本機與遠端 main 均為 `8d72a3bdd9c41b8f1d5f7540891432c14480b98a`，本輪使用者確認 ScoreTape receipt 與 Yahoo 核准尚未取得。下列歷史平台實測另標候選；公式所有權／UI trace 本機驗收及三平台合成資料 CI 已通過。真實 NBA／公開排名來源、真實 Yahoo、因果歷史校準、搜尋品質與部分實際交付情境仍缺證據。使用者最新指示已恢復阻塞網站操作的搜尋效能修補；不再沿用先前的暫停指示阻擋這項工作。
+**整份規格尚未完成。** 最新程式批次已通過獨立審查，再提交為 `ff959f7ab27ebde76f7d00e4b5904a8ad2495f6e`；本文件依使用者要求在程式 commit 後更新。這批尚未推送，尚無此候選的三平台 CI 證據。單週計算的本機聯盟重播已達 19/19 完成，完整交易與 F3 仍逾時。ScoreTape receipt、Yahoo 核准、真實 NBA／公開排名來源、因果歷史校準及部分實際交付驗收仍缺。效能工作已恢復，不再沿用先前的暫停指示。
 
-已移除完成用途的 Windows 暫時診斷，scripts policy 回歸檢查必要的三平台 verify 入口。後續修補多 IL 的完整合法釋出路徑比較，並保留以下未完成條件。提交序列以 `git log` 為準；最新本機審查／CI 證據入口是 `/private/tmp/fba-continuation-report/current-status.md`，暫存資產可能清除，並不隨 clone 交付。
+提交序列以 `git log` 為準。最新審查與效能摘要見下節；Git 外 `/private/tmp/fba-continuation-report/count-delivery.md` 保存這批本機收據入口，舊 `current-status.md` 對應前批，不代表本批狀態。暫存資產可能清除，並不隨 clone 交付。以下歷史平台實測均保留其候選範圍，不外推至新抽樣政策。
 
 ## 1. 權威需求與已接受的決定
 
@@ -13,9 +13,23 @@
 - 交付方式為 **clone + 雙擊命令檔**，取代 installer／PyInstaller／DMG。使用者已授權繼續實作、分批 commit、直接推 main；部署、付費方案、代開帳號及 Yahoo 寫入未獲授權。Yahoo 維持唯讀，建議由使用者手動執行。
 - Today 沿用有效且已保存的 F3／IL 計畫，不再逐名重跑 ROS 移除搜尋。一般週不得降低 ROS；只有輸球即淘汰或確定失去晉級機會、且贏仍有晉級路徑時才優先本週。F3 先比較對目前隊伍貢獻低的球員；使用者於本輪接受品質優先，之後補查其餘合法方案，逾時明確回報未完成。
 - 自動交易先用公開排名比較整包價值，較低估值至少達較高估值的初值 70%，可保存調整 50–100%。缺排名明示未知，手動交易仍可看量化影響。通過門檻後保留完整搜尋；減少候選不等於 top-10 品質通過。
-- 來源只接受免費且條款允許。使用者未提供原始缺陷案例，已自行建立合成驗證。沒有因果 holdout 證據不調整或改標模型參數為已校準。效能工作暫放，產品樣本、候選及 budgets 保持原契約。
+- 來源只接受免費且條款允許。使用者未提供原始缺陷案例，已自行建立合成驗證。沒有因果 holdout 證據不調整或改標模型參數為已校準。效能工作已恢復，產品樣本、候選及 budgets 保持原契約。
+- 本批抽樣／搜尋契約見 [整週次數搜尋](weekly-count-search.md)：同球員、同預測條件的獨立場次改用 `exchangeable_count_v1`；每個固定排陣的機率分布不變，但不同方案間的共同抽樣方式改變，有限樣本分數不保證等於舊 `game_id` 政策。結果保存各隊 `sample_coupling`；沒有生成證明的情境陣列、同日多場仍走原完整搜尋。
 
 ## 2. 最新證據與適用範圍
+
+### 2026-10-03：次數搜尋與篩選重用
+
+- 程式 commit：`ff959f7ab27ebde76f7d00e4b5904a8ad2495f6e`。Goldband `7a0a6c6a-604e-4c72-9349-dd81729b3a1b`，固定候選 `bd36e298cb56377ee751fcf7d5e9a3ca80830d2f4528a413d35acc2fe47167cd`：完整 `scripts/verify.py` 通過，**1,560 passed／587.10 秒**，型別／格式／匯入／依賴檢查通過；兩項 required evidence 均為 fresh verified-pass，0 findings／coverage gap／runtime incomplete，completion-authorized=true。27 個變更檔提交前逐檔 SHA 核對 0 drift。這是隔離容器與合成測試的本機證據。
+- 正式報告與 typed artifact 位於 `/Users/leo/.goldband/workflow-runs/artifacts/7a0a6c6a-604e-4c72-9349-dd81729b3a1b-code.md`、同目錄 `7a0a6c6a-604e-4c72-9349-dd81729b3a1b-0ef56dbf-review-evidence.json`。前次 `c4da7403` 因候選變更失效，不能當通過收據；本次已完整重跑。
+- 新增獨立整週枚舉、精確分布、流量合法性／平手順序／容量剪枝、預測條件分組、情境 fallback、Today 反事實與中斷驗證。F3 四例以無 z/drop/beam 篩選的參考完整枚舉 75／60／2,900／2,510 個方案，新政策最大值為 0.8512／2.0869／1.356／4.40832，核對後才遷移基準並增加方案數斷言；原樣本、容差與舊任意 game-ID 情境 oracle 保留。兩季 portability 參考同步記錄抽樣政策；本批尚未完成跨平台驗證。
+- 提交後同一份聯盟輸入、固定 `as_of=2026-10-02T15:11:07.038927+00:00`、原 1,000 samples／單週 2 秒期限，**我方 19/19 個常規週完成，最慢 0.4802 秒**。收據在 Git 忽略的 `evidence/yahoo-browser-2026-10-02/count-production-benchmark.json`／`count-production-final.log`。這是同一 session 的逐週重播計算，沒有包括 HTTP／UI／保存，不是冷熱 p50/p95 驗收。
+- 提交後 14/14 隊 ROS 基準重播完成，原 200 samples／單週 2 秒期限，總計 17.0405 秒；收據 `count-trade-baseline-committed.log`。這只涵蓋各隊現有名單基準，不包含交易後名單或所有候選的完整計算。
+- 全聯盟 1 換 1 仍在 30 秒期限失敗：1,290 組、70% 價值門檻排除 948 組、342 組合格、原 5 workers，30.0973 秒回報逾時，未發布部分結果。F3 仍在 15 秒期限失敗（15.0304 秒）；該診斷只在記憶體明示補 `adds_used=0`，頁面原始值仍未知。收據分別為私人目錄內 `count-full-trade-unrestricted.log`、`count-full-f3-screening.log`；不能宣稱交易／F3 已可正常完成。
+- F3 每批候選重用基準、分布 moments 與球員貢獻，公式與順序不變；24 個新舊 screening 分數完全一致。最新 profile 中 43,758 次 screening 仍占約 8.64 秒，ROS 約 3.83 秒，15 秒時只開始第一個完整方案估值；profile 含量測額外成本，只用來定位後續瓶頸。沒有減少合法候選、樣本或延長產品期限。
+- 公式所有權盤點已隨新組合／搜尋運算更新（514 個 Python 候選，pending=0）；沒有加入已校準係數。NBA 研究 prior 與明示模擬欄位仍是重播限制，不能當成即時球員預測或季後賽勝率校準。
+
+### 歷史證據：僅適用於各自候選
 
 - Goldband `29f5e7d0-4f84-43f6-853e-44766363595b`：固定候選 `7ff2a2191bc62315c0104e0fb0e42970da824b3787ae22ce35184333f21a22f2`，完整 1,199 passed／297.47 秒，兩項 required evidence fresh verified-pass，0 finding／gap／incomplete，completion-authorized=true；308 檔提交前 0 drift。型別／lint／匯入／格式等完整 gate 保留。這是該程式候選的獨立審查，不能外推為整份規格結案。
 - 真實 [Inseason source run 36958474336](https://github.com/leo110047/fantasy-basketball-assistant/actions/runs/36958474336) 的 Linux、macOS、Windows 全部成功；[Check run 36958474481](https://github.com/leo110047/fantasy-basketball-assistant/actions/runs/36958474481) 成功。Windows 完整測試 1,197 passed／730.68 秒。三份 artifact 已下載，型別、欄位、字串及排序逐項一致，數值有限且最大差 0（要求絕對差≤1e-9、相對容差0）。比較收據與 SHA 在 Git 外 `portability-fba7fdc-comparison.json`。
@@ -47,15 +61,15 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 
 該品質測試修正已提交 `4ee355cf4873323996d56cef889fac7e871f5996` 並核對遠端相同；Goldband `9fa760a8-d2a1-478c-adf8-6c986855d951` 完整 1,472 passed／687.26 秒、兩 required fresh verified-pass、0 findings／gaps，completion-authorized=true。[Inseason source 37010083078](https://github.com/leo110047/fantasy-basketball-assistant/actions/runs/37010083078) 三平台與 Check 37010082951 全部成功，下載產物共 3,363 次數值比較最大差 0。
 
-最新本機搜尋修補仍在進行：以瀏覽器擷取的聯盟資料重建 Yahoo 格式回應，經原 adapter 同步，再經原球員來源／forecast 入口載入既有研究資料；私人輸入僅在 Git 忽略的 `evidence/yahoo-browser-2026-10-02/`，沒有寫入產品程式。這是 API 輸入重播，不是 Yahoo API 核准或 live wire 證據。固定原始抽樣與產品期限，第一週原 300 秒診斷未完成的完整排陣已可在本機 API／Chrome 顯示結果。新的界限保留比率分子分母關係、浮點保守誤差、合法位置域與原同分順序；不支援的數值域沿用既有完整搜尋，沒有截短候選。擴大至 19 個常規對戰週的最近本機測量為 15 完成、4 逾時（第 9、13、17、19 週），交易搜尋仍會被後續週阻塞，不能宣稱整套網站已可用或效能驗收完成。瀏覽器另已實測搜尋執行中／失敗就地回饋、無結果時停用排序；初審完整 1,531 測試通過，但指出工作完成後新渲染的排序按鈕仍停用；已用實際出貨 JS 的 partners／trade handlers 重現兩個失敗案例，改為清除 pending 後再渲染。成功／失敗／空結果／防重複提交共五個瀏覽器元件回歸通過；此證據控制 DOM 與 HTTP 邊界，不當作真實交易計算成功。最新獨立複審、效能與提交狀態仍以 `current-status.md` 為準。
+前批 `7bd2aec` 的搜尋與 UI 修補（以下為當時狀態，已由第 2 節本批結果更新）：以瀏覽器擷取的聯盟資料重建 Yahoo 格式回應，經原 adapter 同步，再經原球員來源／forecast 入口載入既有研究資料；私人輸入僅在 Git 忽略的 `evidence/yahoo-browser-2026-10-02/`，沒有寫入產品程式。這是 API 輸入重播，不是 Yahoo API 核准或 live wire 證據。固定原始抽樣與產品期限，第一週原 300 秒診斷未完成的完整排陣已可在本機 API／Chrome 顯示結果。新的界限保留比率分子分母關係、浮點保守誤差、合法位置域與原同分順序；不支援的數值域沿用既有完整搜尋，沒有截短候選。該批擴大至 19 個常規對戰週的本機測量為 15 完成、4 逾時（第 9、13、17、19 週），交易搜尋仍會被後續週阻塞，不能宣稱整套網站已可用或效能驗收完成。瀏覽器另已實測搜尋執行中／失敗就地回饋、無結果時停用排序；初審完整 1,531 測試通過，但指出工作完成後新渲染的排序按鈕仍停用；已用實際出貨 JS 的 partners／trade handlers 重現兩個失敗案例，改為清除 pending 後再渲染。成功／失敗／空結果／防重複提交共五個瀏覽器元件回歸通過；此證據控制 DOM 與 HTTP 邊界，不當作真實交易計算成功。該批詳細收據在舊 `current-status.md`；本批獨立審查與效能以第 2 節為準。
 
-兩季 portability 參考只更新 F3 候選及排序，其他功能與共同方案分數相同，兩季最佳分數不變；獨立核對 124 次整週呼叫、98,076 組合法排陣後才更新。原始失敗、差異與完整 oracle 保留在 `causal-f3-full-verify.log`／`causal-f3-portable-diff.json`／`causal-f3-portable-oracle.json`。
+前批因果／F3 修補時，兩季 portability 參考只更新 F3 候選及排序，其他功能與共同方案分數相同，兩季最佳分數不變；獨立核對 124 次整週呼叫、98,076 組合法排陣後才更新。原始失敗、差異與完整 oracle 保留在 `causal-f3-full-verify.log`／`causal-f3-portable-diff.json`／`causal-f3-portable-oracle.json`。
 
-本機兩季原檔共 147,201 筆逐場資料，0 筆含 `known_at`；`historical-causal-readiness.json` 列出兩季來源 SHA、欄位、擷取時間與缺少的先驗／傷情／Yahoo 名單及比分。上述修補不是已完成真實因果 holdout、策略優勢或參數校準。完整檢查／獨立審查、提交與三平台 CI 以最新 `current-status.md` 為準。
+本機兩季原檔共 147,201 筆逐場資料，0 筆含 `known_at`；`historical-causal-readiness.json` 列出兩季來源 SHA、欄位、擷取時間與缺少的先驗／傷情／Yahoo 名單及比分。上述修補不是已完成真實因果 holdout、策略優勢或參數校準。歷史完整檢查與 CI 收據在舊 `current-status.md`；本批狀態以第 2 節為準。
 
 ## 4. 完整追蹤清單
 
-「本機已修」表示程式／合成驗證；「未驗」保留真實來源、平台或品質證據。Python 位置相對 `src/fba/`，測試相對專案根目錄。V5 的三平台合成證據已補，其餘完成條件保留。
+「本機已修」表示程式／合成驗證；「未驗」保留真實來源、平台或品質證據。Python 位置相對 `src/fba/`，測試相對專案根目錄。V5 歷史候選有三平台合成證據，本批抽樣政策變更仍需新 CI，其餘完成條件保留。
 
 ### A. 資料入口、同步與儲存
 
@@ -64,7 +78,7 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 | A1 | 未完成：完整免費且條款允許的 NBA adapter、正式資料初始化。 | `data/inseason_sources.py`、`inseason/session.py`、來源設定 UI | 選定來源，實作真實 wire adapter、認證、分頁、限流、球員／逐場數據／賽程／傷病及回歸日；以授權實際回應從 clone 完成 F1/F2，再串 Yahoo。明列來源沒有提供的欄位。 |
 | A2 | 本機轉接已補；真實 Yahoo 回應、設定與首次同步未驗。 | `data/yahoo*.py`、`tests/fixtures/yahoo-example.json` | 使用去識別且不含 token 的實際錄製回應，涵蓋設定、名單、對戰、自由球員、交易與比分；完成真實授權、設定確認及首次同步。 |
 | A3 | 本機已補持有率／變化／來源時間／未知；live wire 未驗。 | `data/yahoo.py`、`data/yahoo_normalize.py`、`inseason/today.py` | 抓取並正規化持有率與資料時間；缺值不可假裝為 0，畫面能辨認未知。 |
-| A4 | 本機已補增量／歷史比分輪轉／交易 cutoff；真實同步與更正未驗，效能暫停。 | `data/yahoo.py`、`inseason/session.py` | 增量同步、分頁與舊比分更正策略；測試季中／季末及大量交易，14 隊完整同步 ≤60 秒、≤100 次請求，必要失敗清楚顯示。 |
+| A4 | 本機已補增量／歷史比分輪轉／交易 cutoff；真實同步、更正與完整同步效能仍未驗。 | `data/yahoo.py`、`inseason/session.py` | 增量同步、分頁與舊比分更正策略；測試季中／季末及大量交易，14 隊完整同步 ≤60 秒、≤100 次請求，必要失敗清楚顯示。 |
 | A5 | 有界 payload 查詢、原始歷史保留已補；索引持續成長、保存策略與長季驗收未結案。 | `data/storage.py`、`inseason/operations.py::bootstrap` | 有界查詢／分頁與明確保存策略，量測長季資料量。不得直接刪除原始快照、帳本或歷史預測來通過效能。 |
 | A6 | 本機已補可靠 identity／唯一 fallback／歧義確認；真實名單 100% 對照未驗。 | `contracts/yahoo.py`、`data/yahoo_normalize.py`、`inseason/session.py::map_player`、UI | 以可靠識別欄位做唯一匹配，歧義要求確認；顯示姓名／球隊等識別資訊。名單球員 100% 對照、自由球員未對照可見，換季不用逐人重輸。使用者估計約 190 名單＋400 自由球員。 |
 | A7 | 缺排名的未知行為已修；合法且可替換的正式 rank adapter 未完成。 | `inseason/trades.py::evaluate_trade`、`contracts/inseason.py::SeasonPlayer` | 選定合法來源並實作可替換 adapter；明訂缺排名的可用性／呈現，避免一名球員令全部搜尋無結果，也不得捏造排名或接受機率。 |
@@ -73,12 +87,12 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 
 | ID | 現況／後果 | 接手位置 | 完成條件 |
 | --- | --- | --- | --- |
-| B1 | 每日精確枚舉／批次／重用有獨立 oracle；效能驗收暫停。 | `core/lineups.py`、`inseason/matchup.py`、`formulas/categories.py` | 先 profile；消除重複工作、適當批次化與重用合法組合。保留 ≤15 人與窮舉一致的正確性證據，不能只縮小搜尋或放寬 timeout。 |
-| B2 | 舊30例13例落後已修；改為完整整週搜尋及保守剪枝，四天／六天獨立窮舉與中斷回歸通過。真實資料品質／效能仍未驗。 | `inseason/matchup.py::optimize_total` | F3/F4/F5 共用完整條件式整週結果；上界／同分規則與獨立全枚舉一致。成功只代表固定對手、名單政策及抽樣下的最優；真實品質與效能需另驗。 |
-| B3 | ROS 抽樣、共同亂數、跨請求失效與冷算一致已驗；長季效能暫停。 | `inseason/season.py`、`Simulation`、`session.simulation` | 使用明確的 ROS 抽樣契約與共同亂數；快取按同步、聯盟、參數、帳本、名單／生效日等正確失效。抽樣數不同不能直接共用不相容的 draws。 |
-| B4 | 保守上界與完整枚舉 top-10 一致有證據；真實規模效能暫停。 | `inseason/trades.py::search_trade_bundles` | 可驗證的上界／候選篩選；小聯盟多換多前十名與完整窮舉一致，記錄真正省略的昂貴計算數，不只統計最後呼叫 `evaluate_trade` 的次數。 |
-| B5 | 新今日契約與沿用已修；F3／交易／Today 真實 p50/p95 未驗，效能暫停。 | `inseason/recommendations.py`、`inseason/trades.py`、`inseason/today.py` | 固定 14×13／10 starters／150 FA 與真實聯盟 p50/p95，F3／交易／Today 分別達 15／30／1 秒。Today 依後續指示只沿用有效 F3／IL 決策，涵蓋 API 讀取／計算／序列化／保存，不重新逐名 ROS。指定一隊 2 換 2 仍需 ≤30 秒；效能驗收目前暫停。 |
-| B6 | 500 人合成入口有量測，非真實聯盟驗收；其餘效能暫停。 | F1/F2、同步、所有計算入口 | 500 人有效預測 ≤1 秒、球隊頁 ≤300ms、手調至更新勝率 ≤2 秒；含冷／熱資料與硬體資訊。產品 budgets 保持明確，不用延長 Goldband 時間宣稱改善。 |
+| B1 | 每日精確枚舉／批次／重用有獨立 oracle；本批增加次數分組與精確流量合法性，完整效能驗收仍待補。 | `core/lineups.py`、`inseason/count_feasibility.py` | 先 profile；消除重複工作、適當批次化與重用合法組合。保留 ≤15 人與窮舉一致的正確性證據，不能只縮小搜尋或放寬 timeout。 |
+| B2 | 完整次數搜尋、容量／分數界限與獨立全枚舉一致；提交後我方 19/19 週重播完成，最慢 0.4802 秒。抽樣政策改變已明示；真實品質與端到端效能仍未驗。 | `inseason/weekly_samples.py`、`weekly_counts.py`、`matchup.py::optimize_total` | F3/F4/F5 共用完整條件式整週結果；上界／同分規則與獨立全枚舉一致。成功只代表固定對手、名單政策及抽樣下的最優；真實品質與效能需另驗。 |
+| B3 | ROS 抽樣、共同亂數、跨請求失效與冷算一致已驗；本批分享 draw profiles／政策標記。14 隊 ROS 基準可完成，完整長季與冷熱效能仍待驗。 | `inseason/season.py`、`Simulation`、`session.simulation` | 使用明確的 ROS 抽樣契約與共同亂數；快取按同步、聯盟、參數、帳本、名單／生效日等正確失效。抽樣數不同不能直接共用不相容的 draws。 |
+| B4 | 保守上界與完整枚舉 top-10 一致有證據；本批放寬浮點包絡涵蓋分組累加。真實聯盟重播的 342 個合格 1 換 1 仍超過 30 秒。 | `inseason/trades.py::search_trade_bundles`、`inseason/trade_bounds.py` | 可驗證的上界／候選篩選；小聯盟多換多前十名與完整窮舉一致，記錄真正省略的昂貴計算數，不只統計最後呼叫 `evaluate_trade` 的次數。 |
+| B5 | Today 與 drop 反事實沿用相同抽樣池；F3 screening 重用已驗，但明示補值的聯盟診斷仍超過 15 秒。F3／交易／Today 端到端 p50/p95 未達驗收。 | `inseason/screening.py`、`recommendations.py`、`trades.py`、`today.py` | 固定 14×13／10 starters／150 FA 與真實聯盟 p50/p95，F3／交易／Today 分別達 15／30／1 秒。Today 依後續指示只沿用有效 F3／IL 決策，涵蓋 API 讀取／計算／序列化／保存，不重新逐名 ROS。指定一隊 2 換 2 仍需 ≤30 秒；逾時不得發布部分結果。 |
+| B6 | 500 人合成入口有量測，非真實聯盟驗收；其餘完整入口效能待驗。 | F1/F2、同步、所有計算入口 | 500 人有效預測 ≤1 秒、球隊頁 ≤300ms、手調至更新勝率 ≤2 秒；含冷／熱資料與硬體資訊。產品 budgets 保持明確，不用延長 Goldband 時間宣稱改善。 |
 
 ### C. 預測、模擬與校準正確性
 
@@ -109,7 +123,7 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 | U2 | 本機合成 Chrome 已驗忽略／忽略到期、傷情改變解除舊忽略、手調到期恢復、新球隊頁／舊手調提醒及接受／撤銷；供應商設定差異恢復仍待真實 Yahoo。 | UI、projection flags、同步設定差異 | 依規格整理待確認事項、來源／理由／操作，核對忽略／到期／狀態改變後行為。 |
 | U3 | 本機完成 20 數字獨立手算、實際手調／撤銷、UI 與模擬值同源；合成資料邊界。 | `apps/inseason/static/views.js::playerCard`、`inseason/projection.py::blend_player/effective_projection` | 清楚分開先驗、混合、手調及最後由命中率重算的 made；抽 20 個 UI 數字獨立手算（至少 3 位小數）並驗證傳給模擬的值。 |
 | U4 | 合成資料的實際 Chrome 已驗跨日、IL／F3 合併、DST 春秋、S-001、新舊回顧與提案更新；本批另完成同日連續換人的有效合成授權／保存計畫沿用流程；真實 Yahoo 未驗。 | today／trade／review UI | 聯盟美東日期、使用者台北顯示、DST、跨午夜、交易內容及舊版 Brier 標籤都實際操作讀回。 |
-| F1 | 129 條登錄；143 檔／472 Python 候選及 C++／JS 人工盤點 pending 均為 0。兩應用隨機 20 個實際 scalar trace 已手算／展開核對；逐功能核對另補四組季賽 trace，相關候選完整檢查及獨立審查已通過；公式所有權／UI trace 本機範圍結案；不包含原規格功能 F1 的歷史校準。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
+| F1 | 129 條登錄；歷史 143 檔／472 Python 候選及 C++／JS 人工盤點 pending 均為 0；本批擴充至 514 個 Python 候選，盤點與完整檢查通過。兩應用隨機 20 個實際 scalar trace 已手算／展開核對；逐功能核對另補四組季賽 trace，相關候選完整檢查及獨立審查已通過；公式所有權／UI trace 本機範圍結案；不包含原規格功能 F1 的歷史校準。 | `formulas/*`、`design/formula-ownership.json`、相關 tests | 全範圍語意所有權與登錄一對一；業務公式只在 formulas，編排／搜尋／驗證有具體理由；UI trace 同源。檢查不能自動證明語意正確。 |
 | F2 | 124 參數葉值逐鍵核對，初值無不符、出處已修；實證訓練／驗證對應仍未完成。 | defaults/parameters.json、回測報告 | 逐鍵核對初值、來源、訓練／驗證季與限制；已找到原規格指定的 `/Users/leo/fantasy-research-2026-27/claude-report-v2/evidence-2026-09-27/` 程式／JSON，重播 318 位球員、1,446 案例與原結果在 1e-12 內零差異。原研究是同季擬合，ESPN dump 於 2026-09-25 季後擷取，不能證明歷史公開時點；也不能當目前 strict-win 引擎的跨季校準。無證據不能改標已校準；OREB 等未回測項另列。 |
 | F3 | 10 隊、不同位置與 OREB／A/T／H2H Each Category 的合成 F0–F6 本機已有驗證。 | `tests/inseason_support.py`、`test_inseason_portability.py`、跨功能測試 | 真正改類別公式（含比率／A/T）、位置、10 隊、H2H Each Category，F0–F6 跑完且合法；只改設定，不在程式塞聯盟特例。 |
 
@@ -121,15 +135,16 @@ B2 舊品質反例已重現並修補：固定 30 seeds、100 samples、一先發
 | V2 | 部分完成：windows-latest 已實測原生 DLL、實際 interpreter PID、單一實例、正常重啟、同一 5 秒 deadline 內強制清理／HTTP connection refusal、編輯器 DELETE sharing 與失敗復原。Windows 11 保留 port、GUI 共存及寫入中斷整體驗收仍缺。 | 真實 Windows 11 驗證 socket 互斥／保留 port、10013 換 port、單一實例、同時雙開、正常重啟、強制終止後 5 秒內無殘留、寫入中斷復原；共用 runtime 也要驗證競標桌與季賽助手共存。 |
 | V3 | 未完成：無 Python 的乾淨 macOS／Windows clone 與自己的正式資料／憑證。 | macOS／Windows 無 Python 環境依 README 安裝必要的 uv、由 uv 取得鎖定 Python 後雙擊啟動；中文／空白路徑、自己的憑證、首次資料取得／同步。先前 macOS 副本測試機已有 Python 3.13.7，不算無 Python 證據。 |
 | V4 | 合成 Chrome 正常結束、CI 命令檔 --help、程式化退出／強制終止已驗；實際雙擊第二次、關分頁／命令視窗及卡住後 GUI 診斷仍未完整驗收。 | clone 命令檔實際雙擊第二次時可見診斷，不偷開另一實例。原「打包版沒有結束選單」已被 clone 交付取代；仍要驗證現有「結束助手」、關分頁及命令視窗的行為。 |
-| V5 | 已完成合成 fixture 範圍：fba7fdc 的 Linux／macOS／Windows 完整 CI 成功，三份 artifact 的欄位、排序一致；每對 1,121 個數值、三對共 3,363 次比較，最大絕對差 0。此證據不涵蓋真實資料或乾淨 Windows 11 clone。 | 真正執行 macOS／Windows／Linux 完整工作流程；同快照、帳本、參數與 seed，排序相同、數值差≤1e-9。CI YAML 存在、單機 golden fixture 更新都不算跨平台通過。 |
+| V5 | 歷史 fba7fdc、4ee355c 有三平台合成 fixture 證據，三對共 3,363 次比較最大差 0。本批 ff959f7 改變抽樣政策，僅本機／隔離容器通過，尚需新三平台 CI 及產物比較；真實資料與乾淨 Windows 11 clone 仍未驗。 | 真正執行 macOS／Windows／Linux 完整工作流程；同快照、帳本、參數與 seed，排序相同、數值差≤1e-9。CI YAML 存在、單機 golden fixture 更新都不算跨平台通過。 |
 | V6 | 未完成：原規格逐條最終整合驗收與里程碑，不因本機審查通過而結案。 | 逐條重查原規格，尤其跨功能手調／撤銷、因果性、錯誤可見、秘密掃描、公式手算、設定可替換、來源時間與日誌；附真實環境證據、未測項與實際 p50/p95，再開獨立審查。 |
 
 ## 5. 接續順序與操作
 
-1. 本輪搜尋批次已提交 `6797390`，Goldband `e1723844-66e4-41f5-8df7-5d8ccbe96c4e` 完整 1,443 tests／513.16 秒、兩 required verified-pass、0 findings；309檔0 drift。R1 後續批次與推送／CI 狀態以最新報告入口為準。核對 git／遠端 main、最新證據入口與本文件。完成已審查候選的分批 commit 與推送，讀回遠端 SHA；審查期間固定候選。未變更範圍沿用相同候選證據，新增範圍做相符驗證及 Goldband 獨立審查。
-2. 取得 ScoreTape wire receipt 後核對欄位與合法存取範圍，補 A1/A7 的真實 adapter。Yahoo 核准後以使用者提供的本機設定完成唯讀 OAuth／refresh／同步及去識別 fixture，補 A2/A6/M3/V1。必要秘密只由使用者在設定流程輸入。
-3. 取得當時公開且可用的歷史後，跑實際引擎的因果 holdout／策略比較及校準；保留資料限制。B2 程式已改完整條件式搜尋；繼續驗證 F3 recall 與真實策略品質，不以合成 oracle 代替歷史驗收。
-4. V2–V4 仍需 Windows 11 保留 port／GUI 共存、無 Python 的乾淨兩平台 clone 與實際雙擊全情境；CI runner 及 --help 不替代此證據。V6 依原規格逐條整合驗收，效能項目依暫停指示保留，未達標不結案。
+1. 本批 `ff959f7` 已通過第 2 節的完整獨立審查並提交，交接文件於其後更新；尚未推送。先核對 Git 狀態與候選，再沿用既有推送授權交付，讀回遠端 SHA、追蹤新三平台 CI 與 portability artifacts。舊 CI 不代表本批通過。
+2. 優先完成 B4/B5：保留現在的完整候選／抽樣／期限，profile 342 個合格交易候選的 worker 完整成本，以及 F3 screening／ROS／多步方案估值。只有可證明的上界、等價狀態或工作重用才可省略計算；與獨立全枚舉核對，量測原聯盟及指定規模的端到端冷熱 p50/p95。不要把單週變快當完整交易／F3 完成，也不要等待 API 才處理這些計算瓶頸。
+3. 取得 ScoreTape wire receipt 後核對欄位與合法存取範圍，補 A1/A7 的真實 adapter。Yahoo 核准後以使用者提供的本機設定完成唯讀 OAuth／refresh／同步及去識別 fixture，補 A2/A6/M3/V1。必要秘密只由使用者在設定流程輸入。頁面回放的 `adds_used`、交易精確時間／ID、季前排名等補值需保留標記；未定季後賽對手不可捏造。
+4. 取得當時公開且可用的歷史後，跑實際引擎的因果 holdout／策略比較及校準；保留資料限制。B2 與 F3 的合成完整搜尋正確性不取代真實因果 recall／策略品質驗收；記錄採用的抽樣政策。
+5. V2–V4 仍需 Windows 11 保留 port／GUI 共存、無 Python 的乾淨兩平台 clone 與實際雙擊全情境；CI runner 及 --help 不替代此證據。V6 依原規格逐條整合驗收，效能工作已恢復，未達標不結案。
 
 ```sh
 cd /Users/leo/fantasy-basketball-assistant
