@@ -2,33 +2,38 @@
 <html lang="zh-Hant">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fantasy · 競標桌</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head>
 <body>
-<header><div><span class="eyebrow">FANTASY / 競標桌</span><h1 id="teamTitle">載入中</h1><p id="subtitle"></p></div><div id="myBudget" class="budget"></div></header>
-<main>
+<a id="skipDesk" class="skip-link" href="#deskContent">跳到主要內容</a>
+<header class="desk-header"><a id="workspaceLink" class="workspace-link" hidden>切換模式</a><div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/><path d="M3 20h34M20 3v34M8 8c16 4 20 12 24 24M32 8C16 12 12 20 8 32"/></svg><div><strong>FANTASY</strong><span>BASKETBALL ASSISTANT</span></div></div><span class="mode-tag">競標桌</span><button id="help">使用說明</button></header>
+<div class="desk-scoreboard"><div><p class="eyebrow">YOUR DRAFT ROOM</p><h1 id="teamTitle">準備競標桌</h1><p id="subtitle" class="muted"></p></div></div>
+<main id="deskContent" tabindex="-1">
 <p id="error" role="alert" class="error" hidden></p>
+<p id="sourceNotice" class="warning" hidden>這份資料沒有來源明細，無法確認哪些球員缺當季預測；請重新建置競標資料。</p>
+<div class="calculation-bar"><p id="equalStatus" role="status">加總：更新中</p><p id="fitStatus" role="status">依陣容調整：更新中</p><button id="retry" hidden>重試計算</button><label for="mode">停損價模式</label><select id="mode"><option value="equal">類別加總</option><option value="fit">依陣容調整</option></select><p class="muted">停損價是模型建議，合法成交可高於建議。更新期間仍可登錄成交。</p></div>
 <div class="workspace">
 <aside>
-<section class="ticket">
+<section class="ticket"><div class="ticket-budget"><span>我方剩餘預算</span><div id="myBudget" class="budget"></div></div>
 <label for="lookup">搜尋本輪球員</label><input id="lookup" type="search" autocomplete="off" placeholder="姓名、縮寫、球隊或 ID"><div id="matches" class="matches" aria-label="搜尋結果"></div>
 <div id="nominee"><p class="muted">搜尋球員，或從表格指定本輪。</p></div>
-<form id="saleForm" novalidate><p class="eyebrow">YAHOO 已成交後，再登錄這裡</p><label for="buyerSearch">搜尋買家</label><input id="buyerSearch" type="search" autocomplete="off" placeholder="隊名或席次；再從下方選擇"><div class="sale-fields"><div><label for="buyer">買家</label><select id="buyer" required><option value="">選擇隊伍</option></select></div><div><label for="amount">成交價</label><input id="amount" inputmode="numeric" autocomplete="off" placeholder="$"></div></div><p id="buyerLimit" class="muted"></p><button id="sell" type="submit" class="primary" disabled>登錄成交</button></form>
+<form id="saleForm" novalidate><p class="eyebrow">成交登錄</p><p class="muted">先在 Yahoo 成交，再記錄於此。</p><details class="buyer-search"><summary>篩選買家</summary><label for="buyerSearch">隊名或席次</label><input id="buyerSearch" type="search" autocomplete="off" placeholder="輸入後，從下方選擇買家"></details><div class="sale-fields"><div><label for="buyer">買家</label><select id="buyer" required><option value="">選擇隊伍</option></select></div><div><label for="amount">成交價</label><input id="amount" inputmode="numeric" autocomplete="off" placeholder="$"></div></div><p id="buyerLimit" class="muted"></p><button id="sell" type="submit" class="primary" disabled>登錄成交</button></form>
 <p id="lastSale" class="muted"></p><button id="undo" disabled>撤銷上一筆</button>
 </section>
-<section class="calculation"><p id="equalStatus" role="status">加總：更新中</p><p id="fitStatus" role="status">依陣容調整：更新中</p><button id="retry" hidden>重試計算</button><label for="mode">停損價模式</label><select id="mode"><option value="equal">類別加總</option><option value="fit">依陣容調整</option></select><p class="muted">停損價是模型建議，合法成交可高於建議。更新期間仍可登錄成交。</p></section>
-<section><h2>買／不買比較</h2><form id="compareForm"><label for="comparePrice">假設買入價</label><input id="comparePrice" inputmode="numeric" autocomplete="off" placeholder="$"><button id="compare" disabled>比較兩種組隊</button></form><p class="muted">依目前選用模式與同一份市場成本比較；不代表勝率。</p><div id="comparison" aria-live="polite"></div></section>
+
+<details class="tool-panel"><summary>買／不買比較</summary><form id="compareForm"><label for="comparePrice">假設買入價</label><input id="comparePrice" inputmode="numeric" autocomplete="off" placeholder="$"><button id="compare" disabled>比較兩種組隊</button></form><p class="muted">依目前選用模式與同一份市場成本比較；不代表勝率。</p><div id="comparison" aria-live="polite"></div></details>
 </aside>
 <div class="support">
-<section>
+<div class="workspace-tabs" role="group" aria-label="競標工作區"><button id="showMarket" aria-pressed="true">球員市場</button><button id="showPlan" aria-pressed="false">組隊方案</button><button id="showRoom" aria-pressed="false">全場與成交</button></div>
+<section id="marketPanel">
 <div class="section-title"><h2>市場與停損價</h2><span id="count" class="muted"></span></div>
-<p id="sourceNotice" class="warning" hidden>這份資料沒有來源明細，無法確認哪些球員缺當季預測；請重新建置競標資料。</p>
+
 <div class="filters"><label>搜尋清單<input id="filter" type="search" placeholder="姓名、縮寫、球隊或 ID"></label><label>顯示<select id="scope"><option value="available">未成交</option><option value="focus">重點價差</option><option value="value">全部市場低估</option><option value="watch">我的追蹤</option><option value="all">全部球員</option></select></label><label>位置<select id="position"><option value="">全部位置</option></select></label><label>排序<select id="sort"><option value="fair">公允價</option><option value="gap">公允與市場價差</option><option value="cap">停損價</option><option value="edge">可出價空間</option><option value="name">名字</option></select></label></div>
 <div class="table-tools"><p class="muted">價差、折扣與可出價空間的代入值可在球員詳情展開核對。</p><button id="exportCSV" disabled>匯出目前清單 CSV</button></div>
 <div class="table-scroll"><table><thead><tr><th>追蹤</th><th>球員／位置</th><th>公允價</th><th>預期成交</th><th>停損價</th><th>本輪</th></tr></thead><tbody id="players"></tbody></table></div>
 </section>
-<section><h2>組隊方案</h2><p id="planNote" class="muted"></p><div id="fitExplanation"></div><div id="plan"></div><details><summary>串流格數比較</summary><button id="streamingCompare" disabled>比較串流格數</button><div id="streamingResult" aria-live="polite"></div></details><h3>提名建議</h3><div id="nominations"></div></section>
-<section><h2>全場與成交紀錄</h2><div id="cashSummary" class="muted"></div><div id="room" class="room"></div><ol id="history"></ol></section>
+<section id="planPanel" hidden><h2>組隊方案</h2><p id="planNote" class="muted"></p><div id="fitExplanation"></div><div id="plan"></div><details><summary>串流格數比較</summary><button id="streamingCompare" disabled>比較串流格數</button><div id="streamingResult" aria-live="polite"></div></details><h3>提名建議</h3><div id="nominations"></div></section>
+<section id="roomPanel" hidden><h2>全場與成交紀錄</h2><div id="cashSummary" class="muted"></div><div id="room" class="room"></div><ol id="history"></ol></section>
 </div>
 </div>
-<footer><button id="settings" disabled>我方與隊名</button><button id="export" disabled>匯出備份</button><label class="file-button">匯入備份<input id="import" type="file" accept="application/json,.json" disabled></label><button id="reset" disabled>清空選秀紀錄</button><button id="help">使用說明</button><button id="legacyWatch" hidden>將瀏覽器原有追蹤存入草稿</button><span id="saved" role="status"></span></footer>
+<footer><span id="saved" role="status"></span><details class="maintenance"><summary>備份與設定</summary><div class="maintenance-actions"><button id="settings" disabled>我方與隊名</button><button id="export" disabled>匯出備份</button><label class="file-button">匯入備份<input id="import" type="file" accept="application/json,.json" disabled></label><button id="reset" disabled>清空選秀紀錄</button><button id="legacyWatch" hidden>將瀏覽器原有追蹤存入草稿</button></div></details></footer>
 <details><summary>聯盟規則與資料版本</summary><div id="rules"></div><div id="identity" class="identity"></div><p class="muted">缺報價保持空白；缺當季預測會標示警告，請核對歷史先驗與人工調整。條件式價格須先確認位置或市場報價。底價備案需要我方首先以最低出價提名，且無人加價。</p></details>
 </main>
 <dialog id="settingsDialog"><form id="settingsForm"><h2>我方與隊名</h2><label for="mine">我的隊伍</label><select id="mine"></select><div id="teamNames"></div><p id="settingsError" class="error" hidden></p><div class="dialog-actions"><button type="button" id="cancelSettings">取消</button><button class="primary">套用</button></div></form></dialog>
@@ -37,4 +42,4 @@
 <dialog id="overrideDialog" aria-labelledby="overrideTitle"><form id="overrideForm"><h2 id="overrideTitle">市場價與位置</h2><p class="muted">覆寫保存於本次草稿與備份。市場價留白、位置不勾選時沿用來源；修改位置仍須讓全部成交合法。</p><p class="error" role="alert" hidden></p><fieldset><label for="overrideMarket">市場報價</label><input id="overrideMarket" name="market" inputmode="decimal" placeholder="留白使用原始來源"><label class="check"><input id="overridePositionsEnabled" name="enabled" type="checkbox">覆寫已確認的位置</label><fieldset id="overridePositions" class="position-options"></fieldset><label for="overrideReason">理由／資料依據</label><input id="overrideReason" name="reason" required><button type="button" id="removeOverride">移除本球員覆寫</button><div class="dialog-actions"><button type="button" id="cancelOverride">取消</button><button class="primary">保存覆寫</button></div></fieldset></form></dialog>
 <dialog id="helpDialog" aria-labelledby="helpTitle"><h2 id="helpTitle">選秀桌怎麼用</h2><p>先在 Yahoo 完成交易，再指定球員、明確選買家、登錄成交價。按「/」可跳到本輪搜尋；金額欄按 Enter 登錄，輸入法組字期間不送出。</p><p>公允價是類別估值；預期成交是市場模型估計；停損價是目前陣容與預算下的建議上限。合法成交可高於建議，模型數字不是勝率或保證價格。</p><p>「更新中」時停損價暫空白，成交仍會保存。若顯示保存未確認，重新整理核對帳本再操作。可在成交紀錄更正舊交易、匯出備份；清空紀錄前請先備份。</p><p>底價備案需要我方先提名且無人加價；缺市場報價者保持缺值。球員詳情可查看來源與修改已確認的位置、報價。</p><button id="closeHelp">關閉</button></dialog>
 <dialog id="confirmDialog" aria-labelledby="confirmText"><form method="dialog"><p id="confirmText"></p><div class="dialog-actions"><button value="cancel" autofocus>取消</button><button value="confirm" class="primary">確認</button></div></form></dialog>
-</body></html>
+<script type="module" src="/workspace-link.js"></script></body></html>

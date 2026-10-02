@@ -4,12 +4,13 @@ from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from time import monotonic
+from urllib.parse import urlsplit
 
 from fba.apps.inseason.api import Jobs, parse_body
 from fba.contracts.base import DataError
 from fba.data.codec import canonical
 from fba.inseason.session import InseasonSession
-from fba.runtime.assets import formula_script
+from fba.runtime.assets import court_image, formula_script, workspace_link_script
 from fba.runtime.local import (
     Instance,
     InstanceLock,
@@ -105,6 +106,10 @@ class SeasonHandler(BaseHTTPRequestHandler):
                 self.reply(200, canonical(self.local.instance))
             elif self.path == "/formulas.js":
                 self.reply(200, formula_script(), "text/javascript")
+            elif self.path == "/workspace-link.js":
+                self.reply(200, workspace_link_script(), "text/javascript")
+            elif self.path == "/court.jpg":
+                self.reply(200, court_image(), "image/jpeg")
             elif self.path == "/api/bootstrap":
                 self.reply(
                     200,
@@ -120,6 +125,7 @@ class SeasonHandler(BaseHTTPRequestHandler):
                     ).encode(),
                 )
             else:
+                path = urlsplit(self.path).path
                 assets = {
                     "/": ("index.html", "text/html"),
                     "/app.js": ("app.js", "text/javascript"),
@@ -127,10 +133,10 @@ class SeasonHandler(BaseHTTPRequestHandler):
                     "/forms.js": ("forms.js", "text/javascript"),
                     "/style.css": ("style.css", "text/css"),
                 }
-                if self.path not in assets:
+                if path not in assets:
                     self.reply(404, b'{"error":"route not found"}')
                     return
-                name, media = assets[self.path]
+                name, media = assets[path]
                 self.reply(200, (Path(__file__).parent / "static" / name).read_bytes(), media)
         except (DataError, ValueError) as exc:
             self.reply(400, json.dumps({"error": str(exc)}, ensure_ascii=False).encode())

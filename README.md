@@ -2,20 +2,26 @@
 
 設定驅動的本機 Yahoo 拍賣籃球助手：建置年度資料、計算估值與停止價、重播季中管理。競標時離線讀取凍結資料，Yahoo 成交需手動登錄。
 
-## 季賽助手
+## 統一入口
 
 以原始碼交付。先安裝 Git 與 [uv](https://docs.astral.sh/uv/getting-started/installation/)，再 clone：
 
 ```sh
 git clone https://github.com/leo110047/fantasy-basketball-assistant.git
 cd fantasy-basketball-assistant
-uv run --locked --no-dev fba-inseason
+uv run --locked --no-dev fba app
 ```
 
-也可在專案資料夾雙擊：macOS 的 `啟動季賽助手.command`，或 Windows 的 `start-inseason.cmd`。
+也可在專案資料夾雙擊：macOS 的 `啟動籃球助手.command`，或 Windows 的 `start-assistant.cmd`。
 首次啟動會依 `.python-version` 與 `uv.lock` 準備 Python 和套件，建立專案內的 `.venv`，再自動開啟本機網頁；需要網路與下載時間，不必另行安裝 Python。
-命令檔須保留在專案目錄。關閉網頁後服務仍會執行，從頁首「結束助手」停止。
+命令檔須保留在專案目錄。首頁可選擇「賽季助手」或「競標桌」，工具頁首的「切換模式」會回到首頁。競標桌首次需填入既有競標資料、名單與計算紀錄的完整路徑；成功開啟後會記住這些路徑。
+
+已開啟的競標桌只會在檔案與輸入版本一致時重用。要更換資料或紀錄路徑，請先結束原本的競標桌；設定不符時會顯示錯誤並保留上次成功使用的路徑。
+
+關閉網頁後服務仍會執行。首頁「工作區選項 → 結束工作區」會停止這個入口啟動的工具；原本獨立執行的工具不受影響。季賽助手也可單獨從「更多 → 結束助手」停止。
 更新時先結束助手，再執行 `git pull --ff-only` 並重新啟動，讓 `uv` 同步更新後的依賴。
+
+原有的 `fba-inseason`、`fba inseason`、季賽啟動命令檔與 `fba serve` 仍可獨立使用。
 
 首次授權、資料來源、換季與回測流程見 [季賽助手說明](design/inseason.md)。
 真實 API、模型樣本外與乾淨機器驗收需要各自的資料及環境，不能用離線測試替代。

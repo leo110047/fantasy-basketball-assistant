@@ -456,7 +456,7 @@
       "role": "structure",
       "owner": "fba.apps.inseason.server.SeasonHandler.do_GET",
       "reason": "Whitelisted static asset filesystem path.",
-      "signature": "7705886e0c99a2608c301fd7d71332355cbdc1d43514f1c310f00e893700ee24"
+      "signature": "a1311be95a5599fced867b6c91436453c27885a074dda6293161c40c1946ceb1"
     },
     "fba.apps.inseason.server.serve_inseason": {
       "role": "structure",
@@ -480,13 +480,13 @@
       "role": "structure",
       "owner": "fba.apps.server.DeskHandler.do_GET",
       "reason": "Static asset paths and local server lifecycle.",
-      "signature": "38c1cbe4c2d640a35381c2916e75a6fac7f68c237bfc7e3bf9de5bda96761132"
+      "signature": "bdbf5ac916a781a7d912d7045bb815f7bd519fa90e145a971dd75f40e6cde0d4"
     },
     "fba.apps.server.serve": {
       "role": "structure",
       "owner": "fba.apps.server.serve",
       "reason": "Static asset paths and local server lifecycle.",
-      "signature": "43d90268639e379d69a0e8193e4a1a10fec5eaf6a619c3f4ce330e591908ca5a"
+      "signature": "866899c5628049168792a8de81b27aa45e59e9af59f473477b8e354e434ca90b"
     },
     "fba.apps.workers.worker_limit": {
       "role": "structure",
@@ -2756,12 +2756,6 @@
       "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
       "signature": "051ff0a07b698edb4b83fc4802b78868f82ad318c2fe1fdfc1d083d1b6139489"
     },
-    "fba.runtime.local.open_existing": {
-      "role": "structure",
-      "owner": "fba.runtime.local.open_existing",
-      "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
-      "signature": "269512793f3ff7af0ed69f0682bc0a39f351d87ed60e9c523f74c6d887bf7d0e"
-    },
     "fba.runtime.local.launch_browser": {
       "role": "structure",
       "owner": "fba.runtime.local.launch_browser",
@@ -3085,6 +3079,66 @@
       "owner": "fba.inseason.screening.Screening.score",
       "reason": "Preserves chronological per-stat move accumulation and composes registered category, z, normal and difference formulas using frozen baseline moments.",
       "signature": "73d9dcca218f2a89313e8f500bd896702ecf2eb259dca1f8b171926aeb26a348"
+    },
+    "fba.apps.workspace.launcher.serve_workspace": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.launcher.serve_workspace",
+      "reason": "Local workspace lock path and owned tool lifecycle.",
+      "signature": "82dd65a38c7881ebd0758a952b3ab75d0a384270a885e454f279ef528b314169"
+    },
+    "fba.apps.workspace.modes.ModeManager.__init__": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.ModeManager.__init__",
+      "reason": "Workspace settings file path; no business calculation.",
+      "signature": "9e844a52111a9d9b8dbf533fb8bfb73014674184ab773eddf27c75c6bd510d44"
+    },
+    "fba.apps.workspace.modes.ModeManager.open": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.ModeManager.open",
+      "reason": "Existing tool lock paths and remembered auction file paths.",
+      "signature": "331c6a489d6b080e5ddd906f675bc3ac5343d6eebbaf5493198f151b7b5ca806"
+    },
+    "fba.apps.workspace.modes.ModeManager.start": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.ModeManager.start",
+      "reason": "Bounded local process startup deadline and readiness polling.",
+      "signature": "50935a81a712d5eb444397e19e1648ace4ab48be6db70ce44a1a3d92e1176b8c"
+    },
+    "fba.apps.workspace.modes.mode_url": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.mode_url",
+      "reason": "Local mode navigation URL composition; token remains in fragment.",
+      "signature": "e9e06cd1b70ae277293eae43cddd5ca5965ddade5a098d7845bcb89614e53b51"
+    },
+    "fba.apps.workspace.modes.stop_mode": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.stop_mode",
+      "reason": "Authenticated loopback shutdown request framing and bounded child cleanup.",
+      "signature": "56be26d8358a09428932c077021182d09af883d9601b8fadbab57acbd1895685"
+    },
+    "fba.apps.workspace.server.WorkspaceHandler.do_GET": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.server.WorkspaceHandler.do_GET",
+      "reason": "Allowlisted UI asset paths and response byte framing.",
+      "signature": "2df0992e5a295e2b069b5417c033e66f2e07ecc683ebb7f639da364c765a37da"
+    },
+    "fba.runtime.assets.court_image": {
+      "role": "structure",
+      "owner": "fba.runtime.assets.court_image",
+      "reason": "Shared decorative image asset path.",
+      "signature": "1c00a098f4e66aab3a2773d7c0680aed104a543e72ca9decf79919f9cafd144c"
+    },
+    "fba.runtime.assets.workspace_link_script": {
+      "role": "structure",
+      "owner": "fba.runtime.assets.workspace_link_script",
+      "reason": "Shared mode navigation script asset path.",
+      "signature": "39fa234a0c9cdf668b72f400abb84377d4b2bccb152a6f6c74bc099f6cfff080"
+    },
+    "fba.runtime.local.existing_url": {
+      "role": "structure",
+      "owner": "fba.runtime.local.existing_url",
+      "reason": "Loopback health probe deadline and validated instance URL composition.",
+      "signature": "b5a2d2ee78ebbddfdcd43cf1070b56bb9cf8625f2a1d040757f5ba5cbe0f375f"
     }
   },
   "source_files": {
@@ -3104,19 +3158,19 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/forms.js": {
-      "sha256": "0b8d19b44abfd254eba915f4cda93a484d67329794957c02372362a7ef18963a",
+      "sha256": "1d7f0ad140046dd62a3de959f0271370be3e967f9605729d4536b0da8de26b58",
       "role": "structure",
       "reason": "Percent conversion and Intl rounding present backend numbers; minutes/calibration charts map values/dates to SVG coordinates and do not recompute model estimates.",
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/app.js": {
-      "sha256": "0a3a4f334a73e117ed5445763acb4ccd1f1d51817bbf0420f716f99e0b9b20f6",
+      "sha256": "95246652e885cb7b0ea1a37521e34314967993f5490b747ea688127b4db936a4",
       "role": "structure",
       "reason": "Local API orchestration, stale seconds to milliseconds and UTC return-date minus one day for user-entered ranges; no forecast equation.",
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "b6320c524d01e0dd47eb47a92523a7bb72f62576d63c44ae8c7aa9e64a79b2d1",
+      "sha256": "554223325f0fb1cf8259e6fae3bd46d5e05282608ee90e085f3c009c8533a7bc",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
       "formula_ids": [
@@ -3147,7 +3201,7 @@
       "formula_ids": []
     },
     "src/fba/apps/static/app.js": {
-      "sha256": "399a66a2b3c13e26c2ec7063aee75c3a71b0d48c646749c59d152111e5b02953",
+      "sha256": "1709b4cf434bce0b0fb15c30a677e53ab99f073c2e4ceb167b932b1331fe1be0",
       "role": "composition",
       "reason": "Displays server model replies, converts elapsed ns to seconds, increments local revisions/sale indices and validates bid entry against backend limits; detailed final trace coverage remains separately unverified. Supplies shared formula definitions to room/comparison renderers; no second formula text or implementation.",
       "formula_ids": []
@@ -3159,7 +3213,7 @@
       "formula_ids": []
     },
     "src/fba/apps/static/view.js": {
-      "sha256": "e099b5c987cfce2e142d64d360a8453d136f3d07c01fe5b8f5d87a84c4c4f7d9",
+      "sha256": "311d5f2e32f0272fed130c0712d2b51f2d52e8ac2aeb03abf76bac439c297e84",
       "role": "composition",
       "reason": "DOM rendering of backend room cash/slots, gap/discount, cap edge and comparison remainders with shared formula traces. Percent/currency formatting, top-strength/scenario extrema, list indices and ordering are presentation structure. No market or remaining-cash equation remains in JavaScript; missing current room summary fails explicitly.",
       "formula_ids": [
@@ -3167,6 +3221,18 @@
         "difference",
         "ratio"
       ]
+    },
+    "src/fba/apps/workspace/static/app.js": {
+      "sha256": "a8c07a53db4dc67b3073b5aa9a034bd29b829dbbbf025e74217cf46beb48f63b",
+      "role": "structure",
+      "reason": "Local launcher form, authentication, readiness, and mode navigation; no business equation.",
+      "formula_ids": []
+    },
+    "src/fba/runtime/static/workspace-link.js": {
+      "sha256": "cb081352315bcb697ca73c1a31ededed6582051ed76aee8f1d12b67e36a822bb",
+      "role": "structure",
+      "reason": "Allowlisted loopback return navigation and port validation; no business equation.",
+      "formula_ids": []
     }
   }
 }

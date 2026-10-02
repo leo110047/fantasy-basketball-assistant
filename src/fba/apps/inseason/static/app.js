@@ -2,11 +2,11 @@ import { el, field, select, form, table, number, empty, formula } from "/forms.j
 import { syncView, teamsView, weekView, tradesView, todayView, reviewView, playerCard } from "/views.js";
 
 const fragment = location.hash.slice(1);
-if (fragment) { sessionStorage.setItem("inseason-session", fragment); history.replaceState(null, "", "/"); }
+if (fragment && fragment !== "content") { sessionStorage.setItem("inseason-session", fragment); history.replaceState(null, "", location.pathname + location.search); }
 const token = sessionStorage.getItem("inseason-session") ?? "";
-const context = { data: {}, results: {}, tab: "sync", nbaTeam: null, tradeTeam: null };
-const tabs = [["sync", "資料與同步", syncView], ["teams", "球隊與手調", teamsView], ["week", "每週對戰", weekView], ["trades", "交易", tradesView], ["today", "今日", todayView], ["review", "每週回顧", reviewView]];
-const actionLabels = { "trade-search": "搜尋交易", partners: "尋找互補對象", trade: "評估交易", week: "計算每週對戰", recommendations: "搜尋換人建議", preferences: "儲存設定", sync: "同步資料" };
+const context = { data: {}, results: {}, tab: new URLSearchParams(location.search).get("view"), nbaTeam: null, tradeTeam: null };
+const tabs = [["today", "今日", todayView, "01"], ["week", "本週對戰", weekView, "02"], ["teams", "我的球隊", teamsView, "03"], ["trades", "交易", tradesView, "04"], ["review", "每週回顧", reviewView, "05"], ["sync", "資料與設定", syncView, "⚙"]];
+const actionLabels = { today:"計算今日安排", complete:"更新完成紀錄", adopt:"更新採納紀錄", "trade-search": "搜尋交易", partners: "尋找互補對象", trade: "評估交易", week: "計算每週對戰", recommendations: "搜尋換人建議", preferences: "儲存設定", sync: "同步資料" };
 
 async function request(path, payload) {
   const options = { headers: { Authorization: `Bearer ${token}` } };
@@ -41,6 +41,7 @@ function close() { document.querySelector("#dialog").close(); }
 function render() {
   const data = context.data;
   const available = data.availability?.enabled ?? false;
+  if (!tabs.some(([id]) => id === context.tab)) context.tab = available ? "today" : "sync";
   document.querySelector("#leagueName").textContent = data.state?.selected.name ?? "連結你的聯盟，開始準備本週對戰。";
   document.querySelector("#freshness").textContent = data.state?.sync.last_success ? `資料截至 ${new Date(data.state.sync.last_success).toLocaleString("zh-TW", { timeZone: data.preferences.timezone })}` : "尚未同步";
   const notice = document.querySelector("#notice");
@@ -48,12 +49,21 @@ function render() {
   notice.hidden = available && !old && !data.state?.sync.last_error && !data.state?.sync.forecast_error;
   notice.textContent = available ? data.state?.sync.forecast_error ?? data.state?.sync.last_error ?? "資料已久未同步，建議重新同步後再採取行動。" : `${data.availability?.reason ?? "資料未就緒"}。${data.availability?.repair ?? ""}`;
   document.querySelector("#syncButton").disabled = !data.selected;
-  document.querySelector("#navigation").replaceChildren(...tabs.map(([id, label]) => el("button", { "aria-current": context.tab === id ? "page" : "false", disabled: !["sync", "teams"].includes(id) && !available, onClick: () => navigate(id) }, label)));
+  document.querySelector("#navigation").replaceChildren(...tabs.map(([id, label, , mark]) => el("button", { "aria-current": context.tab === id ? "page" : "false", disabled: !["sync", "teams"].includes(id) && !available, onClick: () => navigate(id) }, el("span", {class:"nav-mark", "aria-hidden":"true"}, mark), label)));
   const selected = tabs.find(([id]) => id === context.tab);
+  document.querySelector("#pageTitle").textContent = selected[1];
+  document.querySelector("#pageEyebrow").textContent = {today:"YOUR DAILY GAME PLAN", week:"THE WEEK AHEAD", teams:"PLAYER INTELLIGENCE", trades:"BUILD A BETTER TEAM", review:"LOOK BACK, MOVE FORWARD", sync:"YOUR WORKSPACE"}[context.tab];
   const view = !["sync", "teams"].includes(context.tab) && !available ? empty(`${data.availability.reason}；${data.availability.repair}`) : selected[2](context);
   document.querySelector("#content").replaceChildren(view);
 }
-function navigate(tab) { context.tab = tab; render(); }
+function navigate(tab) {
+  context.tab = tab;
+  const url = new URL(location.href); url.searchParams.set("view", tab);
+  history.replaceState(null, "", url.pathname + url.search);
+  render();
+  document.querySelector("#content").focus({preventScroll:true});
+  window.scrollTo({top:0,behavior:"instant"});
+}
 async function refresh(redraw = true) {
   context.data = await request("/api/bootstrap");
   if (context.data.projection) {
@@ -169,6 +179,7 @@ function ignore(flag) {
 
 Object.assign(context, { run, refresh, render, navigate, open, close, error: showError, edit, ignore, selectNba: team => { context.nbaTeam = team; render(); }, player: player => open(playerCard(context, player)) });
 document.querySelector("#closeDialog").addEventListener("click", close);
+document.querySelector("#skipLink").addEventListener("click", event => { event.preventDefault(); document.querySelector("#content").focus(); });
 document.querySelector("#syncButton").addEventListener("click", () => run("sync", {}).catch(showError));
 document.querySelector("#quitButton").addEventListener("click", async () => {
   try { await request("/api/quit", {}); document.querySelector("#content").replaceChildren(empty("助手已結束，可以關閉此分頁。")); document.querySelector("#navigation").replaceChildren(); } catch (error) { showError(error); }

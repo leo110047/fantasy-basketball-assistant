@@ -382,6 +382,7 @@ def test_service_shares_background_pool_and_comparison_never_queues_behind_it(de
 
         def __init__(self, service, port):
             self.service = service
+            self.stopping = threading.Event()
 
         def __enter__(self):
             return self
@@ -529,7 +530,9 @@ def test_all_service_writers_share_the_canonical_draft_lock(desk, monkeypatch):
     monkeypatch.setattr("fba.apps.server.load_auction", lambda path: (desk.inputs, desk.input_hash))
     calls = []
 
-    def run(inputs, sha, draft, log, workers, port, instance_lock):
+    def run(inputs, sha, draft, log, workers, port, instance_lock, *, open_browser, launch_key):
+        assert open_browser is True
+        assert launch_key
         calls.append(draft)
         assert draft == desk.path.resolve()
         # A second server through a symlink must fail before it can read or write the ledger.

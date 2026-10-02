@@ -43,6 +43,25 @@ export function number(value, digits = 3) {
 }
 export const percent = value => value === null || value === undefined ? "—" : `${number(value * 100, 1)}%`;
 export function empty(message) { return el("p", { class: "empty" }, message); }
+export function disclosure(title, ...children) {
+  return el("details", {class:"disclosure"}, el("summary", {}, title), el("div", {class:"disclosure-body"}, children));
+}
+export function avatar(name, large = false) {
+  const words = String(name).trim().split(/\s+/);
+  const initials = words.length > 1 ? words[0][0] + words.at(-1)[0] : String(name).slice(0, 2);
+  return el("span", {class:large ? "avatar avatar-large" : "avatar", "aria-hidden":"true"}, initials.toUpperCase());
+}
+export function playerLabel(ctx, id) {
+  const player = ctx.data.projection?.players.find(p => p.player.id === id)?.player;
+  const name = player?.name ?? id;
+  return el("span", {class:"player-label"}, avatar(name), el("span", {}, el("strong", {}, name), player ? el("small", {}, `${player.team_abbreviation ?? player.team_id} · ${player.positions.join(" / ")}`) : null));
+}
+export function scoreText(value, scoring) {
+  return scoring === "h2h_one_win" ? percent(value) : `${number(value, 2)} 類`;
+}
+export function slotText(ctx, slot) {
+  return ctx.data.state?.league?.starter_slots.find(s => s.id === slot)?.label ?? ({bench:"板凳", il:"傷兵席"}[slot] ?? slot ?? "板凳");
+}
 export function minutesChart(player, fields) {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");

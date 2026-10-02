@@ -213,6 +213,12 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "app":
+        from fba.apps.workspace.launcher import main as workspace_main
+
+        sys.argv.pop(1)
+        workspace_main()
+        return 0
     if len(sys.argv) > 1 and sys.argv[1] == "inseason":
         sys.argv.pop(1)
         inseason_main()

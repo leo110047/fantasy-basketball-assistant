@@ -114,6 +114,13 @@ def test_http_security_and_job_errors_are_visible_and_secret_free(tmp_path):
             status, headers, body = request("/api/bootstrap")
             assert status == 200 and not json.loads(body)["availability"]["enabled"]
             assert not any(h.lower().startswith("access-control-") for h in headers)
+            status, headers, body = request("/?view=today")
+            assert status == 200 and b'id="content"' in body
+            assert headers["Content-Type"].startswith("text/html")
+            status, headers, body = request("/court.jpg")
+            assert status == 200 and body.startswith(b"\xff\xd8\xff")
+            assert headers["Content-Type"].startswith("image/jpeg")
+            assert request("/../server.py")[0] == 404
             assert request("/api/bootstrap", headers={"Host": "evil.test"})[0] == 403
             assert request("/api/quit", "POST", {}, {"Authorization": "Bearer wrong"})[0] == 403
             assert request("/api/quit", "POST", {}, {"Origin": "null"})[0] == 403
