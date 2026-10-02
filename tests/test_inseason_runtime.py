@@ -1,6 +1,9 @@
 import json
+import socket
 import subprocess
 import sys
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from threading import Thread
 from time import monotonic, sleep
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -27,6 +30,56 @@ def published_pid(path):
         # Publishing truncates then writes under the lifetime lock. Production
         # open_existing already retries within a bounded startup grace period.
         return None
+
+
+def assert_http_stopped(origin, token, deadline):
+    # Use the same five-second stop deadline, including process and TCP cleanup.
+    # A Windows closed listener can take about two seconds to refuse a connection.
+    remaining = deadline - monotonic()
+    assert remaining > 0, "server exceeded the stop deadline"
+    with (
+        pytest.raises(URLError) as stopped,
+        urlopen(
+            Request(origin + "/health", headers={"Authorization": "Bearer " + token}),
+            timeout=remaining,
+        ),
+    ):
+        pass
+    assert isinstance(stopped.value.reason, ConnectionRefusedError)
+    assert monotonic() <= deadline, "server exceeded the stop deadline"
+
+
+@pytest.mark.parametrize("status", [200, 401])
+def test_stop_probe_rejects_a_live_http_service(status):
+    class Healthy(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(status)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+    with HTTPServer(("127.0.0.1", 0), Healthy) as server:
+        server.timeout = 1
+        thread = Thread(target=server.handle_request, daemon=True)
+        thread.start()
+        try:
+            failure = pytest.fail.Exception if status == 200 else AssertionError
+            with pytest.raises(failure):
+                assert_http_stopped(
+                    f"http://127.0.0.1:{server.server_port}", "fixture", monotonic() + 1
+                )
+        finally:
+            thread.join(timeout=1)
+
+
+def test_stop_probe_rejects_an_unresponsive_listener():
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        # The connection is accepted by TCP, but no HTTP response is produced.
+        with pytest.raises((TimeoutError, AssertionError)):
+            assert_http_stopped(
+                f"http://127.0.0.1:{listener.getsockname()[1]}", "fixture", monotonic() + 0.05
+            )
 
 
 @pytest.mark.parametrize("force", [False, True])
@@ -79,6 +132,7 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
             Request(origin + "/health", headers={"Authorization": "Bearer " + instance.token})
         ) as response:
             assert json.load(response)["pid"] == interpreter_pid(running)
+        stop_deadline = monotonic() + 5
         if force:
             # Deliberately terminate the launcher: its native job must also
             # terminate the interpreter, release the lock and close its pipes.
@@ -95,19 +149,12 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
                         "Origin": origin,
                         "Content-Type": "application/json",
                     },
-                )
+                ),
+                timeout=stop_deadline - monotonic(),
             ) as response:
                 assert json.load(response)["stopping"]
-        running.communicate(timeout=5)
-        with (
-            pytest.raises(URLError) as stopped,
-            urlopen(
-                Request(origin + "/health", headers={"Authorization": "Bearer " + instance.token}),
-                timeout=1,
-            ),
-        ):
-            pass  # The old authenticated HTTP service must be gone before restart.
-        assert isinstance(stopped.value.reason, ConnectionRefusedError)
+        running.communicate(timeout=stop_deadline - monotonic())
+        assert_http_stopped(origin, instance.token, stop_deadline)
         restarted = start()
         wait_until(
             lambda: (
@@ -125,18 +172,12 @@ def test_simultaneous_start_and_restart_with_chinese_path(tmp_path, force):
         ) as response:
             assert json.load(response)["pid"] == interpreter_pid(restarted)
     finally:
+        cleanup_deadline = monotonic() + 5
         for process in processes:
             if process.poll() is None:
                 process.kill()
-            process.communicate(timeout=5)
-    with (
-        pytest.raises(URLError) as stopped,
-        urlopen(
-            Request(origin + "/health", headers={"Authorization": "Bearer " + new.token}), timeout=1
-        ),
-    ):
-        pass  # Cleanup must terminate the restarted interpreter as well.
-    assert isinstance(stopped.value.reason, ConnectionRefusedError)
+            process.communicate(timeout=cleanup_deadline - monotonic())
+    assert_http_stopped(origin, new.token, cleanup_deadline)
 
 
 @pytest.mark.parametrize("error", [10013, 10048])
