@@ -8,6 +8,7 @@ class Element {
   setAttribute(key,value){this.attributes[key]=value;}
   addEventListener(name,fn){this.events[name]=fn;}
   append(child){this.children.push(child);}
+  replaceChildren(...children){this.children=children;}
   get textContent(){return this.text+this.children.map(c=>c.textContent).join('');}
   set textContent(value){this.text=value;this.children=[];}
   all(tag){return [this,...this.children.flatMap(c=>c.all(tag))].filter(c=>c.tag===tag);}
@@ -62,4 +63,25 @@ test('daily empty state retains an explicit calculation and the selected plan',(
   const ui=environment(),ctx=fixture();ctx.results={selectedPlan:'chosen'};
   const view=ui.todayView(ctx);assert.match(view.textContent,/計算今日安排/);assert.match(view.textContent,/已帶入本週換人計畫/);
   assert.equal(view.all('form').length,1);
+});
+
+test('my roster includes injury slots and search filters only its rendered rows',()=>{
+  const ui=environment(),ctx=fixture();
+  ctx.data.projection.players=[{player:{id:'one',name:'Taylor Player',team_id:'BOS',positions:['PG']},flags:[],adjustments:[],probability:1,minutes:30},{player:{id:'injured',name:'Alex Return',team_id:'NYK',positions:['C']},flags:[],adjustments:[],probability:0,minutes:0},{player:{id:'free',name:'Free Player',team_id:'CHI',positions:['C']},flags:[],adjustments:[],probability:1,minutes:20}];
+  ctx.data.snapshot={mine:'mine',teams:[{id:'mine',name:'My team',players:['one'],injury_players:{injured:'IL'}}]};
+  const view=ui.teamsView(ctx);
+  assert.match(view.textContent,/Taylor Player/);assert.match(view.textContent,/Alex Return/);assert(!view.textContent.includes('Free Player'));
+  const input=view.all('input').find(n=>n.attributes.name==='player_search');
+  input.events.input({target:{value:'Alex'}});
+  assert.match(view.textContent,/Alex Return/);assert(!view.textContent.includes('Taylor Player'));
+  input.events.input({target:{value:'unmatched'}});assert.match(view.textContent,/沒有符合條件/);
+});
+test('filtering multi-select players keeps hidden checked selections',()=>{
+  const ui=environment(),ctx=fixture(),ids=Array.from({length:10},(_,i)=>`p${i}`);
+  ctx.data.projection.players=ids.map(id=>({player:{id,name:`Sample ${id}`,team_id:'BOS',positions:['PG']}}));
+  const view=ui.checks(ctx,ids,'send',['p9']);
+  view.all('input').find(n=>n.attributes.name==='send-filter').events.input({target:{value:'Sample p0'}});
+  const selected=view.all('input').find(n=>n.attributes.value==='p9');
+  assert(selected.checked);assert(!selected.disabled);
+  const row=view.all('label').find(n=>n.children.includes(selected));assert(row.hidden);
 });

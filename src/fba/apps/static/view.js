@@ -6,6 +6,13 @@ export function node(tag, text, className = "") {
   n.className = className;
   return n;
 }
+export function playerBadge(name,large=false) {
+  const words=String(name).trim().split(/\s+/);
+  const initials=words.length>1 ? words[0][0]+words.at(-1)[0] : String(name).slice(0,2);
+  const badge=node("span",initials.toUpperCase(),large ? "player-badge player-badge-large" : "player-badge");
+  badge.setAttribute("aria-hidden","true");
+  return badge;
+}
 export function action(label, fn, className = "") {
   const b = node("button", label, className);
   b.type = "button";
@@ -130,7 +137,10 @@ export function renderTable(data, players, result, watched, browse, nominate, wa
       row = document.createElement("tr"); row.dataset.player = p.id;
       for (let i=0;i<6;i++) row.append(document.createElement("td"));
       row.children[0].append(action("☆", () => watch(p.id)));
-      row.children[1].append(action(p.name, () => browse(p.id), "name"), node("small", ""), node("small", "", "warning"), node("small", "", "tags"));
+      const nameButton=action("",()=>browse(p.id),"name");
+      nameButton.append(playerBadge(p.name),node("span",p.name));
+      nameButton.setAttribute("aria-label",p.name);
+      row.children[1].append(nameButton, node("small", ""), node("small", "", "warning"), node("small", "", "tags"));
       row.children[3].append(node("span", ""), node("small", ""));
       row.children[4].append(node("span", ""), node("small", ""));
       row.children[4].className = "good";

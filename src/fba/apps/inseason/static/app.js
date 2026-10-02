@@ -2,10 +2,10 @@ import { el, field, select, form, table, number, empty, formula } from "/forms.j
 import { syncView, teamsView, weekView, tradesView, todayView, reviewView, playerCard } from "/views.js";
 
 const fragment = location.hash.slice(1);
-if (fragment) { sessionStorage.setItem("inseason-session", fragment); history.replaceState(null, "", location.pathname + location.search); }
+if (fragment && fragment !== "content") { sessionStorage.setItem("inseason-session", fragment); history.replaceState(null, "", location.pathname + location.search); }
 const token = sessionStorage.getItem("inseason-session") ?? "";
 const context = { data: {}, results: {}, tab: new URLSearchParams(location.search).get("view"), nbaTeam: null, tradeTeam: null };
-const tabs = [["today", "今日", todayView, "01"], ["week", "本週對戰", weekView, "02"], ["teams", "球員與預測", teamsView, "03"], ["trades", "交易", tradesView, "04"], ["review", "每週回顧", reviewView, "05"], ["sync", "資料與設定", syncView, "⚙"]];
+const tabs = [["today", "今日", todayView, "01"], ["week", "本週對戰", weekView, "02"], ["teams", "我的球隊", teamsView, "03"], ["trades", "交易", tradesView, "04"], ["review", "每週回顧", reviewView, "05"], ["sync", "資料與設定", syncView, "⚙"]];
 const actionLabels = { today:"計算今日安排", complete:"更新完成紀錄", adopt:"更新採納紀錄", "trade-search": "搜尋交易", partners: "尋找互補對象", trade: "評估交易", week: "計算每週對戰", recommendations: "搜尋換人建議", preferences: "儲存設定", sync: "同步資料" };
 
 async function request(path, payload) {
@@ -61,6 +61,8 @@ function navigate(tab) {
   const url = new URL(location.href); url.searchParams.set("view", tab);
   history.replaceState(null, "", url.pathname + url.search);
   render();
+  document.querySelector("#content").focus({preventScroll:true});
+  window.scrollTo({top:0,behavior:"instant"});
 }
 async function refresh(redraw = true) {
   context.data = await request("/api/bootstrap");

@@ -2978,13 +2978,13 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/app.js": {
-      "sha256": "d2674623d6d04a67a91e95a976a32fc3fc9d7ff2b01d656309f4b1d553921c1e",
+      "sha256": "95246652e885cb7b0ea1a37521e34314967993f5490b747ea688127b4db936a4",
       "role": "structure",
       "reason": "Local API orchestration, stale seconds to milliseconds and UTC return-date minus one day for user-entered ranges; no forecast equation.",
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "84d562b45f7f43d94432711826416f8c780bf0d9443a1e8a4463832f5caa8ebc",
+      "sha256": "554223325f0fb1cf8259e6fae3bd46d5e05282608ee90e085f3c009c8533a7bc",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure.",
       "formula_ids": [
@@ -3015,7 +3015,7 @@
       "formula_ids": []
     },
     "src/fba/apps/static/app.js": {
-      "sha256": "399a66a2b3c13e26c2ec7063aee75c3a71b0d48c646749c59d152111e5b02953",
+      "sha256": "1709b4cf434bce0b0fb15c30a677e53ab99f073c2e4ceb167b932b1331fe1be0",
       "role": "composition",
       "reason": "Displays server model replies, converts elapsed ns to seconds, increments local revisions/sale indices and validates bid entry against backend limits; detailed final trace coverage remains separately unverified. Supplies shared formula definitions to room/comparison renderers; no second formula text or implementation.",
       "formula_ids": []
@@ -3027,7 +3027,7 @@
       "formula_ids": []
     },
     "src/fba/apps/static/view.js": {
-      "sha256": "e099b5c987cfce2e142d64d360a8453d136f3d07c01fe5b8f5d87a84c4c4f7d9",
+      "sha256": "311d5f2e32f0272fed130c0712d2b51f2d52e8ac2aeb03abf76bac439c297e84",
       "role": "composition",
       "reason": "DOM rendering of backend room cash/slots, gap/discount, cap edge and comparison remainders with shared formula traces. Percent/currency formatting, top-strength/scenario extrema, list indices and ordering are presentation structure. No market or remaining-cash equation remains in JavaScript; missing current room summary fails explicitly.",
       "formula_ids": [

@@ -1,5 +1,5 @@
 import {formula} from "/formulas.js";
-import {el, money, node, action, option, catalogue, forecastWarning, renderProjectionDetail, renderRoom, renderBuyers, renderTable, tableRows, renderPlan, renderComparison} from "/view.js";
+import {el, money, node, action, option, catalogue, forecastWarning, renderProjectionDetail, renderRoom, renderBuyers, renderTable, tableRows, renderPlan, renderComparison, playerBadge} from "/view.js";
 import {beginTiming, rendered, measure} from "/timing.js";
 import {matches, priceCSV, floorBackup} from "/presentation.js";
 import {installEditors} from "/editing.js";
@@ -11,11 +11,11 @@ let pollTimer, polling = false;
 let changingPrices = false, stale = false, legacyWatch = [];
 let sensitivityReply = null, sensitivityPending = false;
 let streamingReply = null, streamingPending = false;
-let token = location.hash.slice(1);
+let token = location.hash === "#deskContent" ? "" : location.hash.slice(1);
 try {
   if (token) sessionStorage.setItem("fba-session", token);
   else token = sessionStorage.getItem("fba-session") ?? "";
-  if (token && location.hash) history.replaceState(null, "", location.pathname);
+  if (token && location.hash) history.replaceState(null, "", location.pathname + location.search);
 } catch { /* The fragment remains usable when browser storage is disabled. */ }
 
 async function api(path, body) {
@@ -67,7 +67,11 @@ function renderNominee() {
   const cap = current?.caps.find(c => c.player_id === selected);
   const sold = desk.state.sales.some(s => s.player_id === selected);
   const price = desk.market.market.prices.find(q => q.player_id === selected);
-  el("nominee").replaceChildren(node("h2", p.name), node("p", p.positions.join(" / "), "muted"), node("div", sold ? "已成交" : current ? money(cap?.amount) : unavailable(), "cap"), node("p", `公允 ${money(p.fair)} · 預期成交 ${money(price?.expected)}`, "muted"), action("檢視價格原因", () => browse(selected)));
+  const heading=node("div","","nominee-heading"),identity=node("div","");
+  identity.append(node("h2",p.name),node("p",[p.team?.abbreviation,p.positions.join(" / ")].filter(Boolean).join(" · "),"muted"));
+  heading.append(playerBadge(p.name,true),identity);
+  el("nominee").replaceChildren(heading,node("p","本輪停損價","eyebrow"),node("div",sold ? "已成交" : current ? money(cap?.amount) : unavailable(),"cap"),node("p",`公允 ${money(p.fair)} · 預期成交 ${money(price?.expected)}`,"muted"),action("檢視價格原因",()=>browse(selected)));
+
   if (cap?.conditional || cap?.reason) el("nominee").append(node("p", cap.conditional ? "條件式估值：先確認位置與市場報價。" : cap.reason, "warning"));
   if (floorBackup(price,cap,sold,boot.league.minimum_bid)) el("nominee").append(node("p", `${money(boot.league.minimum_bid)} 備案需我方先提名，且無人加價。`, "warning"));
   const warning = forecastWarning(p);
@@ -418,3 +422,12 @@ el("import").addEventListener("change", async e => {
   } catch (e) { error(`匯入失敗：${e.message}`); }
 });
 start().catch(e => error(`無法開啟競標桌：${e.message}。請使用 serve 顯示的完整網址。`));
+
+for (const [button,panel] of [["showMarket","marketPanel"],["showPlan","planPanel"],["showRoom","roomPanel"]]) {
+  el(button).addEventListener("click",()=>{
+    for (const [other,target] of [["showMarket","marketPanel"],["showPlan","planPanel"],["showRoom","roomPanel"]]) {
+      el(other).setAttribute("aria-pressed",String(other===button));el(target).hidden=target!==panel;
+    }
+  });
+}
+el("skipDesk").addEventListener("click",event=>{event.preventDefault();el("deskContent").focus();});
