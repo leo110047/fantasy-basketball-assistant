@@ -7,11 +7,14 @@ venv launcher. It accesses no application data, credentials or providers.
 import _ctypes
 import ctypes
 import json
+import socket
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from time import monotonic, sleep
+from urllib.error import URLError
+from urllib.request import urlopen
 
 from fba.adapters.native import compile_kernel, compiler_path
 
@@ -82,6 +85,27 @@ def launcher_cleanup(*, hold_launcher_open: bool = False) -> dict[str, object]:
             child.communicate(timeout=5)
 
 
+def loopback_refusal() -> list[dict[str, object]]:
+    """Measure HTTP refusal after closing a real loopback listener."""
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        port = listener.getsockname()[1]
+    observations = []
+    for timeout in (1, 5):
+        started = monotonic()
+        try:
+            with urlopen(f"http://127.0.0.1:{port}/health", timeout=timeout):
+                result = {"reason_type": "unexpected HTTP response"}
+        except URLError as exc:
+            result = {
+                "reason_type": type(exc.reason).__name__,
+                "errno": getattr(exc.reason, "errno", None),
+                "winerror": getattr(exc.reason, "winerror", None),
+            }
+        observations.append({"timeout": timeout, "elapsed": monotonic() - started, **result})
+    return observations
+
+
 def main() -> int:
     if sys.platform != "win32":
         raise RuntimeError("the diagnostic requires the actual Windows runner")
@@ -102,6 +126,7 @@ def main() -> int:
         "compiler_version": version,
         "launcher_pid": launcher_pid,
         "interpreter_pid": interpreter_pid,
+        "closed_loopback_http": loopback_refusal(),
         # The control keeps the launcher alive to exercise child-survival cleanup;
         # it does not claim a failure of the launcher's native job implementation.
         **observations,
