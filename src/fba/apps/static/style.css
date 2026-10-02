@@ -11,3 +11,5 @@
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 .ticket-budget{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:0 0 12px;margin-bottom:16px}.ticket-budget>span{font-size:10px;color:var(--muted)}.ticket-budget .budget strong{font-size:25px}.ticket-budget .budget>div{font-size:10px}#sourceNotice{font-size:11px;background:#f7edd6;border-left:3px solid var(--amber);padding:8px 12px;margin:0 0 12px}.desk-scoreboard>div:last-child{text-align:left}
+
+.workspace-link{font-size:12px;font-weight:600;white-space:nowrap;color:var(--green);text-decoration:none}.workspace-link:hover{text-decoration:underline}@media(max-width:600px){.workspace-link{font-size:11px}.app-header,.desk-header{flex-wrap:wrap;height:auto;min-height:68px;padding-top:12px;padding-bottom:12px;gap:12px}.desk-header .mode-tag{display:none}}

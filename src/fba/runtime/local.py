@@ -20,7 +20,7 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from platformdirs import user_data_path
-from pydantic import AwareDatetime
+from pydantic import AwareDatetime, Field
 
 from fba.contracts.base import DataError, Record, Text
 from fba.data.codec import canonical, decode
@@ -32,6 +32,7 @@ class Instance(Record):
     port: int
     token: Text
     started_at: AwareDatetime
+    launch_key: Text | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 def data_directory() -> Path:
@@ -152,8 +153,19 @@ def permitted(
     )
 
 
-def open_existing(lock: InstanceLock, app: str) -> None:
-    deadline = monotonic() + 2
+def open_existing(lock: InstanceLock, app: str, *, expected_launch_key: str | None = None) -> None:
+    webbrowser.open(existing_url(lock, app, expected_launch_key=expected_launch_key))
+
+
+def existing_url(
+    lock: InstanceLock,
+    app: str,
+    timeout: float = 2,
+    *,
+    expected_launch_key: str | None = None,
+) -> str:
+    """Return a browser URL only after the locked instance answers its health probe."""
+    deadline = monotonic() + timeout
     instance: Instance | None = None
     while monotonic() < deadline:
         try:
@@ -166,13 +178,18 @@ def open_existing(lock: InstanceLock, app: str) -> None:
                 timeout=max(0.05, deadline - monotonic()),
             ) as response:
                 result = decode(Instance, response.read(4096), "runtime.health")
-            if result == instance:
-                webbrowser.open(url + "/#" + instance.token)
-                return
         except (URLError, OSError, DataError):
             # Another process can hold the lock before it has published metadata
             # or started accepting requests. Retry only within this startup grace.
             sleep(0.05)
+            continue
+        if result == instance:
+            if expected_launch_key is not None and result.launch_key != expected_launch_key:
+                raise DataError(
+                    "已開啟的競標桌與所選檔案不一致，或無法確認其設定。"
+                    "請先結束既有競標桌，再使用這組檔案開啟。"
+                )
+            return url + "/#" + instance.token
     pid = str(instance.pid) if instance else "尚未公布"
     raise DataError(f"助手已在執行但沒有回應；PID {pid}。請檢查該行程後再啟動。")
 

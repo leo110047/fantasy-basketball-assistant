@@ -10,7 +10,7 @@ from fba.apps.inseason.api import Jobs, parse_body
 from fba.contracts.base import DataError
 from fba.data.codec import canonical
 from fba.inseason.session import InseasonSession
-from fba.runtime.assets import formula_script
+from fba.runtime.assets import court_image, formula_script, workspace_link_script
 from fba.runtime.local import (
     Instance,
     InstanceLock,
@@ -106,6 +106,10 @@ class SeasonHandler(BaseHTTPRequestHandler):
                 self.reply(200, canonical(self.local.instance))
             elif self.path == "/formulas.js":
                 self.reply(200, formula_script(), "text/javascript")
+            elif self.path == "/workspace-link.js":
+                self.reply(200, workspace_link_script(), "text/javascript")
+            elif self.path == "/court.jpg":
+                self.reply(200, court_image(), "image/jpeg")
             elif self.path == "/api/bootstrap":
                 self.reply(
                     200,
@@ -128,7 +132,6 @@ class SeasonHandler(BaseHTTPRequestHandler):
                     "/views.js": ("views.js", "text/javascript"),
                     "/forms.js": ("forms.js", "text/javascript"),
                     "/style.css": ("style.css", "text/css"),
-                    "/court.jpg": ("court.jpg", "image/jpeg"),
                 }
                 if path not in assets:
                     self.reply(404, b'{"error":"route not found"}')

@@ -53,7 +53,16 @@ unrelated model or data fixes require a separately evidenced bug issue.
 
 ## Image asset
 
-`src/fba/apps/inseason/static/court.jpg` is a locally served image generated with
+`src/fba/runtime/static/court.jpg` is a locally served image generated with
 ImageGen for this UI. Direction: a worn basketball on a forest-green court,
 natural afternoon light, quiet space for text; no people, text, logos or branding.
 The image is decorative and adds no claim about a player or actual game.
+
+## Shared entry
+
+`fba app` owns the mode picker and launches the existing local tools. Each mode
+keeps its own origin, session token, lock and data owner. The picker stores only
+the last auction file paths in the user data directory. Mode switching navigates
+back to the picker in the same tab; no data migration or combined calculation API
+is introduced. Closing the workspace stops only the processes it started.
+Existing separately launched tools stay under their original owner.

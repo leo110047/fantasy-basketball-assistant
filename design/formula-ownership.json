@@ -456,7 +456,7 @@
       "role": "structure",
       "owner": "fba.apps.inseason.server.SeasonHandler.do_GET",
       "reason": "Whitelisted static asset filesystem path.",
-      "signature": "b777e1ef58d5a4c11ba9a6e0974849aca8273f95ba1b7d5e402c782c7e7260d5"
+      "signature": "a1311be95a5599fced867b6c91436453c27885a074dda6293161c40c1946ceb1"
     },
     "fba.apps.inseason.server.serve_inseason": {
       "role": "structure",
@@ -480,13 +480,13 @@
       "role": "structure",
       "owner": "fba.apps.server.DeskHandler.do_GET",
       "reason": "Static asset paths and local server lifecycle.",
-      "signature": "38c1cbe4c2d640a35381c2916e75a6fac7f68c237bfc7e3bf9de5bda96761132"
+      "signature": "bdbf5ac916a781a7d912d7045bb815f7bd519fa90e145a971dd75f40e6cde0d4"
     },
     "fba.apps.server.serve": {
       "role": "structure",
       "owner": "fba.apps.server.serve",
       "reason": "Static asset paths and local server lifecycle.",
-      "signature": "43d90268639e379d69a0e8193e4a1a10fec5eaf6a619c3f4ce330e591908ca5a"
+      "signature": "866899c5628049168792a8de81b27aa45e59e9af59f473477b8e354e434ca90b"
     },
     "fba.apps.workers.worker_limit": {
       "role": "structure",
@@ -2762,12 +2762,6 @@
       "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
       "signature": "051ff0a07b698edb4b83fc4802b78868f82ad318c2fe1fdfc1d083d1b6139489"
     },
-    "fba.runtime.local.open_existing": {
-      "role": "structure",
-      "owner": "fba.runtime.local.open_existing",
-      "reason": "Loopback port retry arithmetic, timeouts and process lifecycle.",
-      "signature": "269512793f3ff7af0ed69f0682bc0a39f351d87ed60e9c523f74c6d887bf7d0e"
-    },
     "fba.runtime.local.launch_browser": {
       "role": "structure",
       "owner": "fba.runtime.local.launch_browser",
@@ -2953,6 +2947,66 @@
       "owner": "fba.inseason.weekly_players.PlayerSearch.visit",
       "reason": "Visit every legal include/exclude branch unless its certified score and tie bound cannot improve the incumbent.",
       "signature": "cc34acf3b33653e30c8c04dbf3a831574f3274a0dced5c4c5db25f1f39f256b8"
+    },
+    "fba.apps.workspace.launcher.serve_workspace": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.launcher.serve_workspace",
+      "reason": "Local workspace lock path and owned tool lifecycle.",
+      "signature": "82dd65a38c7881ebd0758a952b3ab75d0a384270a885e454f279ef528b314169"
+    },
+    "fba.apps.workspace.modes.ModeManager.__init__": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.ModeManager.__init__",
+      "reason": "Workspace settings file path; no business calculation.",
+      "signature": "9e844a52111a9d9b8dbf533fb8bfb73014674184ab773eddf27c75c6bd510d44"
+    },
+    "fba.apps.workspace.modes.ModeManager.open": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.ModeManager.open",
+      "reason": "Existing tool lock paths and remembered auction file paths.",
+      "signature": "331c6a489d6b080e5ddd906f675bc3ac5343d6eebbaf5493198f151b7b5ca806"
+    },
+    "fba.apps.workspace.modes.ModeManager.start": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.ModeManager.start",
+      "reason": "Bounded local process startup deadline and readiness polling.",
+      "signature": "50935a81a712d5eb444397e19e1648ace4ab48be6db70ce44a1a3d92e1176b8c"
+    },
+    "fba.apps.workspace.modes.mode_url": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.mode_url",
+      "reason": "Local mode navigation URL composition; token remains in fragment.",
+      "signature": "e9e06cd1b70ae277293eae43cddd5ca5965ddade5a098d7845bcb89614e53b51"
+    },
+    "fba.apps.workspace.modes.stop_mode": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.modes.stop_mode",
+      "reason": "Authenticated loopback shutdown request framing and bounded child cleanup.",
+      "signature": "56be26d8358a09428932c077021182d09af883d9601b8fadbab57acbd1895685"
+    },
+    "fba.apps.workspace.server.WorkspaceHandler.do_GET": {
+      "role": "structure",
+      "owner": "fba.apps.workspace.server.WorkspaceHandler.do_GET",
+      "reason": "Allowlisted UI asset paths and response byte framing.",
+      "signature": "2df0992e5a295e2b069b5417c033e66f2e07ecc683ebb7f639da364c765a37da"
+    },
+    "fba.runtime.assets.court_image": {
+      "role": "structure",
+      "owner": "fba.runtime.assets.court_image",
+      "reason": "Shared decorative image asset path.",
+      "signature": "1c00a098f4e66aab3a2773d7c0680aed104a543e72ca9decf79919f9cafd144c"
+    },
+    "fba.runtime.assets.workspace_link_script": {
+      "role": "structure",
+      "owner": "fba.runtime.assets.workspace_link_script",
+      "reason": "Shared mode navigation script asset path.",
+      "signature": "39fa234a0c9cdf668b72f400abb84377d4b2bccb152a6f6c74bc099f6cfff080"
+    },
+    "fba.runtime.local.existing_url": {
+      "role": "structure",
+      "owner": "fba.runtime.local.existing_url",
+      "reason": "Loopback health probe deadline and validated instance URL composition.",
+      "signature": "b5a2d2ee78ebbddfdcd43cf1070b56bb9cf8625f2a1d040757f5ba5cbe0f375f"
     }
   },
   "source_files": {
@@ -3035,6 +3089,18 @@
         "difference",
         "ratio"
       ]
+    },
+    "src/fba/apps/workspace/static/app.js": {
+      "sha256": "a8c07a53db4dc67b3073b5aa9a034bd29b829dbbbf025e74217cf46beb48f63b",
+      "role": "structure",
+      "reason": "Local launcher form, authentication, readiness, and mode navigation; no business equation.",
+      "formula_ids": []
+    },
+    "src/fba/runtime/static/workspace-link.js": {
+      "sha256": "cb081352315bcb697ca73c1a31ededed6582051ed76aee8f1d12b67e36a822bb",
+      "role": "structure",
+      "reason": "Allowlisted loopback return navigation and port validation; no business equation.",
+      "formula_ids": []
     }
   }
 }

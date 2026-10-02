@@ -1,9 +1,11 @@
+import json
 import os
 from http.server import BaseHTTPRequestHandler
 from itertools import combinations
 from pathlib import Path
 from threading import Event
 from typing import override
+from urllib.parse import urlsplit
 
 from fba.adapters.auction import load_auction
 from fba.adapters.desk import check_storage
@@ -21,12 +23,13 @@ from fba.contracts.desk import (
     StateRequest,
     StreamingRequest,
 )
-from fba.data.codec import canonical, decode
-from fba.runtime.assets import formula_script
+from fba.data.codec import canonical, decode, digest
+from fba.runtime.assets import formula_script, workspace_link_script
 from fba.runtime.local import (
     Instance,
     InstanceLock,
     LocalServer,
+    existing_url,
     launch_browser,
     open_existing,
     permitted,
@@ -113,6 +116,8 @@ class DeskHandler(BaseHTTPRequestHandler):
             self.respond(self.desk_server.instance)
         elif self.path == "/formulas.js":
             self.send_body(200, formula_script(), "text/javascript; charset=utf-8")
+        elif self.path == "/workspace-link.js":
+            self.send_body(200, workspace_link_script(), "text/javascript; charset=utf-8")
         elif self.path == "/api/health":
             self.respond(DeskHealth(status="ok"))
         elif self.path == "/api/bootstrap":
@@ -130,7 +135,7 @@ class DeskHandler(BaseHTTPRequestHandler):
                 "/timing.js": ("timing.js", "text/javascript"),
                 "/style.css": ("style.css", "text/css"),
             }
-            entry = assets.get(self.path)
+            entry = assets.get(urlsplit(self.path).path)
             if entry is None:
                 self.respond(DeskError(error="route: not found"), 404)
                 return
@@ -160,6 +165,10 @@ class DeskHandler(BaseHTTPRequestHandler):
             return
         try:
             data = self.request_body()
+            if self.path == "/api/quit":
+                self.send_body(200, b'{"stopping":true}', "application/json")
+                self.desk_server.stopping.set()
+                return
             desk = self.desk_server.desk
             if self.path == "/api/draft":
                 try:
@@ -193,7 +202,14 @@ class DeskHandler(BaseHTTPRequestHandler):
             )
 
 
-def serve(input_path: Path, draft: Path, log: Path, workers: int, port: int) -> None:
+def auction_launch_key(paths: tuple[Path, Path, Path], input_sha256: str) -> str:
+    """Identify the files and immutable input version actually loaded by the desk."""
+    return digest(json.dumps([input_sha256, *(str(path.resolve()) for path in paths)]).encode())
+
+
+def serve(
+    input_path: Path, draft: Path, log: Path, workers: int, port: int, *, open_browser: bool = True
+) -> None:
     if not 0 <= port <= 65535:
         raise ConfigError("serve.port: must be between 0 and 65535")
     paths = (input_path.resolve(), draft.resolve(), log.resolve())
@@ -203,13 +219,27 @@ def serve(input_path: Path, draft: Path, log: Path, workers: int, port: int) -> 
         raise ConfigError("serve: input, draft and log must be distinct files")
     input_path, draft, log = paths
     inputs, sha = load_auction(input_path)
+    launch_key = auction_launch_key(paths, sha)
     # Every service alias shares this stable lock, held across all reads and replacements.
     lock = InstanceLock(draft.with_suffix(draft.suffix + ".lock"))
     if not lock.acquire():
-        open_existing(lock, "desk")
+        if open_browser:
+            open_existing(lock, "desk", expected_launch_key=launch_key)
+        else:
+            existing_url(lock, "desk", expected_launch_key=launch_key)
         return
     try:
-        run_server(inputs, sha, draft, log, workers, port, lock)
+        run_server(
+            inputs,
+            sha,
+            draft,
+            log,
+            workers,
+            port,
+            lock,
+            open_browser=open_browser,
+            launch_key=launch_key,
+        )
     finally:
         lock.release()
 
@@ -222,12 +252,17 @@ def run_server(
     workers: int,
     port: int,
     instance_lock: InstanceLock | None = None,
+    *,
+    open_browser: bool = True,
+    launch_key: str | None = None,
 ) -> None:
     check_storage(draft)
-    with shutdown_signals() as stopping, DeskServer(None, port) as server:
+    with DeskServer(None, port) as server, shutdown_signals(server.stopping) as stopping:
+        if launch_key is not None:
+            server.instance = server.instance.model_copy(update={"launch_key": launch_key})
         if instance_lock is not None:
             instance_lock.publish(server.instance)
-        launch_browser(server, open_browser=instance_lock is not None)
+        launch_browser(server, open_browser=open_browser and instance_lock is not None)
         with owned_processes():
             run_desk(inputs, sha, draft, log, workers, server, stopping)
 
