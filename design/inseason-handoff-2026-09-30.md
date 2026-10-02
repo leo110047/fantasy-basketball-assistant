@@ -4,7 +4,7 @@
 
 **整份規格尚未完成。** 下列平台實測對應已推送基準 `fba7fdc19781e42023c5b14a0341161268ad7d35`；公式所有權／UI trace 本機驗收及三平台合成資料 CI 已通過。真實 NBA／公開排名來源、真實 Yahoo、因果歷史校準、搜尋品質與部分實際交付情境仍缺證據，效能工作依使用者指示暫停。
 
-本批移除完成用途的 Windows 暫時診斷，將 scripts policy 回歸改為檢查必要的三平台 verify 入口，並更新本文件。提交序列以 `git log` 為準；最新本機審查／CI 證據入口是 `/private/tmp/fba-continuation-report/current-status.md`，暫存資產可能清除，並不隨 clone 交付。
+已移除完成用途的 Windows 暫時診斷，scripts policy 回歸檢查必要的三平台 verify 入口。後續修補多 IL 的完整合法釋出路徑比較，並保留以下未完成條件。提交序列以 `git log` 為準；最新本機審查／CI 證據入口是 `/private/tmp/fba-continuation-report/current-status.md`，暫存資產可能清除，並不隨 clone 交付。
 
 ## 1. 權威需求與已接受的決定
 
@@ -33,7 +33,7 @@
 
 原 2025–26 研究資產已找回，五份 players／schedule 資料 SHA 與 manifest 一致；318 位球員、1,446 案例重播≤1e-12 零差。另做跨季「公式」驗證：325 人／1,473 訓練案例、317 人／1,446 驗證案例，11 欄位×5 checkpoint 共55項通過基準。季後擷取資料缺 DNP／傷情／排名／prior 當時公開時間，也不是目前引擎的因果策略回放；不可倒填 known_at。目前124參數葉值仍為 initial-uncalibrated／Assumption，沒有安裝新係數。官方 NBA 資料的可用性／用途限制另記 Git 外 `official-nba-history-readback.md`；不當成已取得合法兩季完整歷史。
 
-B2 有具體未解品質反例：production defaults 不變，30 固定種子、100 samples、1先發／3候選／4天、256合法整週組合；獨立 strict-win oracle 包含 TO 反向及投罰3位小數。13/30 的 daily_exact_coordinate 低於完整枚舉，最大4pp；seed12012 現有 `[p0,p1,p0,p0]` 為0.51，oracle `[p0,p0,p2,p0]` 為0.55。見 Git 外 `weekly-coordinate-quality.json`。這是合成條件式反例，不是 recall≥95%、歷史 holdout 或效能驗收；尚未套用新搜尋策略。M5 多 IL 仍逐次估值，沒有聯合最優證據。不能以外部資料尚缺概括所有未完成項。
+B2 有具體未解品質反例：production defaults 不變，30 固定種子、100 samples、1先發／3候選／4天、256合法整週組合；獨立 strict-win oracle 包含 TO 反向及投罰3位小數。13/30 的 daily_exact_coordinate 低於完整枚舉，最大4pp；seed12012 現有 `[p0,p1,p0,p0]` 為0.51，oracle `[p0,p0,p2,p0]` 為0.55。見 Git 外 `weekly-coordinate-quality.json`。這是合成條件式反例，不是 recall≥95%、歷史 holdout 或效能驗收；尚未套用新搜尋策略。M5 多 IL 已改為完整合法釋出路徑比較，以同一 ROS 起點估值；原 30 例9例落後、最大0.08的反例修正後均與9條完整路徑的獨立名單 oracle 相符。另核對同日／分日及兩計分模式；另補多名回歸與明確未來換人並存的完整路徑 oracle。初審 5ffb1269 的唯一失敗是未變的競標 solver deadline；原條件單獨競標重播通過，但相同 digest 正式 closure 被工具拒絕，不能當成已結案。完整候選審查／提交狀態以最新入口為準，不沿用前版 CI。此最優限於既有回歸日期政策及目前每週估值模型，B2 的整週品質缺口仍在。不能以外部資料尚缺概括所有未完成項。
 
 ## 4. 完整追蹤清單
 
@@ -70,7 +70,7 @@ B2 有具體未解品質反例：production defaults 不變，30 固定種子、
 | M2 | 雙位置去重、零／部分出賽分鐘分配已修；prior groups 仍粗且為 Assumption。 | `inseason/projection.py::fallback_prior`、`inseason/adjustments.py::redistribute`、參數檔 | 位置／分鐘 peer 分組與資料依據、無 peer 明確失敗、雙位置去重；補部分傷病與隊伍分鐘分配的情境驗收。不要把粗群組描述成已校準先驗。 |
 | M3 | 缺完賽比分涵蓋時明確不可算；真實 Yahoo 不漏算／不重複仍未完成。 | `inseason/matchup.py::actual/total/daily_draws` | 核對 `through` 與來源比分的真正語義；覆蓋已完成、進行中、當天多場、官方更正。不漏算、不重複加入部分已含的比分，不猜歷史 Yahoo 先發。 |
 | M4 | 無 history 的隨機 frozen prior 本機已補；相關性及樣本外品質未驗。 | `inseason/matchup.py::game_draw`、來源歷史資料契約 | 開季、新秀／新升上來球員可計算；補足歷史或明確定義先驗預測抽樣與不確定性。不能用全零／確定常數偷偷代替未知，也不能把未來資料帶入回測。 |
-| M5 | 本機已修 IL／未來換人合併事件、完整合法後續、容量／保護／鎖定延期、再取得與冷啟動 Today 沿用；本批已補同日連續換人的合成 Chrome 流程。多 IL 仍逐次估值，未證明聯合最優；真實 Yahoo 未驗。 | `inseason/matchup.py::roster`、`inseason/season.py`、`inseason/today.py` | 包含預計回歸、移出 IL、容量、保護及必要丟人的合法轉換；與未來換人共用時間軸，動作與條件排陣一致，不把球星 ROS 當零。合成 oracle 不能替代真實來源與完整搜尋品質驗收。 |
+| M5 | 本機已修 IL／未來換人合併事件、完整合法後續、容量／保護／鎖定延期、再取得與冷啟動 Today 沿用；本批已補同日連續換人的合成 Chrome 流程。多 IL 完整合法釋出路徑比較已補獨立合成 oracle，使用共同 ROS 起點；日期政策及每週估值模型的品質邊界仍保留，真實 Yahoo 未驗。 | `inseason/matchup.py::roster`、`inseason/season.py`、`inseason/today.py` | 包含預計回歸、移出 IL、容量、保護及必要丟人的合法轉換；與未來換人共用時間軸，動作與條件排陣一致，不把球星 ROS 當零。合成 oracle 不能替代真實來源與完整搜尋品質驗收。 |
 | M6 | 類別／整週參數、匯出及擬合分開本機已修；holdout 未完成。 | 參數契約／defaults、`inseason/matchup.py`、`inseason/review.py::calibration_history/refit_history`、backtest | 分開類別 0.82／整週 0.80 的規格初值及出處；匯出兩層級的預測與結果，分開擬合、展示與樣本外驗證。舊版積分不可當新整週勝率訓練資料。 |
 | M7 | 自建接受模型案例、分離／不識別檢查及求解已驗；真實提案機率未校準。 | `formulas/fitting.py`、`inseason/operations.py::refit_acceptance`、保存的 acceptance-fits | 自行建立正常、分離與不識別案例，驗證係數／需求方向、殘差、log loss、顯示與既有報告處理；真實提案樣本另作驗收。不要把合成訓練擬合說成真實接受機率校準。 |
 
@@ -110,7 +110,7 @@ B2 有具體未解品質反例：production defaults 不變，30 固定種子、
 
 1. 核對 git／遠端 main、最新證據入口與本文件。完成已審查候選的分批 commit 與推送，讀回遠端 SHA；審查期間固定候選。未變更範圍沿用相同候選證據，新增範圍做相符驗證及 Goldband 獨立審查。
 2. 取得 ScoreTape wire receipt 後核對欄位與合法存取範圍，補 A1/A7 的真實 adapter。Yahoo 核准後以使用者提供的本機設定完成唯讀 OAuth／refresh／同步及去識別 fixture，補 A2/A6/M3/V1。必要秘密只由使用者在設定流程輸入。
-3. 取得當時公開且可用的歷史後，跑實際引擎的因果 holdout／策略比較及校準；保留資料限制。B2/M5 搜尋品質仍需處理，不能只重新標為外部 blocker。
+3. 取得當時公開且可用的歷史後，跑實際引擎的因果 holdout／策略比較及校準；保留資料限制。B2 整週排陣、F3 recall 及更大多 IL 情境品質仍需處理，不能只重新標為外部 blocker。
 4. V2–V4 仍需 Windows 11 保留 port／GUI 共存、無 Python 的乾淨兩平台 clone 與實際雙擊全情境；CI runner 及 --help 不替代此證據。V6 依原規格逐條整合驗收，效能項目依暫停指示保留，未達標不結案。
 
 ```sh
