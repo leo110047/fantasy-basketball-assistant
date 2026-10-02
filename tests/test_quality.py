@@ -72,13 +72,10 @@ def assert_runtime_script_entrypoints(project: Path) -> None:
         "check",
         "verify.py",
         "benchmark_inseason.py",
-        "windows_diagnostics.py",
     }
     assert "scripts/benchmark_inseason.py" in (project / "README.md").read_text()
     assert "scripts/check" in (project / ".github/workflows/check.yml").read_text()
-    assert (
-        "scripts/windows_diagnostics.py" in (project / ".github/workflows/inseason.yml").read_text()
-    )
+    assert "scripts/verify.py" in (project / ".github/workflows/inseason.yml").read_text()
     assert "scripts/verify.py" in (project / "scripts/check").read_text()
     assert "design/contracts.pyi" in (project / "README.md").read_text()
 
@@ -93,21 +90,20 @@ def assert_runtime_script_entrypoints(project: Path) -> None:
         "check-entry",
         "verify-entry",
         "contracts-doc",
-        "windows-diagnostic-entry",
-        "windows-diagnostic-missing",
+        "inseason-verify-entry",
     ),
 )
 def test_runtime_script_policy_accepts_registered_entries_and_rejects_drift(tmp_path, change):
     (tmp_path / "scripts").mkdir()
     (tmp_path / ".github/workflows").mkdir(parents=True)
-    for name in ("check", "verify.py", "benchmark_inseason.py", "windows_diagnostics.py"):
+    for name in ("check", "verify.py", "benchmark_inseason.py"):
         (tmp_path / "scripts" / name).write_text("scripts/verify.py")
     readme = tmp_path / "README.md"
     workflow = tmp_path / ".github/workflows/check.yml"
-    diagnostic_workflow = tmp_path / ".github/workflows/inseason.yml"
+    inseason_workflow = tmp_path / ".github/workflows/inseason.yml"
     readme.write_text("scripts/benchmark_inseason.py design/contracts.pyi")
     workflow.write_text("scripts/check")
-    diagnostic_workflow.write_text("scripts/windows_diagnostics.py")
+    inseason_workflow.write_text("scripts/verify.py")
     if change is None:
         assert_runtime_script_entrypoints(tmp_path)
         return
@@ -121,10 +117,8 @@ def test_runtime_script_policy_accepts_registered_entries_and_rejects_drift(tmp_
         workflow.write_text("")
     elif change == "verify-entry":
         (tmp_path / "scripts/check").write_text("")
-    elif change == "windows-diagnostic-entry":
-        diagnostic_workflow.write_text("")
-    elif change == "windows-diagnostic-missing":
-        (tmp_path / "scripts/windows_diagnostics.py").unlink()
+    elif change == "inseason-verify-entry":
+        inseason_workflow.write_text("")
     else:
         readme.write_text("scripts/benchmark_inseason.py")
     with pytest.raises(AssertionError):
