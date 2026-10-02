@@ -151,13 +151,11 @@ def replay_case(
     best = plans[0] if plans and plans[0].score > params.tolerance.value else None
     recommended = best.after if best else before
     keys, future = search_context(sim, before)
-    candidates: list[tuple[float, tuple[RosterMove, ...]]] = []
     full: list[tuple[float, tuple[RosterMove, ...]]] = []
     remaining = max(0, sim.league.adds_per_week - team.adds_used - prefs.reserve_adds)
     on = max(earliest_move(sim), week.start)
     if remaining and keys:
         while on <= week.end:
-            candidates.extend(candidate_moves(sim, prefs, team.players, (), on, week.end, keys))
             full.extend(
                 candidate_moves(sim, prefs, team.players, (), on, week.end, (), exhaustive=True)
             )
@@ -167,17 +165,14 @@ def replay_case(
                     "no recall result can be certified"
                 )
             on += timedelta(days=1)
-    candidates.sort(
-        key=lambda row: (
-            -round(row[0] / params.tolerance.value),
-            tuple((m.add, m.drop, m.effective_on) for m in row[1]),
-        )
-    )
     retained: bool | None = None
     if full:
+        # Published one-add choices follow the completed search, including
+        # its deferred candidates. Never certify the priority pass alone.
         screened = {
-            tuple((m.add, m.drop, m.effective_on) for m in moves)
-            for _, moves in candidates[: params.shortlist.value]
+            tuple((m.add, m.drop, m.effective_on) for m in plan.moves)
+            for plan in plans
+            if len(plan.moves) == 1
         }
         maximum: int | None = None
         for _, moves in full:
@@ -281,6 +276,7 @@ def run_policy_replay(study: PolicyReplayStudy, params: InseasonParameters) -> P
     )
     enough = len(rows) >= study.minimum_cases
     return PolicyReplayReport(
+        search_method="complete",
         input_sha256=digest(canonical(study)),
         parameters_sha256=digest(canonical(params)),
         rows=rows,
@@ -301,7 +297,8 @@ def run_policy_replay(study: PolicyReplayStudy, params: InseasonParameters) -> P
         evidence=study.evidence,
         scope="Paired weekly trials from recorded starting rosters; "
         "outcomes never enter decisions. "
-        "Recall covers the one-add shortlist and the complete legal multi-add search space "
+        "Recall covers the published one-add shortlist after complete search and the "
+        "complete legal multi-add search space (legacy beam_recall field) "
         "within oracle_max_plans. This is not a persistent-roster season simulation "
         "and does not measure real opponent responses.",
     )

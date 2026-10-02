@@ -138,7 +138,7 @@ def test_no_key_categories_still_searches_legal_moves(monkeypatch):
     monkeypatch.setattr(recommendations, "season_value", lambda *args, **kwargs: 0)
     categories = []
 
-    def candidates(*args):
+    def candidates(*args, **kwargs):
         categories.append(args[-1])
         return []
 

@@ -60,7 +60,7 @@
       "value": 400,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 section 11; design/inseason-remediation-2026-09-30.md",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c section 11; design/inseason-remediation-2026-09-30.md",
         "as_of": "2026-10-01T17:14:02.827314+00:00",
         "reason": "No OREB stabilization fit in the recovered study. k=400 is an assumption inherited from REB, not a validated value."
       }
@@ -127,7 +127,7 @@
       "value": 1,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -136,7 +136,7 @@
       "value": 0.5,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -145,7 +145,7 @@
       "value": 0,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -154,7 +154,7 @@
       "value": 0,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -163,7 +163,7 @@
       "value": 0.5,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -174,7 +174,7 @@
       "value": 60,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -183,7 +183,7 @@
       "value": 1,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -192,7 +192,7 @@
       "value": 0.3,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -201,7 +201,7 @@
       "value": 2,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -210,7 +210,7 @@
       "value": 15,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -219,7 +219,7 @@
       "value": 30,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -228,7 +228,7 @@
       "value": 30,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -237,7 +237,7 @@
       "value": 1,
       "evidence": {
         "kind": "Assumption",
-        "reference": "季賽助手規格 sections 4, 6, 7, 9",
+        "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
         "as_of": "2026-09-29T16:00:00Z",
         "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
       }
@@ -259,13 +259,13 @@
   ],
   "group_evidence": {
     "kind": "Assumption",
-    "reference": "季賽助手規格 sections 4, 6, 7, 9",
+    "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
     "as_of": "2026-09-29T16:00:00Z",
     "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
   },
   "fields_evidence": {
     "kind": "Assumption",
-    "reference": "季賽助手規格 sections 4, 6, 7, 9",
+    "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
     "as_of": "2026-09-29T16:00:00Z",
     "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
   },
@@ -309,7 +309,7 @@
     "value": 5,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -318,7 +318,7 @@
     "value": 6,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -327,7 +327,7 @@
     "value": 3,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -336,7 +336,7 @@
     "value": 1000,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -345,7 +345,7 @@
     "value": 200,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -354,7 +354,7 @@
     "value": 731,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -372,7 +372,7 @@
     "value": 0.85,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -381,7 +381,7 @@
     "value": 0.15,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -390,25 +390,25 @@
     "value": 10,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-02T00:00:00Z",
+      "reason": "Evaluate ten ordered candidates per batch and retain ten published choices per move count after complete search. Deferred candidates are not discarded; this is an uncalibrated resource policy."
     }
   },
   "beam_width": {
     "value": 3,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
-      "as_of": "2026-09-29T16:00:00Z",
-      "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
+      "reference": "design/inseason-remediation-2026-09-30.md",
+      "as_of": "2026-10-02T00:00:00Z",
+      "reason": "Visit the best three prefixes in each evaluated batch first, then every remaining prefix. This ordering never truncates the legal search space."
     }
   },
   "max_trade_players": {
     "value": 2,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -417,7 +417,7 @@
     "value": 0.1,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -426,7 +426,7 @@
     "value": 1,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -435,7 +435,7 @@
     "value": 0.5,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -444,7 +444,7 @@
     "value": 1,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -453,7 +453,7 @@
     "value": 30,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -462,7 +462,7 @@
     "value": 1,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -471,7 +471,7 @@
     "value": 100,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -480,7 +480,7 @@
     "value": 10,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -489,7 +489,7 @@
     "value": 0.05,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 F3 holdout calibration criterion; design/inseason-remediation-2026-09-30.md",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c F3 holdout calibration criterion; design/inseason-remediation-2026-09-30.md",
       "as_of": "2026-10-01T07:35:14.320394Z",
       "reason": "Runtime monitoring policy uses the 5pp holdout calibration criterion as an initial alert threshold. This is a separate unvalidated policy, not an empirically fitted threshold."
     }
@@ -498,7 +498,7 @@
     "value": 1e-09,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -507,7 +507,7 @@
     "value": 3,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -516,7 +516,7 @@
     "value": 1,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -525,7 +525,7 @@
     "value": 10,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -534,7 +534,7 @@
     "value": 100,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 sections 4, 6, 7, 9",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c sections 4, 6, 7, 9",
       "as_of": "2026-09-29T16:00:00Z",
       "reason": "Initial specification value, not independently calibrated; requires out-of-sample validation."
     }
@@ -542,7 +542,7 @@
   "fields": [
     {
       "id": "minutes",
-      "label": "每場分鐘",
+      "label": "\u6bcf\u5834\u5206\u9418",
       "kind": "override",
       "targets": [
         "minutes"
@@ -554,7 +554,7 @@
     },
     {
       "id": "usage",
-      "label": "球權倍數",
+      "label": "\u7403\u6b0a\u500d\u6578",
       "kind": "multiply",
       "targets": [
         "rate:FGA",
@@ -570,7 +570,7 @@
     },
     {
       "id": "status",
-      "label": "狀態與回歸日",
+      "label": "\u72c0\u614b\u8207\u56de\u6b78\u65e5",
       "kind": "status",
       "targets": [
         "q"
@@ -587,7 +587,7 @@
     },
     {
       "id": "back_to_back",
-      "label": "背靠背休兵",
+      "label": "\u80cc\u9760\u80cc\u4f11\u5175",
       "kind": "status",
       "targets": [
         "q"
@@ -602,7 +602,7 @@
     },
     {
       "id": "fg",
-      "label": "投籃命中率",
+      "label": "\u6295\u7c43\u547d\u4e2d\u7387",
       "kind": "override",
       "targets": [
         "shot:FG%"
@@ -614,7 +614,7 @@
     },
     {
       "id": "ft",
-      "label": "罰球命中率",
+      "label": "\u7f70\u7403\u547d\u4e2d\u7387",
       "kind": "override",
       "targets": [
         "shot:FT%"
@@ -638,7 +638,7 @@
     "value": 8,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 F3/F6; design/inseason-remediation-2026-09-30.md",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c F3/F6; design/inseason-remediation-2026-09-30.md",
       "as_of": "2026-09-30T00:00:00Z",
       "reason": "Require at least eight distinct matchup-week clusters per bin plus a bounded-outcome uncertainty margin; explicit monitoring policy, not a holdout-calibrated threshold."
     }
@@ -647,7 +647,7 @@
     "value": 1.96,
     "evidence": {
       "kind": "Assumption",
-      "reference": "季賽助手規格 F3/F6; design/inseason-remediation-2026-09-30.md",
+      "reference": "\u5b63\u8cfd\u52a9\u624b\u898f\u683c F3/F6; design/inseason-remediation-2026-09-30.md",
       "as_of": "2026-09-30T00:00:00Z",
       "reason": "Two-sided approximate 95% uncertainty margin; monitoring assumption. Category outcomes are clustered by matchup-week."
     }
@@ -693,8 +693,8 @@
     "evidence": {
       "kind": "Assumption",
       "reference": "design/inseason-remediation-2026-09-30.md",
-      "as_of": "2026-09-30T00:00:00Z",
-      "reason": "Prioritize three low-contribution roster players from the cached team lineup before add/drop screening; configurable resource and quality policy, not a validated recall guarantee."
+      "as_of": "2026-10-02T00:00:00Z",
+      "reason": "Search the three low-contribution roster players from the cached team lineup first, then every other legal drop. This priority is not a pruning rule or a validated forecast."
     }
   }
 }

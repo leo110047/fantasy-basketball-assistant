@@ -37,7 +37,7 @@ Today 的類別影響現在保留「raw 機率差 → 類別校準乘數」兩�
 
 `tests/formula_ownership_support.py` 每次掃描全部 `src/fba/**/*.py`，包含 module／class 內容、method、nested function、lambda 內的算術及數值正負號；排除型別註記與位元旗標運算。它只找候選，沒有宣稱能從 AST 自動判斷業務語意。
 
-目前 143 個 Python 檔有 472 個候選 owner：129 `registered`、1 `component`、133 `composition`、17 `validation`、192 `structure`、0 `pending`。數字不是公式總數。Paths、字串、集合、日期與 solver constraint arithmetic 也會被掃到。本輪讀完剩餘 87 個函式本體，抽取業務算式後逐條記錄具體分類理由。合法名單／現金保留、搜尋順序與停止條件不當成預測公式；使用既有登錄公式的編排保留在引擎。
+目前 143 個 Python 檔有 475 個候選 owner：129 `registered`、1 `component`、133 `composition`、17 `validation`、195 `structure`、0 `pending`。數字不是公式總數。Paths、字串、集合、日期與 solver constraint arithmetic 也會被掃到。本輪讀完剩餘 87 個函式本體，抽取業務算式後逐條記錄具體分類理由。合法名單／現金保留、搜尋順序與停止條件不當成預測公式；使用既有登錄公式的編排保留在引擎。
 
 另逐檔核對 1 個 C++ 與 10 個 JavaScript 來源，保存完整檔案 SHA-256、分類、理由與所用登錄 ID。測試檢查新增／刪除／改寫來源時必須更新這份人工盤點，不能自動判斷語意。拍賣頁的價差／折扣、cap 對市場價的空間、全場現金／名額與買／不買餘額已移回後端，使用既有 `difference`、`ratio`、`linear`。重點價差門檻沿用 5／0.2，改由 `model.market.focus_difference`／`focus_discount` 設定；舊模型保持相同行為，範例與受影響 schema 同步。Python／C++／JavaScript 的 pending 均為 0。拍賣候選完整通過 1,185 項測試（292.59 秒）與獨立審查 `2ad24675-08fc-48f9-92ec-73935d864e2a`，0 findings、兩項 required verified-pass；304 檔提交前 0 drift，分批提交 `ad00944`、`3980741`，未推送。
 
@@ -100,3 +100,5 @@ Git 外 `random-20-handcheck.json` 保存 seed 20261002、拍賣 66／Today 111 
 ### 因果檢查點與 F3 recall 補修
 
 `checkpoint_history` 的出版時間／版本／目標切分屬結構；`search_context` 重用既有 ROS owner，避免回測與正式建議的比較政策不同。z 篩選重用既有公式、累計完整序列至同一基準；recall 以完整合法候選、實際 shortlist 成員與容差比較，不創造新預測方程。其餘 backtest／旗標 owner 改用共同檢查點。逐項核對 11 個新增／變更候選，登錄公式維持 129；沒有將合成搜尋品質或未完成的歷史 holdout 標為通過。
+
+F3 完整搜尋另核對六個新增／變更候選：新增排序、完整樹遍歷與候選優先序三個結構 owner；更新搜尋編排及 replay 的兩個報告 owner。批次索引、進度區間、容差排序與保留發布數量屬搜尋政策，沒有新增預測方程或改寫完整計分。新報告的方法標記區分完整搜尋與舊 z／beam，不能據此跳過真實歷史驗收。

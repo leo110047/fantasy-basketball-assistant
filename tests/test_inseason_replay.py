@@ -70,6 +70,7 @@ def test_replay_reports_three_policies_and_sparse_cases_cannot_pass():
     assert set(report.mean_scores) == {"unchanged", "ranking", "recommended"}
     assert report.rows[0].full_candidates > 0
     assert report.recall is not None
+    assert report.search_method == "complete"
     assert report.beam_recall is not None
     assert not report.sufficient_cases
     assert not report.recall_passed and not report.policy_passed
@@ -140,7 +141,7 @@ def test_no_gain_controls_do_not_count_as_successful_recall():
     assert not report.recall_passed
 
 
-def test_shortlist_recall_includes_candidates_lost_by_drop_screening(monkeypatch):
+def test_complete_search_recovers_candidates_deferred_by_drop_screening(monkeypatch):
     import fba.inseason.recommendations as recommendations
 
     data, params = study()
@@ -152,6 +153,28 @@ def test_shortlist_recall_includes_candidates_lost_by_drop_screening(monkeypatch
 
     monkeypatch.setattr(recommendations, "prioritized_drops", restricted)
     report = run_policy_replay(data, params)
+    assert report.rows[0].shortlist_retained_best is True
+    assert report.rows[0].search_retained_best is True
+    assert report.rows[0].full_candidates == report.rows[0].full_plan_count
+
+
+def test_recall_still_detects_a_missing_optimum_after_the_search_method_changes(monkeypatch):
+    from fba.inseason import replay
+
+    data, params = study()
+    monkeypatch.setattr(replay, "search_adds", lambda *args: ())
+    report = run_policy_replay(data, params)
+    assert report.search_method == "complete"
+    assert report.recall == 0.0 and report.beam_recall == 0.0
     assert report.rows[0].shortlist_retained_best is False
     assert report.rows[0].search_retained_best is False
-    assert report.rows[0].full_candidates == report.rows[0].full_plan_count
+    assert not report.recall_passed
+
+
+def test_legacy_replay_report_is_not_relabelled_as_complete_search():
+    from fba.contracts.inseason_replay import PolicyReplayReport
+
+    data, params = study()
+    report = run_policy_replay(data, params)
+    legacy = report.model_dump(exclude={"search_method"})
+    assert PolicyReplayReport.model_validate(legacy).search_method == "z_beam"

@@ -2423,8 +2423,8 @@
     "fba.inseason.recommendations.search_add_plans": {
       "role": "composition",
       "owner": "fba.inseason.recommendations.search_add_plans",
-      "reason": "Searches unchanged legal shortlist/beam using registered plan scores; arithmetic is add allowance, date iteration, tolerance sort and progress fraction.",
-      "signature": "c3611a122632746a9241d4f2847cc024e5b98695ca7ba8de1fe3ba4ebaa5aa7a"
+      "reason": "Complete legal plan traversal uses the existing plan-score owner; allowance and bounded per-depth published choices are search policy, not a forecast equation.",
+      "signature": "21f53e9ee090658be4c77a010e04e0bc31bd80ab0b0a7e839695c88184259a22"
     },
     "fba.inseason.recommendations.evaluate_plan": {
       "role": "composition",
@@ -2453,14 +2453,14 @@
     "fba.inseason.replay.replay_case": {
       "role": "composition",
       "owner": "fba.inseason.replay.replay_case",
-      "reason": "Existing forecast and plan evaluation owners produce paired policies; complete legal one-add plans define the reference pool, identity membership checks actual drop/z screening and tolerance quantization compares scores.",
-      "signature": "a18b89cfb57b9f310cbaef5035337a56028e40679dacd076baf5898d5319c55d"
+      "reason": "Existing full-score owner evaluates paired policies and complete legal references; published one-add identity membership measures completed search, with no-gain controls excluded.",
+      "signature": "b5b63c46ca2b79d8a259376f281b04a683e13555cdda9b7746704caff88be6ec"
     },
     "fba.inseason.replay.run_policy_replay": {
       "role": "composition",
       "owner": "fba.inseason.replay.run_policy_replay",
-      "reason": "Registered mean owns actual policy averages and boolean recall; min-case/target/tolerance comparisons are report acceptance policy.",
-      "signature": "82dcc3f6e6886fd5e6ebd5d95aa52f599a1186782c713bb40e94b5ed2ecd4cdf"
+      "reason": "Registered mean owns policy averages and boolean recall. Existing sample and recall thresholds stay intact; method provenance distinguishes completed search from legacy z/beam screening.",
+      "signature": "cbd1fe50a98dc5e827532f701f587ec8884cdd4e7b8af3fb8bb96eab79a5ad3c"
     },
     "fba.inseason.replay_oracle.exhaustive_plans": {
       "role": "composition",
@@ -2833,6 +2833,24 @@
       "owner": "fba.inseason.recommendations.search_context",
       "reason": "Reuses season_value for the objective shared by live and replay search; category selection and must-win branching contain no new forecast equation.",
       "signature": "b18af7811caca4fb82fb63fb2f3ae48bc0f9a18e1a7a0a2bb3c696c8d8e629b2"
+    },
+    "fba.inseason.recommendations.search_add_plans<locals>.rank": {
+      "role": "structure",
+      "owner": "fba.inseason.recommendations.search_add_plans<locals>.rank",
+      "reason": "Tolerance-quantized plan-score ordering and stable plan ID tie breaker.",
+      "signature": "90505ca5e9603db29bf6b2b5fa7488c6120658c3030b59459d75e63f236c8472"
+    },
+    "fba.inseason.recommendations.search_add_plans<locals>.visit": {
+      "role": "structure",
+      "owner": "fba.inseason.recommendations.search_add_plans<locals>.visit",
+      "reason": "Deferred sibling traversal, batch and prefix indices, and nested progress intervals; no candidate or inadmissible prefix is pruned by a heuristic score.",
+      "signature": "675d9d1b57340ea9a70f513dd263a69c62eb7ab4a754e1afaab5139691fe80d7"
+    },
+    "fba.inseason.recommendations.ordered_candidates": {
+      "role": "structure",
+      "owner": "fba.inseason.recommendations.ordered_candidates",
+      "reason": "Legal date traversal and priority ordering by low-contribution drop membership, existing z score and move identity; all legal candidates remain.",
+      "signature": "911328e7f57ae188d8c88f89ac4a25198160fe8a8bea502fb1f123af5503c6ad"
     }
   },
   "source_files": {

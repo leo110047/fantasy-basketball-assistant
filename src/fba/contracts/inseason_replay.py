@@ -63,6 +63,7 @@ class ReplayRow(Record):
 
 
 class PolicyReplayReport(Record):
+    search_method: Literal["z_beam", "complete"] = "z_beam"
     input_sha256: Digest
     parameters_sha256: Digest
     rows: tuple[ReplayRow, ...]

@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import date, datetime, timedelta
 from hashlib import sha256
 
@@ -162,46 +162,83 @@ def search_add_plans(
     week = next(w for w in sim.league.matchups if w.id == week_id)
     before = sim.week(team.id, opponent, week_id)
     keys, future = search_context(sim, before)
-    beam: list[tuple[tuple[RosterMove, ...], tuple[str, ...]]] = [((), team.players)]
-    results: list[AddPlan] = []
-    for depth in range(remaining):
-        candidates: list[tuple[float, tuple[RosterMove, ...]]] = []
-        for moves, roster in beam:
-            on = max(earliest_move(sim), moves[-1].effective_on if moves else week.start)
-            while on <= week.end:
-                candidates.extend(
-                    candidate_moves(sim, preferences, roster, moves, on, week.end, keys)
-                )
-                on += timedelta(days=1)
-        candidates.sort(
-            key=lambda row: (
-                -round(row[0] / sim.params.tolerance.value),
-                tuple((m.add, m.drop, m.effective_on) for m in row[1]),
-            )
-        )
-        evaluated: list[AddPlan] = []
-        for index, (_, moves) in enumerate(candidates[: sim.params.shortlist.value]):
-            sim.check_limits()
-            plan = evaluate_plan(sim, preferences, moves, before, future)
-            evaluated.append(plan)
-            progress(
-                (depth + (index + 1) / max(1, min(len(candidates), sim.params.shortlist.value)))
-                / remaining
-            )
-        evaluated.sort(key=lambda p: (-round(p.score / sim.params.tolerance.value), p.id))
-        results.extend(p for p in evaluated if admissible_plan(p, sim.params.tolerance.value))
-        beam = [
-            (
-                p.moves,
-                changed_simulation(sim, team.id, p.moves).projected_roster(
-                    team.id, p.moves[-1].effective_on, sim.roster(team.id)
+    tolerance = sim.params.tolerance.value
+    width = sim.params.shortlist.value
+
+    def rank(plan: AddPlan) -> tuple[int, str]:
+        return -round(plan.score / tolerance), plan.id
+
+    def visit(moves: tuple[RosterMove, ...], start: float, stop: float) -> Iterator[AddPlan]:
+        candidates = ordered_candidates(sim, preferences, moves, week.start, week.end, keys)
+        for offset in range(0, len(candidates), width):
+            # The former shortlist and beam now order bounded batches. Every
+            # deferred sibling is visited, including inadmissible prefixes.
+            batch = sorted(
+                (
+                    evaluate_plan(sim, preferences, candidate, before, future)
+                    for _, candidate in candidates[offset : offset + width]
                 ),
+                key=rank,
             )
-            for p in evaluated[: sim.params.beam_width.value]
-        ]
-    unique = {p.id: p for p in results}
-    return tuple(
-        sorted(unique.values(), key=lambda p: (-round(p.score / sim.params.tolerance.value), p.id))
+            yield from batch
+            for beam_start in range(0, len(batch), sim.params.beam_width.value):
+                for index, plan in enumerate(
+                    batch[beam_start : beam_start + sim.params.beam_width.value], beam_start
+                ):
+                    sim.check_limits()
+                    lower = start + (stop - start) * (offset + index) / len(candidates)
+                    upper = (
+                        stop
+                        if offset + index + 1 == len(candidates)
+                        else start + (stop - start) * (offset + index + 1) / len(candidates)
+                    )
+                    if len(plan.moves) < remaining:
+                        yield from visit(plan.moves, lower, upper)
+                    progress(upper)
+
+    # Keep the best published choices per move count, not every forecast in
+    # the exponentially growing tree. This never restricts continuation.
+    results: dict[int, list[AddPlan]] = {}
+    for plan in visit((), 0.0, 1.0):
+        if admissible_plan(plan, tolerance):
+            depth_results = results.setdefault(len(plan.moves), [])
+            depth_results.append(plan)
+            depth_results.sort(key=rank)
+            del depth_results[width:]
+    sim.check_limits()
+    progress(1.0)
+    return tuple(sorted((p for plans in results.values() for p in plans), key=rank))
+
+
+def ordered_candidates(
+    sim: Simulation,
+    preferences: InseasonPreferences,
+    moves: tuple[RosterMove, ...],
+    start: date,
+    end: date,
+    keys: tuple[str, ...],
+) -> list[tuple[float, tuple[RosterMove, ...]]]:
+    """Low-contribution drops first, then z order; never remove legal moves."""
+    roster = sim.roster(sim.snapshot.mine)
+    candidates: list[tuple[float, tuple[RosterMove, ...]]] = []
+    preferred: set[tuple[RosterMove, ...]] = set()
+    on = max(earliest_move(sim), moves[-1].effective_on if moves else start)
+    while on <= end:
+        preferred.update(
+            candidate
+            for _, candidate in candidate_moves(sim, preferences, roster, moves, on, end, keys)
+        )
+        candidates.extend(
+            candidate_moves(sim, preferences, roster, moves, on, end, keys, exhaustive=True)
+        )
+        on += timedelta(days=1)
+    return sorted(
+        candidates,
+        key=lambda row: (
+            row[1] not in preferred,
+            -round(row[0] / sim.params.tolerance.value),
+            tuple((m.add, m.drop, m.effective_on) for m in row[1]),
+        ),
     )
 
 
