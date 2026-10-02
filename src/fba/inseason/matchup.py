@@ -45,8 +45,9 @@ from fba.inseason.projection import (
     visible_games,
 )
 from fba.inseason.roster_timeline import RosterChange, merge_changes, roster_after
-from fba.inseason.sampling import sample_game
+from fba.inseason.sampling import SamplingProfile, sample_game, sampling_profile
 from fba.inseason.weekly_lineups import joint_lineup
+from fba.inseason.weekly_samples import CountSamples
 
 type Array = NDArray[np.float64]
 
@@ -79,6 +80,7 @@ class Simulation:
         self.projection_profiles: dict[tuple[tuple[str, ...], ...], EffectiveProjection] = {}
         self.player_index = ProjectionIndex()
         self.draws: dict[tuple[str, str], Array] = {}
+        self.draw_profiles: dict[tuple[str, str], tuple[Array, SamplingProfile]] = {}
         self.team_cache: OrderedDict[
             tuple[str, str, tuple[str, ...]], tuple[Array, tuple[DayLineup, ...]]
         ] = OrderedDict()
@@ -118,6 +120,7 @@ class Simulation:
         self.injury_plan_cache: dict[tuple[str, tuple[str, ...]], tuple[InjuryReturn, ...]] = {}
         self.season_engine: Simulation | None = None
         self.joint_weeks: set[tuple[str, str, tuple[str, ...]]] = set()
+        self.count_weeks: set[tuple[str, str, tuple[str, ...]]] = set()
         self.priority_cache: dict[str, MatchupPriority] = {}
 
     def season(self) -> "Simulation":
@@ -195,6 +198,7 @@ class Simulation:
             game,
         )
         self.draws[key] = result
+        self.draw_profiles[key] = result, sampling_profile(player)
         return result
 
     def actual(self, team_id: str, week_id: str) -> tuple[Array, datetime]:
@@ -335,11 +339,14 @@ class Simulation:
             return self.team_cache[key]
         week = next(w for w in self.league.matchups if w.id == week_id)
         total, through = self.actual(team_id, week_id)
+        actual = total.copy()
+        sample_days: list[tuple[date, dict[str, Array]]] = []
         lineups: list[DayLineup] = []
         on = max(week.start, self.as_of.astimezone(self.zone).date())
         while on <= week.end:
             current_roster = self.projected_roster(team_id, on, roster)
             draws = self.daily_draws(current_roster, on, max(through, self.as_of))
+            sample_days.append((on, draws))
             fixed, slots, positions = self.lineup_constraints(team_id, on, draws)
             means = {pid: mean_array(draw, axis=0) for pid, draw in draws.items()}
 
@@ -357,6 +364,10 @@ class Simulation:
                 )
             )
             on += timedelta(days=1)
+        samples = CountSamples.create(self, tuple(sample_days), max(through, self.as_of))
+        if samples is not None:
+            total = samples.total(actual, samples.counts(tuple(day.slots for day in lineups)))
+            self.count_weeks.add(key)
         result = total, tuple(lineups)
         self.team_cache[key] = result
         if len(self.team_cache) > self.params.scenario_cache_entries.value:
@@ -448,12 +459,17 @@ class Simulation:
         started: float,
         required: tuple[str, ...] = (),
         excluded: tuple[str, ...] = (),
+        compose: Callable[[tuple[str, ...]], Array] | None = None,
     ) -> tuple[dict[str, str], float]:
         def objective(ids: tuple[str, ...]) -> float:
             self.check_limits()
             if monotonic() - started > self.params.budgets["week"].value:
                 raise CalculationTimeout("lineup: exact daily optimization exceeded time budget")
-            total = rest + sum((draws[p] for p in ids), start=np.zeros_like(rest))
+            total = (
+                compose(ids)
+                if compose is not None
+                else rest + sum((draws[p] for p in ids), start=np.zeros_like(rest))
+            )
             return self.calibrated_score(
                 float(mean_array(self.score(total, opponent_total)[1]))
             ).result
@@ -469,7 +485,11 @@ class Simulation:
             self.check_limits()
             if monotonic() - started > self.params.budgets["week"].value:
                 raise CalculationTimeout("lineup: exact daily optimization exceeded time budget")
-            totals = rest + ordered_row_sums(rows, draws, rest.shape, fixed_ids)
+            totals = (
+                np.stack([compose((*fixed_ids, *row)) for row in rows])
+                if compose is not None
+                else rest + ordered_row_sums(rows, draws, rest.shape, fixed_ids)
+            )
             scores = mean_array(
                 sample_scores(
                     totals,
@@ -493,7 +513,9 @@ class Simulation:
             batch_objective=objectives,
             batch_size=self.params.lineup_batch.value,
             subset_solver=cached_subsets,
-            maximum=lambda achieved: assignment_ceiling(
+            maximum=None
+            if compose is not None
+            else lambda achieved: assignment_ceiling(
                 self, draws, fixed_ids, tuple(free), rest, opponent_total, achieved=achieved
             ),
         )

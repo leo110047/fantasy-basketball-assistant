@@ -9,6 +9,7 @@ import numpy as np
 
 from fba.contracts.config import Linear, Term
 from fba.formulas.categories import category_values
+from fba.formulas.lineup import accumulation_error
 from fba.formulas.simulation import (
     comparison_margin,
     linear_interval,
@@ -123,17 +124,34 @@ def certified_loss(
     week = next(w for w in sim.league.matchups if w.id == week_id)
     on = max(week.start, sim.as_of.astimezone(sim.zone).date())
     roster = changed.get(home, sim.roster(home))
+    terms = 0
     while on <= week.end:
         sim.check_limits()
         for draw in sim.daily_draws(roster, on, max(through, sim.as_of)).values():
+            terms += 1
             lower, upper = subset_interval(
                 {"lower": lower, "upper": upper, "draw": draw, "fixed": np.asarray(0.0)}
             )
         lower, upper = outward_interval({"lower": lower, "upper": upper})
         on += timedelta(days=1)
+    lower, upper = grouped_interval(lower, upper, terms)
     # Treat a tie as a full win here: a floor result then proves that no
     # sample can even tie. Both teams' standings points are therefore known.
     return score_ceiling(sim, lower, upper, opponent, week_tie=1.0) == minimum
+
+
+def grouped_interval(lower: Array, upper: Array, terms: int) -> tuple[Array, Array]:
+    """Cover count-prefix then group-order sums as well as chronological sums.
+
+    Each selected draw enters once; at most 2n + 2 rounded additions occur.
+    The existing nonnegative subset interval bounds the absolute exact sum.
+    """
+    if not np.isfinite(lower).all() or not np.isfinite(upper).all():
+        return np.full_like(lower, -np.inf), np.full_like(upper, np.inf)
+    error = accumulation_error(
+        {"magnitude": np.maximum(abs(lower), abs(upper)), "additions": np.asarray(2 * terms + 2)}
+    )
+    return outward_interval({"lower": lower - error, "upper": upper + error})
 
 
 def assignment_ceiling(

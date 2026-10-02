@@ -117,7 +117,7 @@ class ThresholdBounds:
                     {"upper": numerator, "dlower": dlow, "dupper": dhigh, "threshold": threshold}
                 )
             )
-        result_array = np.stack(result, axis=1)
+        result_array = np.stack(result, axis=-2)
         return (
             np.asfortranarray(result_array)
             if self.sim.league.scoring == "h2h_one_win"

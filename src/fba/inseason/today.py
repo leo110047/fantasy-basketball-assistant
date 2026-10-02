@@ -17,7 +17,7 @@ from fba.core.lineups import legal_assignment
 from fba.formulas.registry import evaluate
 from fba.formulas.simulation import mean_array
 from fba.inseason.injury_returns import cache_saved_returns, reuse_return_plans
-from fba.inseason.matchup import Simulation
+from fba.inseason.matchup import Array, Simulation
 from fba.inseason.recommendations import admissible_plan, changed_simulation, earliest_move
 
 
@@ -267,12 +267,27 @@ def injury_actions(
 def lineup_effects(
     sim: Simulation, lineup: DayLineup, opponent: str, week: str
 ) -> dict[str, tuple[FormulaTrace, dict[str, tuple[FormulaTrace, ...]]]]:
-    own, other, _ = sim.matchup_totals(lineup.team_id, opponent, week)
+    from fba.inseason.weekly_samples import lineup_samples
+
+    own, other, all_days = sim.matchup_totals(lineup.team_id, opponent, week)
     _, through = sim.actual(lineup.team_id, week)
     roster = roster_on(sim, lineup.team_id, lineup.on)
     draws = sim.daily_draws(roster, lineup.on, max(sim.as_of, through))
     selected = tuple(lineup.slots.values())
     rest = own - sum((draws[p] for p in selected), start=np.zeros_like(own))
+    days = tuple(day for day in all_days if day.team_id == lineup.team_id)
+    samples = lineup_samples(sim, lineup.team_id, days, through)
+    actual, _ = sim.actual(lineup.team_id, week)
+
+    def compose(ids: tuple[str, ...]) -> Array:
+        if samples is None:
+            return rest + sum((draws[p] for p in ids), start=np.zeros_like(rest))
+        rows = tuple(
+            {str(i): pid for i, pid in enumerate(ids)} if day.on == lineup.on else day.slots
+            for day in days
+        )
+        return samples.total(actual, samples.counts(rows))
+
     categories, score = sim.score(own, other)
     selected_score = sim.calibrated_score(float(mean_array(score))).result
     team = next(t for t in sim.snapshot.teams if t.id == lineup.team_id)
@@ -297,10 +312,9 @@ def lineup_effects(
             started,
             required=() if pid in selected else (pid,),
             excluded=(pid,) if pid in selected else (),
+            compose=compose if samples is not None else None,
         )
-        altered = rest + sum(
-            (draws[p] for p in alternative_slots.values()), start=np.zeros_like(rest)
-        )
+        altered = compose(tuple(alternative_slots.values()))
         changed_categories, _ = sim.score(altered, other)
         changes: dict[str, tuple[FormulaTrace, ...]] = {}
         for i, category in enumerate(sim.league.categories):

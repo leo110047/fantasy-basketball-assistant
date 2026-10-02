@@ -69,6 +69,7 @@ def batch_source(sim: Simulation) -> Simulation:
         "priority_cache",
         "injury_plan_cache",
         "joint_weeks",
+        "count_weeks",
         "team_cache",
         "expected_cache",
         "matchup_cache",

@@ -93,6 +93,7 @@ def reuse_return_plans(
         sim.projection_profiles,
         sim.draws,
     )
+    child.draw_profiles = sim.draw_profiles
     child.priority_cache = sim.priority_cache
     child.transitions = sim.transitions.copy()
     child.cancelled, child.deadline = sim.cancelled, sim.deadline
@@ -300,6 +301,7 @@ def return_scenario(sim: Simulation, team: str, planned: tuple[InjuryReturn, ...
         sim.projection_profiles,
         sim.season().draws,
     )
+    child.draw_profiles = sim.season().draw_profiles
     child.transitions = {
         **sim.transitions,
         team: merge_changes(sim.transitions.get(team, ()), planned),

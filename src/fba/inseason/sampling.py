@@ -19,6 +19,22 @@ from fba.formulas.categories import derive_games
 from fba.formulas.registry import evaluate
 from fba.formulas.simulation import array_product, mean_array, nested_count_limit
 
+type SamplingProfile = tuple[str, float, float, tuple[tuple[str, float], ...]]
+
+
+def sampling_profile(player: EffectivePlayer) -> SamplingProfile:
+    """Distribution identity within one Simulation's fixed history/model context.
+
+    This deliberately compares the original inputs, not rounded target means.
+    Game identity only selects independent random streams in sample_game.
+    """
+    return (
+        player.player.id,
+        player.minutes,
+        player.probability,
+        tuple(sorted(player.rates.items())),
+    )
+
 
 def sample_game(
     player: EffectivePlayer,

@@ -170,6 +170,13 @@ def forecast(
             in sim.joint_weeks
             else "daily_exact_coordinate"
         ),
+        sample_coupling={
+            team: "exchangeable_count_v1"
+            if (team, week_id, tuple(sorted(changed.get(team, sim.roster(team)))))
+            in sim.count_weeks
+            else "game_id"
+            for team in (home, away)
+        },
         prior_players=tuple(
             sorted(
                 {pid for day in lineups for pid in day.slots.values() if not sim.history.get(pid)}

@@ -401,6 +401,7 @@ class WeekForecast(Record):
     no_moves_raw_score: Nonnegative | None = None
     injury_returns: tuple[InjuryReturn, ...] = ()
     lineup_search: Literal["joint_exact", "daily_exact_coordinate"] = "daily_exact_coordinate"
+    sample_coupling: dict[Text, Literal["game_id", "exchangeable_count_v1"]] = {}
     prior_players: tuple[Text, ...] = ()
     week_id: Text
     home: Text

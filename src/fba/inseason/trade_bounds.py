@@ -12,7 +12,7 @@ from fba.contracts.inseason import WeekForecast
 from fba.formulas.registry import evaluate
 from fba.formulas.scalar import upper_total
 from fba.formulas.simulation import outward_interval, subset_interval
-from fba.inseason.lineup_bounds import score_ceiling, score_ceilings
+from fba.inseason.lineup_bounds import grouped_interval, score_ceiling, score_ceilings
 from fba.inseason.matchup import Simulation
 from fba.inseason.season import remaining_weeks, season_opponent
 
@@ -45,17 +45,20 @@ def completion_contexts(
         after = max(through, sim.as_of)
         days: list[date] = []
         on = max(week.start, today)
+        terms = 0
         while on <= week.end:
             sim.check_limits()
             # Relax slots and eligibility: any subset of these draws is
             # enclosed, including every legal daily/weekly assignment.
             for draw in sim.daily_draws(roster, on, after).values():
+                terms += 1
                 lower, upper = subset_interval(
                     {"lower": lower, "upper": upper, "draw": draw, "fixed": np.asarray(0.0)}
                 )
             lower, upper = outward_interval({"lower": lower, "upper": upper})
             days.append(on)
             on += timedelta(days=1)
+        lower, upper = grouped_interval(lower, upper, terms)
         result.append(WeekDrawBound(lower, upper, opponent, after, tuple(days)))
     return tuple(result)
 
@@ -103,11 +106,13 @@ def addition_ceilings(
     shape = (len(choices), *context.lower.shape)
     lower = np.broadcast_to(context.lower, shape).copy()
     upper = np.broadcast_to(context.upper, shape).copy()
+    terms = 0
     for on in context.days:
         sim.check_limits()
         draws = sim.daily_draws(choices, on, context.after)
         indices = [i for i, player in enumerate(choices) if player in draws]
         if indices:
+            terms += 1
             daily = np.stack([draws[choices[i]] for i in indices])
             # Each row retains its date/addition order and outward rounding.
             # Only independent candidates share a batch.
@@ -119,6 +124,7 @@ def addition_ceilings(
                     "fixed": np.asarray(0.0),
                 }
             )
+    lower, upper = grouped_interval(lower, upper, terms)
     return tuple(float(v) for v in score_ceilings(sim, lower, upper, context.opponent))
 
 

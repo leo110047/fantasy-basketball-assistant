@@ -49,6 +49,7 @@ def reuse_simulation(
     if cached is not None and cached[0] == key:
         previous = cached[1]
         simulation.draws = previous.draws
+        simulation.draw_profiles = previous.draw_profiles
         simulation.projections = {
             on: projection.model_copy(update={"as_of": now})
             for on, projection in previous.projections.items()
@@ -59,6 +60,7 @@ def reuse_simulation(
             for key, projection in previous.projection_profiles.items()
         }
         simulation.joint_weeks = previous.joint_weeks.copy()
+        simulation.count_weeks = previous.count_weeks.copy()
         simulation.team_cache = previous.team_cache.copy()
         simulation.expected_cache = previous.expected_cache.copy()
         simulation.matchup_cache = previous.matchup_cache.copy()
@@ -88,6 +90,7 @@ def reuse_simulation(
             )
             for name in (
                 "draws",
+                "draw_profiles",
                 "projections",
                 "projection_profiles",
                 "team_cache",
@@ -95,6 +98,7 @@ def reuse_simulation(
                 "matchup_cache",
                 "forecast_cache",
                 "joint_weeks",
+                "count_weeks",
                 "injury_plan_cache",
                 "standings_point_cache",
                 "season_score_cache",

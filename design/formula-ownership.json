@@ -2207,14 +2207,14 @@
     "fba.inseason.drop_candidates.prioritized_drops": {
       "role": "composition",
       "owner": "fba.inseason.drop_candidates.prioritized_drops",
-      "reason": "Registered score/sample_mean/nonnegative_samples/difference own frozen-lineup contribution; date sums compose existing draws and tolerance sorts candidates.",
-      "signature": "f65cbefada344e3b96467bc757d8db89698d1a49ad212ba72951463c5c5b8f9a"
+      "reason": "Screening composes same-pool count totals after removing selected future starts; registered score/mean/difference rank releases. Unknown playoff brackets exclude only that optional screening horizon, never a legal candidate.",
+      "signature": "d56d0a0f815b24879fb8960e6831bda903fcadd64b3a51d080c80fe5191d7735"
     },
     "fba.inseason.forecast.forecast": {
       "role": "composition",
       "owner": "fba.inseason.forecast.forecast",
       "reason": "Registered mean/calibration/variance/error/product own estimates and uncertainty; remaining arithmetic counts elapsed dates, scheduled games and allowed adds.",
-      "signature": "ca4560ced23e567d7e4e9972a68ad62e7eb146591e2e309754282d6693693407"
+      "signature": "92e5d865441dd775b3d318f367b4de434bc033b9c5103f2fbd63e7edb792b623"
     },
     "fba.inseason.forecast.category_forecast": {
       "role": "composition",
@@ -2226,7 +2226,7 @@
       "role": "structure",
       "owner": "fba.inseason.injury_returns.reuse_return_plans",
       "reason": "Caches/constructs IL scenarios using configured roster capacity; consumes existing projection probabilities.",
-      "signature": "f14d270bea1ccb637cbe57328eb643babff94f0add344214a5cbb4b26fc54ae4"
+      "signature": "99258225708f24c32b33ae73eddcae7a2fee9a529a3c89d6695d8fbebe9e6043"
     },
     "fba.inseason.injury_returns.cache_saved_returns": {
       "role": "validation",
@@ -2262,7 +2262,7 @@
       "role": "composition",
       "owner": "fba.inseason.lineup_bounds.certified_loss",
       "reason": "Registered subset_bound/outward_bound and scoring formulas construct loss bound; 1/sample sets exhaustive loss counting tolerance, dates select remaining decisions.",
-      "signature": "2b94c06fba5978dbb9e397a4bbb507ee1f4c7ebdb63b1eb876d15e5461b55aa4"
+      "signature": "4787fcec64da4f98bf1491be5f7b3488bb8093fc4404bb3637ee269a89837114"
     },
     "fba.inseason.lineup_space.ordered_row_sums": {
       "role": "composition",
@@ -2298,7 +2298,7 @@
       "role": "composition",
       "owner": "fba.inseason.matchup.Simulation.total",
       "reason": "Aggregates recorded actual boxes and selected registered game draws; dates/cache lengths select covered timeline.",
-      "signature": "da4bdd92df34118722af8b804e6724d3f5f15cc986228b756c876b80ee2c5cc0"
+      "signature": "6b43e2ef92cada7e1047fc83633897b3266691efed3a84e5c94658ab3855f441"
     },
     "fba.inseason.matchup.Simulation.expected_assignment<locals>.objective": {
       "role": "composition",
@@ -2316,13 +2316,13 @@
       "role": "composition",
       "owner": "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objective",
       "reason": "Combines registered candidate draws with fixed rest, then score/sample_mean/calibration; monotonic subtraction enforces deadline.",
-      "signature": "15287dc8387afb15cce7723df14261d788a55c00da738179d1ca0494df50d11f"
+      "signature": "e03a238855349f734c1f1c1bd83cbe86ab0da14dae24602d0c24913266e68801"
     },
     "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objectives": {
       "role": "composition",
       "owner": "fba.inseason.matchup.Simulation.optimize_assignment<locals>.objectives",
       "reason": "Ordered draws feed registered sample_scores/mean/calibration; elapsed-clock arithmetic enforces unchanged deadline.",
-      "signature": "f13fae167e7a265afa56534f277057e5d59b1ac850893406dd47bfdbf5cb9750"
+      "signature": "d4078f26109ea73317fa302f46852d1266e4cd7e76106e125328d83db0be6ffa"
     },
     "fba.inseason.operations.calibration_status": {
       "role": "structure",
@@ -2406,19 +2406,13 @@
       "role": "validation",
       "owner": "fba.inseason.recommendations.legal_roster",
       "reason": "Roster capacity, uniqueness and known-player membership; does not require filled starter slots.",
-      "signature": "b223c32ae856c691e9f623912d9edce344a51ddd127c6be0164c1b1dc8617453"
+      "signature": "fb8404c984be5615f91c900803a52b17287e1e38026db98fda78bcdd3940e19b"
     },
     "fba.inseason.recommendations.earliest_move": {
       "role": "structure",
       "owner": "fba.inseason.recommendations.earliest_move",
       "reason": "League cutoff/effective-day rules advance the calendar by zero or one day.",
       "signature": "6880c084b3114ff1a01bbab3c11f8670c94908cff4af4c744a8e7243f06cd4d5"
-    },
-    "fba.inseason.recommendations.quick_score": {
-      "role": "composition",
-      "owner": "fba.inseason.recommendations.quick_score",
-      "reason": "Registered product/nonnegative_samples/category_values/z/normal/difference compose the complete-prefix screening approximation against one unchanged baseline; date counts and sums aggregate expected game contributions, reciprocal tolerance bounds z.",
-      "signature": "02ae59af53ec10c238c169fa6001ad4b4c0d13a25c3844ebab54f8834410c2e8"
     },
     "fba.inseason.recommendations.search_add_plans": {
       "role": "composition",
@@ -2436,7 +2430,7 @@
       "role": "structure",
       "owner": "fba.inseason.recommendations.candidate_moves",
       "reason": "Roster tuple changes and waiver release date; quick_score owns candidate numerical estimates.",
-      "signature": "94de3268ee1700e7d2dacac7dd02bbd4cef7bd2be3b85e9657dec7153a2e2984"
+      "signature": "b7bb10c92b138b79385a64fbb11db11533a8e2cef67b00f913e11449b75fa31b"
     },
     "fba.inseason.recommendations.admissible_plan": {
       "role": "validation",
@@ -2580,7 +2574,7 @@
       "role": "structure",
       "owner": "fba.inseason.simulation_cache.reuse_simulation",
       "reason": "Counts causal clock intervals solely for simulation cache identity/invalidation.",
-      "signature": "9fb65a0714d03dbc8942eefee942aba9952931a42fec2223070c1e7a50da0e6b"
+      "signature": "375403facd02477a97b7d4ec6d0f900a6acf3f2118160957e0874362c3c918f9"
     },
     "fba.inseason.team_view.team_views": {
       "role": "composition",
@@ -2603,8 +2597,8 @@
     "fba.inseason.today.lineup_effects": {
       "role": "composition",
       "owner": "fba.inseason.today.lineup_effects",
-      "reason": "Registered score/sample_mean/difference/product own weekly/category effects and category traces; sample sums replace one legal date assignment.",
-      "signature": "59684c07fa32c7191b2595ff56c3dd1690fe3e71b8a3b58fbfefc5a22a7787c2"
+      "reason": "Registered score/mean/difference/product report counterfactual weekly and category effects under the same count-prefix composition; game-ID fallback preserves explicit scenarios.",
+      "signature": "3e311073b883b47d862c7bb0a7abbaa4e65c49b826b5c8bb9de027ae498a204b"
     },
     "fba.inseason.today.today_players": {
       "role": "composition",
@@ -2616,7 +2610,7 @@
       "role": "composition",
       "owner": "fba.inseason.trade_bounds.completion_contexts",
       "reason": "Registered subset_bound/outward_bound assemble conservative contexts; max dates select remaining schedule.",
-      "signature": "2c4822abbf71de824f71aec44f17b7ae82fe33bad9811a206f05ff3ad696f0b4"
+      "signature": "0b1075ce62a3de22370632ec7b0b0b72b157f57dc93154990d4a77be2202e5e0"
     },
     "fba.inseason.trade_bounds.free_agent_bounds": {
       "role": "composition",
@@ -2706,7 +2700,7 @@
       "role": "structure",
       "owner": "fba.inseason.weekly_lineups.joint_lineup",
       "reason": "Builds complete legal weekly search, records successful exact completion, and assembles active-roster bench output. Dates and ID sorting are structural.",
-      "signature": "2acb232d9561febb1875c7f964a2beb7f9c0ef14b42b2adf084aa9fbfebc3c07"
+      "signature": "d34db6b6df5c1619ee090ac2ad7ba75a9e6d4a1e61c8f125066b1b93e5feef8f"
     },
     "fba.projection.preparation.game_samples": {
       "role": "structure",
@@ -2784,7 +2778,7 @@
       "role": "composition",
       "owner": "fba.inseason.weekly_lineups.day_choices",
       "reason": "Enumerates all legal daily subsets. Per-slot minimum and maximum of available draws relax uniqueness to bound every ordered completion; date selection and eligibility remain structural.",
-      "signature": "c076ec75ffeeff8464231400e1f1dd94f3883cfe9e0e4fb3f71b897f81ad7062"
+      "signature": "8b26cafcd2a24b43e837bd4956156a0a582835ecdc8ebe31d4a99a2fea7ebdcf"
     },
     "fba.inseason.weekly_lineups.lineup_key": {
       "role": "structure",
@@ -2909,8 +2903,8 @@
     "fba.inseason.weekly_bounds.ThresholdBounds.contribution": {
       "role": "composition",
       "owner": "fba.inseason.weekly_bounds.ThresholdBounds.contribution",
-      "reason": "Map configured signed terms and ratio denominators to registered conservative margin equations.",
-      "signature": "6b508ac75c60cd4483812e220a347b5c6fb15fb31f2f1dead8d481391795e474"
+      "reason": "Registered linear intervals and threshold_margin preserve correlated numerator/denominator bounds, including independent leading batch dimensions.",
+      "signature": "c35a29331884898d9c030fa4d278a3ef2406129965cd0894c0db99765c49e61d"
     },
     "fba.inseason.weekly_bounds.ThresholdBounds.ceiling": {
       "role": "composition",
@@ -2953,6 +2947,144 @@
       "owner": "fba.inseason.weekly_players.PlayerSearch.visit",
       "reason": "Visit every legal include/exclude branch unless its certified score and tie bound cannot improve the incumbent.",
       "signature": "cc34acf3b33653e30c8c04dbf3a831574f3274a0dced5c4c5db25f1f39f256b8"
+    },
+    "fba.inseason.count_feasibility.CountFeasibility.create": {
+      "role": "structure",
+      "owner": "fba.inseason.count_feasibility.CountFeasibility.create",
+      "reason": "Constructs integer group/day capacities and complete row-count vectors for exact roster feasibility.",
+      "signature": "63610ba3183d3319d4d4450ec07c273dd0551d5090a5299c693a4da2e0d9c3d5"
+    },
+    "fba.inseason.count_feasibility.CountFeasibility.feasible": {
+      "role": "structure",
+      "owner": "fba.inseason.count_feasibility.CountFeasibility.feasible",
+      "reason": "Updates source capacities and checks exact integer flow; an infeasible root flow records a valid capacity cut.",
+      "signature": "991654aa7a80e4d8f1e1be1998a48dd1381e31e33ff3461c2ccb93747ae500d9"
+    },
+    "fba.inseason.count_feasibility.CountFeasibility.record_cut": {
+      "role": "structure",
+      "owner": "fba.inseason.count_feasibility.CountFeasibility.record_cut",
+      "reason": "Residual reachability yields a necessary integer demand/capacity inequality from the max-flow min-cut theorem.",
+      "signature": "5485a65aefd77a9dc4e95e802f02b0beaf8660f2b9d40d60304b489212f831d4"
+    },
+    "fba.inseason.count_feasibility.CountFeasibility.prefix_possible": {
+      "role": "structure",
+      "owner": "fba.inseason.count_feasibility.CountFeasibility.prefix_possible",
+      "reason": "Applies certified group-capacity inequalities to partial integer count choices.",
+      "signature": "2e6c23ca90a4a58aae479ce013872d4d470f28e9ffe95853ce08e296a27592c6"
+    },
+    "fba.inseason.count_feasibility.CountFeasibility.canonical": {
+      "role": "structure",
+      "owner": "fba.inseason.count_feasibility.CountFeasibility.canonical",
+      "reason": "Retains all daily rows, filters exact integer suffix capacities and reconstructs lexical minimum legal dates.",
+      "signature": "73ac2b733a6a000912665d28accfb79c7345d7f8adefb955f98fd4ab9d27c81d"
+    },
+    "fba.inseason.count_feasibility.flow_graph": {
+      "role": "structure",
+      "owner": "fba.inseason.count_feasibility.flow_graph",
+      "reason": "Builds source/group/player-day/eligible-slot/sink unit-capacity graph; node arithmetic is structural.",
+      "signature": "04a8a495188d4cc0f76c424707eec22e0a5c9a084932d5195bd3d6bf17720585"
+    },
+    "fba.inseason.lineup_bounds.grouped_interval": {
+      "role": "composition",
+      "owner": "fba.inseason.lineup_bounds.grouped_interval",
+      "reason": "Registered accumulation_error and outward_interval cover prefix/group regrouping of nonnegative sampled totals.",
+      "signature": "3cc5ce28f6105a03066dc0ef3e4c9bc3f289301780bc8a31bb368afe9dbc3004"
+    },
+    "fba.inseason.today.lineup_effects<locals>.compose": {
+      "role": "composition",
+      "owner": "fba.inseason.today.lineup_effects<locals>.compose",
+      "reason": "Rebuilds same-pool weekly count totals for a daily counterfactual, or retains explicit per-game scenario summation.",
+      "signature": "5e0f5b51d21333e36220f2061a32783fc15e4de004517ace9146971bd7a3b0d3"
+    },
+    "fba.inseason.trade_bounds.addition_ceilings": {
+      "role": "composition",
+      "owner": "fba.inseason.trade_bounds.addition_ceilings",
+      "reason": "Existing subset_interval and grouped_interval bound candidate additions, then registered scoring/calibration supplies ceilings.",
+      "signature": "20060a11a221958e01f0ca138468ea1f5506de427ec78fce000c9300b714d61b"
+    },
+    "fba.inseason.weekly_counts.CountSearch.create": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_counts.CountSearch.create",
+      "reason": "Composes registered threshold and accumulation-error bounds for count choices; priority changes traversal only, never summation or tie order.",
+      "signature": "dc95d1ca204d9f335593e937ea7660ae3cdd8ef613a5f5f83fd5c2ed8bfb3cc8"
+    },
+    "fba.inseason.weekly_counts.CountSearch.seed_removals": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_counts.CountSearch.seed_removals",
+      "reason": "Legal one-count removals improve incumbent; complete count domains remain unchanged.",
+      "signature": "fbdb780d2d7c77a22363e842cd8d776246b2e60aa5f261b1672f7d793aec346c"
+    },
+    "fba.inseason.weekly_counts.CountSearch.consider": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_counts.CountSearch.consider",
+      "reason": "Exact legal count composition feeds registered sample mean and score calibration; tolerance and canonical key select incumbent.",
+      "signature": "b916ac8d17d0f05ac75a2a704f96236763404424e37ab506c4e4379fe0a5e556"
+    },
+    "fba.inseason.weekly_counts.CountSearch.canonical_counts": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_counts.CountSearch.canonical_counts",
+      "reason": "Restores canonical group index order from heuristic traversal indices.",
+      "signature": "e8b3a4510957d028bdc13a79d0bd214123ecc59449227b50ef8043bcf6473042"
+    },
+    "fba.inseason.weekly_counts.CountSearch.pruned": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_counts.CountSearch.pruned",
+      "reason": "Certified score ceiling and attainable starter-count/canonical-key inequalities determine safe pruning.",
+      "signature": "fcbf09828b96052f58108e8c38877aac24d87dd56e5447e700e37438f40bb7fe"
+    },
+    "fba.inseason.weekly_counts.CountSearch.visit": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_counts.CountSearch.visit",
+      "reason": "Traverses every remaining integer count with certified capacity pruning and registered threshold accumulation.",
+      "signature": "e34bbed8ad291d698f64c01c05eb527d4b3427bfb35c4989c4b3f4306f281d3c"
+    },
+    "fba.inseason.weekly_counts.grouped_margins": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_counts.grouped_margins",
+      "reason": "Batches independent prefix contributions through the same threshold owner; bounded chunks and stable indices retain all choices.",
+      "signature": "121d2d0e536773e717a364539edab83d9214d2df284975e56b66cdde93e43697"
+    },
+    "fba.inseason.weekly_samples.CountSamples.create": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_samples.CountSamples.create",
+      "reason": "Sampling-profile identity admits only exchangeable generated draws; deterministic prefixes compose per-game samples, including derived stats.",
+      "signature": "ee1b3f1131358a5f26332e658bf7466d8bc545bf9fd6b0b3370cae1c03adcfa1"
+    },
+    "fba.inseason.weekly_samples.CountSamples.counts": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_samples.CountSamples.counts",
+      "reason": "Counts selected player appearances per verified sampling group.",
+      "signature": "7f55b9e7e4207a89d0b9983bd10e4ffc3f6a9527bd9156327bf6fb4a4c5ffa91"
+    },
+    "fba.inseason.weekly_samples.CountSamples.total": {
+      "role": "composition",
+      "owner": "fba.inseason.weekly_samples.CountSamples.total",
+      "reason": "Adds fixed actual stats and one rounded sampled prefix per group in canonical first-appearance order.",
+      "signature": "512f68e7e1373e232f21b570c32a9d73d31c152674e0116ff5ba08f70374bd5c"
+    },
+    "fba.inseason.weekly_samples.lineup_samples": {
+      "role": "structure",
+      "owner": "fba.inseason.weekly_samples.lineup_samples",
+      "reason": "Selects the projected roster and available game cutoff for each date before invoking the shared sample-composition owner.",
+      "signature": "554227f4ec065836722d8d1df8e7ab4dc6b22684a8d88f2f874b85521c29f40a"
+    },
+    "fba.inseason.screening.Screening.create": {
+      "role": "composition",
+      "owner": "fba.inseason.screening.Screening.create",
+      "reason": "Registered category values, sample moments, z and normal formulas prepare one immutable team baseline for a candidate batch.",
+      "signature": "320f2ab0fd75fd735afc1d50823305f5298a7eb56f0e6f37935de1dfeeda760c"
+    },
+    "fba.inseason.screening.Screening.contribution": {
+      "role": "composition",
+      "owner": "fba.inseason.screening.Screening.contribution",
+      "reason": "Counts remaining scheduled games and caches registered product results for each player/date/sign within this batch.",
+      "signature": "e81e46735d375090150055e1cedfa69f6fe4ef9db2bfd31330822475c23e789f"
+    },
+    "fba.inseason.screening.Screening.score": {
+      "role": "composition",
+      "owner": "fba.inseason.screening.Screening.score",
+      "reason": "Preserves chronological per-stat move accumulation and composes registered category, z, normal and difference formulas using frozen baseline moments.",
+      "signature": "73d9dcca218f2a89313e8f500bd896702ecf2eb259dca1f8b171926aeb26a348"
     }
   },
   "source_files": {

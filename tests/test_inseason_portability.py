@@ -100,6 +100,7 @@ def portable_results():
                 for p in projection.players
             ],
             "week": {
+                "sample_coupling": week.sample_coupling,
                 "score": week.score,
                 "categories": [c.probability for c in week.categories],
                 "lineups": [d.model_dump(mode="json") for d in week.lineups],

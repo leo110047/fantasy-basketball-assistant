@@ -2,18 +2,15 @@ from collections.abc import Callable, Iterator
 from datetime import date, datetime, timedelta
 from hashlib import sha256
 
-import numpy as np
-
 from fba.contracts.base import DataError
 from fba.contracts.inseason import FreeAgent, InseasonPreferences, WeekForecast
 from fba.contracts.inseason_results import AddPlan, RosterMove
-from fba.formulas.categories import category_values
 from fba.formulas.registry import evaluate
-from fba.formulas.simulation import mean_array, nonnegative_samples, variance_array
 from fba.inseason.drop_candidates import prioritized_drops
 from fba.inseason.forecast import category_changes
 from fba.inseason.matchup import Simulation
 from fba.inseason.roster_timeline import RosterChange
+from fba.inseason.screening import Screening
 from fba.inseason.season import MissingSeasonOpponent, season_value
 
 
@@ -21,8 +18,8 @@ def legal_roster(sim: Simulation, roster: tuple[str, ...], on: date) -> bool:
     capacity = len(sim.league.starter_slots) + sim.league.bench_slots
     if len(roster) > capacity or len(set(roster)) != len(roster):
         return False
-    positions = {p.player.id: p.player.positions for p in sim.projection(on).players}
-    if set(roster) - positions.keys():
+    players = sim.player_index.get(sim.projection(on))
+    if set(roster) - players.keys():
         return False
     return True  # Yahoo permits unfilled starter slots on an otherwise valid roster.
 
@@ -49,6 +46,7 @@ def changed_simulation(sim: Simulation, team: str, moves: tuple[RosterMove, ...]
         untouchable=tuple(sim.untouchable),
     )
     child.projections, child.draws = sim.projections, sim.draws
+    child.draw_profiles = sim.draw_profiles
     child.projection_profiles = sim.projection_profiles
     child.priority_cache = sim.priority_cache
     child.project_injury_returns = sim.project_injury_returns
@@ -58,6 +56,7 @@ def changed_simulation(sim: Simulation, team: str, moves: tuple[RosterMove, ...]
         # Reuse the existing ROS pool without mixing it with weekly draws.
         # Forecast/lineup caches remain private to this transition scenario.
         child.season().draws = sim.season_engine.draws
+        child.season().draw_profiles = sim.season_engine.draw_profiles
     if any(a.effective_on > b.effective_on for a, b in zip(moves, moves[1:], strict=False)):
         raise DataError("recommendations: moves must be in chronological order")
     child.transitions = sim.transitions.copy()
@@ -70,54 +69,7 @@ def quick_score(
 ) -> float:
     if not key_categories:
         return 0.0  # Exhaustive/reference policies do not need screening scores.
-    week = next(w for w in sim.league.matchups if w.start <= moves[-1].effective_on <= w.end)
-    pair = next(
-        p
-        for p in sim.snapshot.pairings
-        if p.week_id == week.id and sim.snapshot.mine in (p.home, p.away)
-    )
-    opponent = pair.away if pair.home == sim.snapshot.mine else pair.home
-    a, _ = sim.total(sim.snapshot.mine, week.id)
-    b, _ = sim.total(opponent, week.id)
-    # Compare every prefix against the same original team. This remains a raw
-    # expected-game screening approximation; evaluate_plan owns legal lineups.
-    deltas: dict[str, float] = {}
-    for move in moves:
-        projection = {p.player.id: p for p in sim.projection(move.effective_on).players}
-        for pid, sign in ((move.add, 1), (move.drop, -1)):
-            player = projection[pid]
-            games = sum(
-                len(sim.games_on(player.player.team_id, move.effective_on + timedelta(days=day)))
-                for day in range((end - move.effective_on).days + 1)
-            )
-            for stat, value in player.expected.items():
-                contribution = evaluate(
-                    "product", gain=value, probability=float(sign * games)
-                ).result
-                deltas[stat] = deltas.get(stat, 0.0) + contribution
-    shifted = mean_array(a, axis=0) + np.array([deltas.get(s, 0.0) for s in sim.axes])
-    shifted = nonnegative_samples({"values": shifted})
-    total = 0.0
-    for category in sim.league.categories:
-        if category.id not in key_categories:
-            continue
-        own = category_values(a, (category,), sim.axes)[:, 0]
-        rival = category_values(b, (category,), sim.axes)[:, 0]
-        mean_after = float(category_values(shifted, (category,), sim.axes)[0])
-        common = dict(
-            away=float(mean_array(rival)),
-            home_variance=float(variance_array(own)),
-            away_variance=float(variance_array(rival)),
-            limit=1 / sim.params.tolerance.value,
-        )
-        before_z = evaluate("z", home=float(mean_array(own)), **common)
-        after_z = evaluate("z", home=mean_after, **common)
-        total += evaluate(
-            "difference",
-            after=evaluate("normal", z=after_z.result).result,
-            before=evaluate("normal", z=before_z.result).result,
-        ).result
-    return total
+    return Screening.create(sim, end, key_categories).score(moves)
 
 
 def search_context(sim: Simulation, before: WeekForecast) -> tuple[tuple[str, ...], float]:
@@ -366,6 +318,7 @@ def candidate_moves(
         on,
         exhaustive=exhaustive,
     )
+    screening: Screening | None = None
     for free in available.values():
         if free.player_id in roster:
             continue
@@ -384,7 +337,10 @@ def candidate_moves(
             proposed = tuple(p for p in roster if p != drop) + (free.player_id,)
             if legal_roster(sim, proposed, on):
                 move = RosterMove(add=free.player_id, drop=drop, effective_on=on, starter_games=0)
-                result.append((quick_score(sim, (*moves, move), end, keys), (*moves, move)))
+                if keys and screening is None:
+                    screening = Screening.create(sim, end, keys)
+                score = screening.score((*moves, move)) if screening is not None else 0.0
+                result.append((score, (*moves, move)))
     return result
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from itertools import islice, product
 from math import prod
 from typing import TYPE_CHECKING
@@ -18,6 +18,7 @@ from fba.formulas.simulation import mean_array, outward_interval
 from fba.inseason.lineup_bounds import score_ceiling
 from fba.inseason.lineup_space import cached_subsets
 from fba.inseason.weekly_players import PlayerSearch
+from fba.inseason.weekly_samples import CountSamples
 
 if TYPE_CHECKING:
     from fba.inseason.matchup import Simulation
@@ -29,6 +30,7 @@ type LineupKey = tuple[int, tuple[tuple[str, ...], ...]]
 
 @dataclass
 class DayChoices:
+    on: date
     roster: tuple[str, ...]
     draws: dict[str, Array]
     rows: tuple[Assignment, ...]
@@ -64,7 +66,7 @@ def day_choices(
         # Relax uniqueness and allow an empty slot. Every legal assignment is
         # inside these per-slot bounds, in the same floating-point sum order.
         bounds.append((low, high))
-    return DayChoices(active, draws, rows, tuple(bounds))
+    return DayChoices(day.on, active, draws, rows, tuple(bounds))
 
 
 def lineup_key(rows: tuple[Assignment, ...]) -> LineupKey:
@@ -214,7 +216,16 @@ def joint_lineup(
         for day in initial
     )
     actual, _ = sim.actual(team, week)
-    best_total, best = WeeklySearch(sim, days, actual, opponent).run()
+    samples = CountSamples.create(
+        sim, tuple((day.on, day.draws) for day in days), max(sim.as_of, through)
+    )
+    search = WeeklySearch(sim, days, actual, opponent)
+    if samples is None:
+        best_total, best = search.run()
+    else:
+        from fba.inseason.weekly_counts import CountSearch
+
+        best_total, best = CountSearch.create(search, samples).run()
     sim.joint_weeks.add(
         (team, week, tuple(sorted(roster if roster is not None else sim.roster(team))))
     )

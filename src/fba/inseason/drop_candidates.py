@@ -11,6 +11,7 @@ from fba.formulas.simulation import mean_array, nonnegative_samples
 from fba.inseason.matchup import Simulation
 from fba.inseason.priority import matchup_priority
 from fba.inseason.season import season_forecasts
+from fba.inseason.weekly_samples import lineup_samples
 
 
 def prioritized_drops(
@@ -44,10 +45,19 @@ def prioritized_drops(
         opponent = pair.away if pair.home == team.id else pair.home
         forecasts = (engine.week(team.id, opponent, week.id),)
     else:
-        forecasts = season_forecasts(sim, team.id, after=on, include_playoffs=True)
+        known = {p.week_id for p in sim.snapshot.pairings if team.id in (p.home, p.away)}
+        include_playoffs = all(
+            w.id in known for w in sim.league.matchups if w.phase == "playoff" and w.end >= on
+        )
+        # Screening only orders the complete search. An undetermined playoff
+        # bracket must not block F3's regular-season objective. Final strength
+        # evidence still explicitly reports its unknown playoff opponent.
+        forecasts = season_forecasts(sim, team.id, after=on, include_playoffs=include_playoffs)
     for forecast in forecasts:
         own, other, lineups = engine.matchup_totals(team.id, forecast.away, forecast.week_id)
-        _, through = engine.actual(team.id, forecast.week_id)
+        actual, through = engine.actual(team.id, forecast.week_id)
+        days = tuple(day for day in lineups if day.team_id == team.id)
+        samples = lineup_samples(engine, team.id, days, through)
         contributions = {p: np.zeros_like(own) for p in movable}
         for day in lineups:
             if day.team_id != team.id or day.on < on:
@@ -60,14 +70,23 @@ def prioritized_drops(
         before = engine.calibrated_score(float(mean_array(engine.score(own, other)[1]))).result
         for p in movable:
             engine.check_limits()
-            without = engine.calibrated_score(
-                float(
-                    mean_array(
-                        engine.score(
-                            nonnegative_samples({"values": own - contributions[p]}), other
-                        )[1]
-                    )
+            remaining = (
+                samples.total(
+                    actual,
+                    samples.counts(
+                        tuple(
+                            {slot: pid for slot, pid in day.slots.items() if pid != p}
+                            if day.on >= on
+                            else day.slots
+                            for day in days
+                        )
+                    ),
                 )
+                if samples is not None
+                else nonnegative_samples({"values": own - contributions[p]})
+            )
+            without = engine.calibrated_score(
+                float(mean_array(engine.score(remaining, other)[1]))
             ).result
             values[p].append(evaluate("difference", after=before, before=without).result)
     return tuple(
