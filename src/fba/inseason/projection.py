@@ -25,7 +25,7 @@ from fba.core.config import require_members
 from fba.core.inseason import required_statistics
 from fba.formulas.registry import evaluate
 from fba.inseason.adjustments import active_entries
-from fba.inseason.rotation import allocate_rotation, estimate_role
+from fba.inseason.rotation import estimate_role
 
 
 class ProjectionIndex:
@@ -155,6 +155,8 @@ def fallback_prior(
             ).result
             for s in {key for p in peers for key in p.probabilities}
         },
+        source="缺少個人預測；使用已設定的同位置與分鐘群組基準",
+        fallback_statistics=tuple(peers[0].rates),
     )
 
 
@@ -550,12 +552,11 @@ def effective_projection(
                 flags=flags,
             )
         )
-    allocated = allocate_rotation(tuple(result), league, params, known_roles, b2b_teams)
     return EffectiveProjection(
         as_of=as_of,
         on=on,
         parameter_version=params.version,
-        players=tuple(with_expectations(p, league) for p in allocated),
+        players=tuple(with_expectations(p, league) for p in result),
     )
 
 

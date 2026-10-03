@@ -3,11 +3,13 @@ from pathlib import Path
 from typing import Protocol
 from urllib.parse import urlsplit
 
+from pydantic import TypeAdapter, ValidationError
+
 from fba.contracts.archive import ForecastArchive
 from fba.contracts.base import DataError
-from fba.contracts.inseason import PlayerSnapshot, ProjectionRules
+from fba.contracts.inseason import InseasonForecast, PlayerSnapshot, ProjectionRules
 from fba.contracts.yahoo import YahooCatalog
-from fba.data.codec import decode, read_bytes
+from fba.data.codec import checked_json, decode, read_bytes
 from fba.data.yahoo_auth import Transport, http_request
 
 
@@ -39,8 +41,18 @@ class AuthorizedFeed:
         return decode(PlayerSnapshot, result.body, "player_source")
 
 
+def forecast_document(data: bytes, label: str) -> ForecastArchive | InseasonForecast:
+    adapter: TypeAdapter[ForecastArchive | InseasonForecast] = TypeAdapter(
+        ForecastArchive | InseasonForecast
+    )
+    try:
+        return adapter.validate_json(checked_json(data, label))
+    except ValidationError as exc:
+        raise DataError(f"{label}: {exc}") from exc
+
+
 def projection_rules(path: Path, catalog: YahooCatalog) -> ProjectionRules:
-    archive = decode(ForecastArchive, read_bytes(path), str(path))
+    archive = forecast_document(read_bytes(path), str(path))
     defaults = catalog.confirmation_defaults
     return ProjectionRules.model_validate_json(
         json.dumps(

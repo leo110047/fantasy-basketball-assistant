@@ -112,44 +112,44 @@ def test_old_import_cannot_silently_restore_full_participation():
         project(inputs)
 
 
-def test_overfull_known_rotation_reduces_opportunities_without_cutting_conditional_minutes():
+def test_preseason_team_overage_does_not_rewrite_individual_forecasts():
     result = project(rotation_case([35] * 8))
-    assert all(p.minutes == 35 and p.probability == pytest.approx(6 / 7) for p in result.players)
-    assert sum(p.traces["expected:minutes"].result for p in result.players) == pytest.approx(240)
+    assert all(p.minutes == 35 and p.probability == 1.0 for p in result.players)
+    assert sum(p.traces["expected:minutes"].result for p in result.players) == pytest.approx(280)
     assert [p.expected["FGA"] for p in result.players] == pytest.approx(
-        [10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5]
+        [value * 7 / 6 for value in (10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5)]
     )
 
 
-def test_peer_roles_share_only_residual_and_cannot_dilute_known_players():
+def test_missing_role_reminders_do_not_change_other_players_forecasts():
     result = project(rotation_case([40] * 8, known=range(4)))
-    assert all(p.probability == 1 and p.minutes == 40 for p in result.players[:4])
-    assert all(p.probability == 0.5 and p.minutes == 40 for p in result.players[4:])
-    assert sum(p.traces["expected:minutes"].result for p in result.players) == 240
+    assert all(p.probability == 1 and p.minutes == 40 for p in result.players)
+    assert sum(p.traces["expected:minutes"].result for p in result.players) == 320
     assert all(p.flags[0].kind == "missing_role" for p in result.players[4:])
     assert all(p.flags[0].observed is None for p in result.players[4:])
 
 
-def test_no_residual_is_not_a_twenty_minute_role_and_unused_capacity_is_not_upside():
+def test_team_capacity_neither_deletes_unknown_roles_nor_increases_known_roles():
     full = project(rotation_case([40] * 7, known=range(6)))
-    assert full.players[-1].probability == full.players[-1].expected["FGA"] == 0
+    assert full.players[-1].probability == 1.0
+    assert full.players[-1].expected["FGA"] > 0
     partial = project(rotation_case([30], [0.5]))
     assert partial.players[0].probability == 0.5
     assert partial.players[0].traces["expected:minutes"].result == 15
 
 
-def test_manual_minutes_are_preserved_and_overfull_manual_requests_fail():
+def test_manual_minutes_change_only_the_requested_player():
     inputs = rotation_case([40] * 7)
     change = entry(inputs, 48.0)
     result = project(inputs, ledger=AdjustmentLedger(format_version=1, entries=(change,)))
     assert result.players[0].minutes == 48 and result.players[0].probability == 1
-    assert all(p.probability == 0.8 for p in result.players[1:])
+    assert all(p.probability == 1.0 for p in result.players[1:])
     changes = tuple(
         change.model_copy(update={"id": f"manual:{i}", "player_id": p.id, "value": 40.0})
         for i, p in enumerate(inputs[2].players)
     )
-    with pytest.raises(DataError, match="手調預期分鐘超過全隊"):
-        project(inputs, ledger=AdjustmentLedger(format_version=1, entries=changes))
+    overfull = project(inputs, ledger=AdjustmentLedger(format_version=1, entries=changes))
+    assert all(p.minutes == 40 and p.probability == 1.0 for p in overfull.players)
 
 
 def test_explicit_dnps_reduce_probability_without_double_counting_zero_minutes():

@@ -1327,6 +1327,28 @@
           },
           "title": "Probabilities",
           "type": "object"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "fallback_statistics": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Fallback Statistics",
+          "type": "array"
         }
       },
       "required": [

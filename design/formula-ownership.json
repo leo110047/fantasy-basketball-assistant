@@ -149,8 +149,8 @@
     "fba.adapters.inseason_priors.read_priors": {
       "role": "composition",
       "owner": "fba.adapters.inseason_priors.read_priors",
-      "reason": "Registered ratio preserves archived games/season appearance and converts totals to conditional minute rates and shooting probabilities. Explicit zero roles are retained; game-count and coverage comparisons validate imports.",
-      "signature": "a4c2717332d5e695c8a2b3f747a7dba2ce1706ab426b358e44a728a82e2660a8"
+      "reason": "Verifies pinned source digest, season and direct publication time; preserves direct priors without auction allocation. Legacy archives compose registered ratio conversion and validate required statistics.",
+      "signature": "24d6ecd4ec6120935e78f2fcfef2c1f00c11c422ac7dcbc400444cbbcfbfb998"
     },
     "fba.adapters.migration.frozen_calibration": {
       "role": "structure",
@@ -2399,8 +2399,8 @@
     "fba.inseason.projection.effective_projection": {
       "role": "composition",
       "owner": "fba.inseason.projection.effective_projection",
-      "reason": "Composes causal visibility, the shared role estimator, status caps, adjustments and shared team rotation before producing expectations. Set subtraction and timestamp comparisons validate input coverage and roles.",
-      "signature": "facc3b1cade8fdb6a3e4afd57e28a918365b63a8e1b9f58dce5756412169b89a"
+      "reason": "Composes causal visibility, conditional role estimation, status caps and explicit adjustments; preserves individual source priors without team allocation.",
+      "signature": "24461243dfbf9d363cf23aea06e1dd68e2d4962d4f5b8d24aba2efb5c8f4869a"
     },
     "fba.inseason.recommendations.legal_roster": {
       "role": "validation",
@@ -2489,8 +2489,8 @@
     "fba.inseason.sampling.sample_game": {
       "role": "composition",
       "owner": "fba.inseason.sampling.sample_game",
-      "reason": "Samples only positive-minute conditional production history; availability RNG owns all DNPs. With no played history, requires frozen nested Poisson prior rules. Existing registered bootstrap, means, count constraints and derived game formulas own numerical transformations; RNG identity is structural.",
-      "signature": "23bd4b005083eee41ddc43398edffcbe4ac3fd85f9f543425b6148fc6c39191c"
+      "reason": "Composes registered product, ratio, difference and history calibration with frozen nested-count draws. Configured feasibility tolerance admits normalization roundoff only; child draws remain bounded by parent draws. Production history excludes explicit DNP rows, whose probability is sampled once.",
+      "signature": "bee4f3230d408d2027b9aeea787922077789c5c5b34dd41ec4b9df7b3f2e8e8e"
     },
     "fba.inseason.season.season_value": {
       "role": "composition",
@@ -3167,7 +3167,7 @@
     "fba.inseason.projection.with_expectations": {
       "role": "composition",
       "owner": "fba.inseason.projection.with_expectations",
-      "reason": "Registered product, expectation and linear compute minutes, base counts and linear derived counts only after shared team rotation allocation.",
+      "reason": "Registered product, expectation and linear compute minutes, base counts and linear derived counts from each effective individual profile, without rewriting team budgets.",
       "signature": "644e63301c4db26f3652740a57d83a8b76da1a767de4b28a6ea0d6f56b1527f3"
     },
     "fba.inseason.rotation.estimate_role": {
@@ -3176,11 +3176,11 @@
       "reason": "Registered minutes blends only observed positive appearances; registered blend estimates appearance from explicit positive/zero minute records with the archived games prior. Count sum is observed evidence.",
       "signature": "472260556cdf697fda5ec22af9d68ca83f77084f216ffd68e4b4c62bb8afd5ea"
     },
-    "fba.inseason.rotation.allocate_team": {
-      "role": "composition",
-      "owner": "fba.inseason.rotation.allocate_team",
-      "reason": "Registered linear, budget_fraction, product and difference allocate existing team minute capacity by manual, known and missing roles. Addition with numeric tolerance and max with zero enforce budget bounds; they do not define a second forecast equation.",
-      "signature": "fd38259daa7e3320ca7ad66c52325cc70c2c284096787136de585462484ff0e1"
+    "fba.adapters.inseason_priors.validate_direct_priors": {
+      "signature": "a07c57b5d3398e37b42fdf083917d1e9ffd4faf52f93abc463fbfc0c665dc22d",
+      "role": "validation",
+      "owner": "fba.adapters.inseason_priors.validate_direct_priors",
+      "reason": "Validate direct source identity, required fields and physical shooting consistency; registered ratio checks supplied probabilities against supplied made and attempted rates without revising forecasts."
     }
   },
   "source_files": {
@@ -3212,7 +3212,7 @@
       "formula_ids": []
     },
     "src/fba/apps/inseason/static/views.js": {
-      "sha256": "05852930bec11ae686c77b06c0a9059b86369dabfbd676c5b6819c61b99a0bfb",
+      "sha256": "3bd9e5d4cf446a4c30ebbbf377c45dde5cda0fbb004dc9c8dcb1d6047e9ef7f4",
       "role": "composition",
       "reason": "Displays server projection/forecast/trade/review/Today results and registered traces; arithmetic only converts percent controls/time countdown or compares existing values for ordering. Weekly displayed category totals/ratios and both weekly/cumulative calibration-bin means render retained backend traces; old records have no fabricated evidence. Applied adjustment multipliers, acceptance-fit Log loss and populated acceptance bins render shared traces. Fitted coefficients are solver outputs and source/count/date values are facts or grouping structure. Player category means and ratios render the backend view, with no browser scoring arithmetic; minute columns distinguish conditional and expected minutes.",
       "formula_ids": [

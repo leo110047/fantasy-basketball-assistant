@@ -11,7 +11,12 @@ from fba.contracts.auction import DraftState
 from fba.contracts.backtest import ReplayDocument
 from fba.contracts.config import LeagueRules, ModelDocument, SeasonConfig
 from fba.contracts.data import IdentityMap, ManualAdjustments
-from fba.contracts.inseason import InseasonLeague, InseasonParameters, PlayerSnapshot
+from fba.contracts.inseason import (
+    InseasonForecast,
+    InseasonLeague,
+    InseasonParameters,
+    PlayerSnapshot,
+)
 from fba.contracts.inseason_backtest import BacktestStudy
 from fba.contracts.inseason_replay import PolicyReplayStudy
 
@@ -31,6 +36,7 @@ def test_runtime_types_own_schemas():
         ("identity-map", IdentityMap),
         ("manual-adjustments", ManualAdjustments),
         ("inseason-league", InseasonLeague),
+        ("inseason-forecast", InseasonForecast),
         ("inseason-parameters", InseasonParameters),
         ("inseason-players", PlayerSnapshot),
         ("inseason-backtest", BacktestStudy),

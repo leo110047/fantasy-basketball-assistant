@@ -14,6 +14,7 @@ from fba.contracts.config import (
     Matchup,
     StarterSlot,
     Term,
+    ValidatedConfig,
 )
 from fba.contracts.data import Digest
 from fba.contracts.formula import ArrayFormulaTrace, FormulaTrace
@@ -217,6 +218,8 @@ class PlayerPrior(Record):
     minutes: Nonnegative
     rates: dict[str, Nonnegative]
     probabilities: dict[str, Probability]
+    source: Text | None = None
+    fallback_statistics: tuple[Text, ...] = ()
 
 
 class FrozenPriors(Record):
@@ -227,6 +230,14 @@ class FrozenPriors(Record):
     known_at: AwareDatetime
     players: tuple[PlayerPrior, ...]
     distribution: DistributionParameters | None = None
+
+
+class InseasonForecast(Record):
+    """Direct preseason priors, independent of auction valuation or team allocation."""
+
+    format_version: Literal[1]
+    config: ValidatedConfig
+    priors: FrozenPriors
 
 
 class PlayerSnapshot(Record):

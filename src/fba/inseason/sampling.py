@@ -87,14 +87,22 @@ def sample_game(
                 if parent not in league.base_stats:
                     raise DataError(f"prior.distribution.{child}: missing parent {parent}")
                 i, j = (league.base_stats.index(s) for s in (child, parent))
-                if target[i] > target[j]:
-                    raise DataError(f"prior.distribution.{child}: mean exceeds parent {parent}")
-                probability = evaluate(
-                    "ratio",
-                    numerator=float(target[i]),
-                    denominator=float(target[j]),
-                    zero_value=0.0,
+                excess = evaluate(
+                    "difference", before=float(target[j]), after=float(target[i])
                 ).result
+                if excess > distribution.feasibility_tolerance:
+                    raise DataError(f"prior.distribution.{child}: mean exceeds parent {parent}")
+                # Independently normalized rates can differ by a floating-point ULP
+                # at an exact child=parent boundary; retain the physical draw limit.
+                probability = min(
+                    1.0,
+                    evaluate(
+                        "ratio",
+                        numerator=float(target[i]),
+                        denominator=float(target[j]),
+                        zero_value=0.0,
+                    ).result,
+                )
                 sampled[:, i] = random(child + ":nested").binomial(
                     sampled[:, j].astype(np.int64), probability
                 )

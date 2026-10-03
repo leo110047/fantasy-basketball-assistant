@@ -154,7 +154,7 @@ function nbaTeamsView(ctx) {
       el("button",{class:"small",onClick:()=>ctx.ignore(f)},"暫時忽略"))
   ]));
   const content = el("div", {}, section("預測提醒", flags.length ? disclosure(`查看全聯盟 ${flags.length} 項提醒`, table(["球員","球隊","理由","模型／觀察","處理"],flags)) : empty("目前沒有未忽略的模型旗標。來源與 Yahoo 設定問題請看資料與同步頁。")), section(selected,
-    el("div", { class: "row" }, el("strong", {}, `全隊預期分鐘 ${number(summary.minutes.result, 1)} / ${number(summary.budget.result, 1)}`), el("span", { class: summary.difference.result > ctx.data.parameters.tolerance.value ? "warning" : "muted" }, `差距 ${number(summary.difference.result, 1)}；已按出賽與輪替機率分配`)),
+    el("div", { class: "row" }, el("strong", {}, `全隊預期分鐘 ${number(summary.minutes.result, 1)} / ${number(summary.budget.result, 1)}`), el("span", { class: summary.difference.result > ctx.data.parameters.tolerance.value ? "warning" : "muted" }, `差距 ${number(summary.difference.result, 1)}；僅檢查加總，不自動縮減個人預測`)),
     [summary.minutes, summary.budget, summary.difference].map(t => formula(t, ctx.data.formulas)),
     el("p", {}, `本週 ${summary.week_games ?? "—"} 場 · 下週 ${summary.next_week_games ?? "—"} 場`),
     el("p", { class: "muted" }, `背靠背第二天：${summary.back_to_back.join("、") || "沒有已公布場次"}`),
@@ -184,6 +184,7 @@ export function playerCard(ctx, player) {
   return section(player.player.name,
     el("div",{class:"player-overview"},avatar(player.player.name,true),el("p",{},`${player.player.team_abbreviation ?? player.player.team_id} · ${player.player.positions.join(" / ")}`),el("button",{class:"primary",onClick:()=>ctx.edit(player)},"調整預測")),
     el("p", {}, `${player.player.team_id} · ${player.player.positions.join(" / ")} · 出賽／輪替 ${percent(player.probability)} · 出賽時分鐘 ${number(player.minutes, 1)} · 預期分鐘 ${number(player.traces["expected:minutes"].result, 1)}`),
+    player.prior.source ? el("p", {class:"muted"}, `季前基準：${player.prior.source}${player.prior.fallback_statistics?.length ? `；缺少的 ${player.prior.fallback_statistics.join("、")} 使用另行提供的備用數據` : ""}`) : null,
     el("p", {}, `分鐘手調：${manual("minutes")} · 出賽手調：${manual("q")}`),
     minutesChart(player, ctx.data.parameters.fields), formula(player.traces.minutes, ctx.data.formulas),
     player.adjustments.map(entry => {

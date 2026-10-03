@@ -1,0 +1,3205 @@
+{
+  "$defs": {
+    "Assumption": {
+      "additionalProperties": false,
+      "properties": {
+        "field_path": {
+          "minLength": 1,
+          "title": "Field Path",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "field_path",
+        "evidence"
+      ],
+      "title": "Assumption",
+      "type": "object"
+    },
+    "AuctionModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 5,
+          "minimum": 5,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit"
+      ],
+      "title": "AuctionModel",
+      "type": "object"
+    },
+    "AvailabilityModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 11,
+          "minimum": 11,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        },
+        "availability_tail": {
+          "$ref": "#/$defs/AvailabilityTail"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense",
+        "availability_tail"
+      ],
+      "title": "AvailabilityModel",
+      "type": "object"
+    },
+    "AvailabilityTail": {
+      "additionalProperties": false,
+      "properties": {
+        "lower_anchor_games": {
+          "exclusiveMinimum": 0,
+          "title": "Lower Anchor Games",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "lower_anchor_games",
+        "evidence"
+      ],
+      "title": "AvailabilityTail",
+      "type": "object"
+    },
+    "CalculationModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 3,
+          "minimum": 3,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation"
+      ],
+      "title": "CalculationModel",
+      "type": "object"
+    },
+    "CalibrationMethod": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "const": "ordinary_least_squares",
+          "title": "Value",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "value",
+        "evidence"
+      ],
+      "title": "CalibrationMethod",
+      "type": "object"
+    },
+    "Category": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "formula": {
+          "discriminator": {
+            "mapping": {
+              "linear": "#/$defs/Linear",
+              "ratio": "#/$defs/Ratio"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Linear"
+            },
+            {
+              "$ref": "#/$defs/Ratio"
+            }
+          ],
+          "title": "Formula"
+        },
+        "direction": {
+          "enum": [
+            "higher",
+            "lower"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "comparison_decimals": {
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Comparison Decimals",
+          "type": "integer"
+        },
+        "tie_value": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Tie Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "formula",
+        "direction",
+        "comparison_decimals",
+        "tie_value"
+      ],
+      "title": "Category",
+      "type": "object"
+    },
+    "CategoryFloor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "exclusiveMinimum": 0,
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "value"
+      ],
+      "title": "CategoryFloor",
+      "type": "object"
+    },
+    "Columns": {
+      "additionalProperties": false,
+      "properties": {
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "positions": {
+          "minLength": 1,
+          "title": "Positions",
+          "type": "string"
+        },
+        "rank": {
+          "minLength": 1,
+          "title": "Rank",
+          "type": "string"
+        },
+        "projected_price": {
+          "minLength": 1,
+          "title": "Projected Price",
+          "type": "string"
+        },
+        "average_price": {
+          "minLength": 1,
+          "title": "Average Price",
+          "type": "string"
+        }
+      },
+      "required": [
+        "player_id",
+        "name",
+        "positions",
+        "rank",
+        "projected_price",
+        "average_price"
+      ],
+      "title": "Columns",
+      "type": "object"
+    },
+    "ConfigBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "league": {
+          "$ref": "#/$defs/ConfigRef"
+        },
+        "season": {
+          "$ref": "#/$defs/ConfigRef"
+        },
+        "model": {
+          "$ref": "#/$defs/ConfigRef"
+        }
+      },
+      "required": [
+        "league",
+        "season",
+        "model"
+      ],
+      "title": "ConfigBundle",
+      "type": "object"
+    },
+    "ConfigRef": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "minLength": 1,
+          "title": "Schema Id",
+          "type": "string"
+        },
+        "input_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "effective_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Effective Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_id",
+        "input_sha256",
+        "effective_sha256"
+      ],
+      "title": "ConfigRef",
+      "type": "object"
+    },
+    "DistributionParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Stat Ids",
+          "type": "array"
+        },
+        "rounding_groups": {
+          "items": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rounding Groups",
+          "type": "array"
+        },
+        "nested_counts": {
+          "items": {
+            "$ref": "#/$defs/NestedCount"
+          },
+          "title": "Nested Counts",
+          "type": "array"
+        },
+        "scoring_stat": {
+          "minLength": 1,
+          "title": "Scoring Stat",
+          "type": "string"
+        },
+        "scoring_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Scoring Terms",
+          "type": "array"
+        },
+        "threshold_stat": {
+          "minLength": 1,
+          "title": "Threshold Stat",
+          "type": "string"
+        },
+        "count_pseudocount": {
+          "minimum": 0,
+          "title": "Count Pseudocount",
+          "type": "number"
+        },
+        "attempt_pseudocount": {
+          "minimum": 0,
+          "title": "Attempt Pseudocount",
+          "type": "number"
+        },
+        "search_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Search Iterations",
+          "type": "integer"
+        },
+        "integration_batch_size": {
+          "exclusiveMinimum": 0,
+          "title": "Integration Batch Size",
+          "type": "integer"
+        },
+        "feasibility_tolerance": {
+          "minimum": 0,
+          "title": "Feasibility Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "stat_ids",
+        "rounding_groups",
+        "nested_counts",
+        "scoring_stat",
+        "scoring_terms",
+        "threshold_stat",
+        "count_pseudocount",
+        "attempt_pseudocount",
+        "search_iterations",
+        "integration_batch_size",
+        "feasibility_tolerance",
+        "evidence"
+      ],
+      "title": "DistributionParameters",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "Assumption",
+            "source",
+            "backtest"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "reference": {
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "reference",
+        "as_of",
+        "reason"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "FitParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "samples": {
+          "exclusiveMinimum": 0,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "opponent_seed": {
+          "minimum": 0,
+          "title": "Opponent Seed",
+          "type": "integer"
+        },
+        "health_samples": {
+          "exclusiveMinimum": 0,
+          "title": "Health Samples",
+          "type": "integer"
+        },
+        "health_seed": {
+          "minimum": 0,
+          "title": "Health Seed",
+          "type": "integer"
+        },
+        "health_blocks": {
+          "exclusiveMinimum": 0,
+          "title": "Health Blocks",
+          "type": "integer"
+        },
+        "mean_missed_games": {
+          "exclusiveMinimum": 0,
+          "title": "Mean Missed Games",
+          "type": "number"
+        },
+        "forecast_days": {
+          "exclusiveMinimum": 0,
+          "title": "Forecast Days",
+          "type": "integer"
+        },
+        "unavailable_status": {
+          "minLength": 1,
+          "title": "Unavailable Status",
+          "type": "string"
+        },
+        "availability_floor": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Availability Floor",
+          "type": "number"
+        },
+        "category_floors": {
+          "items": {
+            "$ref": "#/$defs/CategoryFloor"
+          },
+          "title": "Category Floors",
+          "type": "array"
+        },
+        "bandwidth": {
+          "exclusiveMinimum": 0,
+          "title": "Bandwidth",
+          "type": "number"
+        },
+        "gradient_fraction": {
+          "exclusiveMinimum": 0,
+          "title": "Gradient Fraction",
+          "type": "number"
+        },
+        "gradient_floor": {
+          "exclusiveMinimum": 0,
+          "title": "Gradient Floor",
+          "type": "number"
+        },
+        "steps": {
+          "items": {
+            "exclusiveMinimum": 0,
+            "maximum": 1,
+            "type": "number"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "improvement_tolerance": {
+          "exclusiveMinimum": 0,
+          "title": "Improvement Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "samples",
+        "seed",
+        "opponent_seed",
+        "health_samples",
+        "health_seed",
+        "health_blocks",
+        "mean_missed_games",
+        "forecast_days",
+        "unavailable_status",
+        "availability_floor",
+        "category_floors",
+        "bandwidth",
+        "gradient_fraction",
+        "gradient_floor",
+        "steps",
+        "improvement_tolerance",
+        "evidence"
+      ],
+      "title": "FitParameters",
+      "type": "object"
+    },
+    "FrozenPriors": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "const": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "season_id": {
+          "minLength": 1,
+          "title": "Season Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "source_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Source Sha256",
+          "type": "string"
+        },
+        "known_at": {
+          "format": "date-time",
+          "title": "Known At",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/PlayerPrior"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DistributionParameters"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "format_version",
+        "season_id",
+        "version",
+        "source_sha256",
+        "known_at",
+        "players"
+      ],
+      "title": "FrozenPriors",
+      "type": "object"
+    },
+    "HealthModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 8,
+          "minimum": 8,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health"
+      ],
+      "title": "HealthModel",
+      "type": "object"
+    },
+    "HealthParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "injury_share": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Injury Share",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "injury_share",
+        "evidence"
+      ],
+      "title": "HealthParameters",
+      "type": "object"
+    },
+    "HistoryShare": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_id": {
+          "minLength": 1,
+          "title": "Stat Id",
+          "type": "string"
+        },
+        "parent_stat": {
+          "minLength": 1,
+          "title": "Parent Stat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stat_id",
+        "parent_stat"
+      ],
+      "title": "HistoryShare",
+      "type": "object"
+    },
+    "InjurySlot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "count": {
+          "exclusiveMinimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "eligible_statuses": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Eligible Statuses",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "count",
+        "eligible_statuses"
+      ],
+      "title": "InjurySlot",
+      "type": "object"
+    },
+    "LeagueRules": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "league_id": {
+          "minLength": 1,
+          "title": "League Id",
+          "type": "string"
+        },
+        "teams": {
+          "minimum": 2,
+          "title": "Teams",
+          "type": "integer"
+        },
+        "budget": {
+          "exclusiveMinimum": 0,
+          "title": "Budget",
+          "type": "integer"
+        },
+        "minimum_bid": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Bid",
+          "type": "integer"
+        },
+        "bid_increment": {
+          "exclusiveMinimum": 0,
+          "title": "Bid Increment",
+          "type": "integer"
+        },
+        "timezone": {
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Positions",
+          "type": "array"
+        },
+        "starter_slots": {
+          "items": {
+            "$ref": "#/$defs/StarterSlot"
+          },
+          "minItems": 1,
+          "title": "Starter Slots",
+          "type": "array"
+        },
+        "bench_slots": {
+          "minimum": 0,
+          "title": "Bench Slots",
+          "type": "integer"
+        },
+        "injury_slots": {
+          "items": {
+            "$ref": "#/$defs/InjurySlot"
+          },
+          "title": "Injury Slots",
+          "type": "array"
+        },
+        "categories": {
+          "items": {
+            "$ref": "#/$defs/Category"
+          },
+          "minItems": 1,
+          "title": "Categories",
+          "type": "array"
+        },
+        "scoring": {
+          "$ref": "#/$defs/Scoring"
+        },
+        "transactions": {
+          "$ref": "#/$defs/Transactions"
+        },
+        "lineup": {
+          "$ref": "#/$defs/Lineup"
+        },
+        "matchups": {
+          "items": {
+            "$ref": "#/$defs/Matchup"
+          },
+          "minItems": 1,
+          "title": "Matchups",
+          "type": "array"
+        },
+        "playoffs": {
+          "$ref": "#/$defs/Playoffs"
+        },
+        "trade_deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Trade Deadline"
+        },
+        "assumptions": {
+          "items": {
+            "$ref": "#/$defs/Assumption"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "league_id",
+        "teams",
+        "budget",
+        "minimum_bid",
+        "bid_increment",
+        "timezone",
+        "positions",
+        "starter_slots",
+        "bench_slots",
+        "injury_slots",
+        "categories",
+        "scoring",
+        "transactions",
+        "lineup",
+        "matchups",
+        "playoffs",
+        "trade_deadline",
+        "assumptions"
+      ],
+      "title": "LeagueRules",
+      "type": "object"
+    },
+    "Linear": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "linear",
+          "title": "Kind",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Terms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "terms"
+      ],
+      "title": "Linear",
+      "type": "object"
+    },
+    "Lineup": {
+      "additionalProperties": false,
+      "properties": {
+        "lock_mode": {
+          "enum": [
+            "daily",
+            "weekly"
+          ],
+          "title": "Lock Mode",
+          "type": "string"
+        },
+        "lock_at": {
+          "enum": [
+            "period_start",
+            "first_game",
+            "player_game"
+          ],
+          "title": "Lock At",
+          "type": "string"
+        },
+        "lock_local_time": {
+          "format": "time",
+          "title": "Lock Local Time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "lock_mode",
+        "lock_at",
+        "lock_local_time"
+      ],
+      "title": "Lineup",
+      "type": "object"
+    },
+    "ManagedPricingModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 9,
+          "minimum": 9,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing"
+      ],
+      "title": "ManagedPricingModel",
+      "type": "object"
+    },
+    "ManagementParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "long_forecast_days": {
+          "exclusiveMinimum": 0,
+          "title": "Long Forecast Days",
+          "type": "integer"
+        },
+        "candidate_limit": {
+          "exclusiveMinimum": 0,
+          "title": "Candidate Limit",
+          "type": "integer"
+        },
+        "reserve_adds": {
+          "minimum": 0,
+          "title": "Reserve Adds",
+          "type": "integer"
+        },
+        "minimum_gain": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Gain",
+          "type": "number"
+        },
+        "opportunity_cost": {
+          "minimum": 0,
+          "title": "Opportunity Cost",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "long_forecast_days",
+        "candidate_limit",
+        "reserve_adds",
+        "minimum_gain",
+        "opportunity_cost",
+        "evidence"
+      ],
+      "title": "ManagementParameters",
+      "type": "object"
+    },
+    "ManualCapture": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "retrieved_at": {
+          "format": "date-time",
+          "title": "Retrieved At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sha256",
+        "retrieved_at"
+      ],
+      "title": "ManualCapture",
+      "type": "object"
+    },
+    "MarketParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "volatility": {
+          "minimum": 0,
+          "title": "Volatility",
+          "type": "number"
+        },
+        "wealth_lower": {
+          "minimum": 0,
+          "title": "Wealth Lower",
+          "type": "number"
+        },
+        "wealth_upper": {
+          "minimum": 0,
+          "title": "Wealth Upper",
+          "type": "number"
+        },
+        "wealth_exponent": {
+          "minimum": 0,
+          "title": "Wealth Exponent",
+          "type": "number"
+        },
+        "competition_bid": {
+          "exclusiveMinimum": 0,
+          "title": "Competition Bid",
+          "type": "integer"
+        },
+        "focus_difference": {
+          "default": 5.0,
+          "minimum": 0,
+          "title": "Focus Difference",
+          "type": "number"
+        },
+        "focus_discount": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Focus Discount",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "format_version": {
+          "const": 2,
+          "title": "Format Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "volatility",
+        "wealth_lower",
+        "wealth_upper",
+        "wealth_exponent",
+        "competition_bid",
+        "evidence",
+        "format_version"
+      ],
+      "title": "MarketParameters",
+      "type": "object"
+    },
+    "Matchup": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "start": {
+          "format": "date",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date",
+          "title": "End",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "regular",
+            "playoff",
+            "postseason"
+          ],
+          "title": "Phase",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "start",
+        "end",
+        "phase"
+      ],
+      "title": "Matchup",
+      "type": "object"
+    },
+    "ModelConfig": {
+      "additionalProperties": false,
+      "description": "Model format 1: calibration settings for snapshot construction.",
+      "properties": {
+        "format_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration"
+      ],
+      "title": "ModelConfig",
+      "type": "object"
+    },
+    "NestedCount": {
+      "additionalProperties": false,
+      "properties": {
+        "child": {
+          "minLength": 1,
+          "title": "Child",
+          "type": "string"
+        },
+        "parent": {
+          "minLength": 1,
+          "title": "Parent",
+          "type": "string"
+        }
+      },
+      "required": [
+        "child",
+        "parent"
+      ],
+      "title": "NestedCount",
+      "type": "object"
+    },
+    "Observed": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "observed",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "Observed",
+      "type": "object"
+    },
+    "Period": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "start": {
+          "format": "date",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "start",
+        "end"
+      ],
+      "title": "Period",
+      "type": "object"
+    },
+    "PlayerPrior": {
+      "additionalProperties": false,
+      "properties": {
+        "appearance_probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Appearance Probability"
+        },
+        "player_id": {
+          "minLength": 1,
+          "title": "Player Id",
+          "type": "string"
+        },
+        "minutes": {
+          "minimum": 0,
+          "title": "Minutes",
+          "type": "number"
+        },
+        "rates": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Rates",
+          "type": "object"
+        },
+        "probabilities": {
+          "additionalProperties": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Probabilities",
+          "type": "object"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "fallback_statistics": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Fallback Statistics",
+          "type": "array"
+        }
+      },
+      "required": [
+        "player_id",
+        "minutes",
+        "rates",
+        "probabilities"
+      ],
+      "title": "PlayerPrior",
+      "type": "object"
+    },
+    "Playoffs": {
+      "additionalProperties": false,
+      "properties": {
+        "team_count": {
+          "exclusiveMinimum": 0,
+          "title": "Team Count",
+          "type": "integer"
+        },
+        "week_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Week Ids",
+          "type": "array"
+        },
+        "seeding": {
+          "items": {
+            "enum": [
+              "record",
+              "head_to_head",
+              "category_record",
+              "seed"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Seeding",
+          "type": "array"
+        },
+        "byes": {
+          "minimum": 0,
+          "title": "Byes",
+          "type": "integer"
+        },
+        "reseed": {
+          "title": "Reseed",
+          "type": "boolean"
+        },
+        "matchup_tie": {
+          "enum": [
+            "higher_seed",
+            "category_record"
+          ],
+          "title": "Matchup Tie",
+          "type": "string"
+        }
+      },
+      "required": [
+        "team_count",
+        "week_ids",
+        "seeding",
+        "byes",
+        "reseed",
+        "matchup_tie"
+      ],
+      "title": "Playoffs",
+      "type": "object"
+    },
+    "PositionPool": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "any_positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Any Positions",
+          "type": "array"
+        },
+        "exact_positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Exact Positions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "any_positions",
+        "exact_positions"
+      ],
+      "title": "PositionPool",
+      "type": "object"
+    },
+    "PreparationModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 4,
+          "minimum": 4,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation"
+      ],
+      "title": "PreparationModel",
+      "type": "object"
+    },
+    "PreparationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "minutes_stat": {
+          "minLength": 1,
+          "title": "Minutes Stat",
+          "type": "string"
+        },
+        "forecast_prior_id": {
+          "minLength": 1,
+          "title": "Forecast Prior Id",
+          "type": "string"
+        },
+        "historical_prior_id": {
+          "minLength": 1,
+          "title": "Historical Prior Id",
+          "type": "string"
+        },
+        "minimum_player_history": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Player History",
+          "type": "integer"
+        },
+        "donor_minimum_history": {
+          "exclusiveMinimum": 0,
+          "title": "Donor Minimum History",
+          "type": "integer"
+        },
+        "donor_minutes_lower": {
+          "minimum": 0,
+          "title": "Donor Minutes Lower",
+          "type": "number"
+        },
+        "donor_minutes_upper": {
+          "minimum": 0,
+          "title": "Donor Minutes Upper",
+          "type": "number"
+        },
+        "position_pools": {
+          "items": {
+            "$ref": "#/$defs/PositionPool"
+          },
+          "minItems": 1,
+          "title": "Position Pools",
+          "type": "array"
+        },
+        "history_shares": {
+          "items": {
+            "$ref": "#/$defs/HistoryShare"
+          },
+          "title": "History Shares",
+          "type": "array"
+        },
+        "historical_games_lower": {
+          "minimum": 0,
+          "title": "Historical Games Lower",
+          "type": "number"
+        },
+        "historical_games_upper": {
+          "minimum": 0,
+          "title": "Historical Games Upper",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "minutes_stat",
+        "forecast_prior_id",
+        "historical_prior_id",
+        "minimum_player_history",
+        "donor_minimum_history",
+        "donor_minutes_lower",
+        "donor_minutes_upper",
+        "position_pools",
+        "history_shares",
+        "historical_games_lower",
+        "historical_games_upper",
+        "evidence"
+      ],
+      "title": "PreparationParameters",
+      "type": "object"
+    },
+    "PricingParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "streaming_slots": {
+          "minimum": 0,
+          "title": "Streaming Slots",
+          "type": "integer"
+        },
+        "upgrades": {
+          "title": "Upgrades",
+          "type": "boolean"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "streaming_slots",
+        "upgrades",
+        "evidence"
+      ],
+      "title": "PricingParameters",
+      "type": "object"
+    },
+    "PriorWeight": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "weight": {
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "weight"
+      ],
+      "title": "PriorWeight",
+      "type": "object"
+    },
+    "ProjectionParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Stat Ids",
+          "type": "array"
+        },
+        "rounding_groups": {
+          "items": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rounding Groups",
+          "type": "array"
+        },
+        "nested_counts": {
+          "items": {
+            "$ref": "#/$defs/NestedCount"
+          },
+          "title": "Nested Counts",
+          "type": "array"
+        },
+        "scoring_stat": {
+          "minLength": 1,
+          "title": "Scoring Stat",
+          "type": "string"
+        },
+        "scoring_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Scoring Terms",
+          "type": "array"
+        },
+        "threshold_stat": {
+          "minLength": 1,
+          "title": "Threshold Stat",
+          "type": "string"
+        },
+        "count_pseudocount": {
+          "minimum": 0,
+          "title": "Count Pseudocount",
+          "type": "number"
+        },
+        "attempt_pseudocount": {
+          "minimum": 0,
+          "title": "Attempt Pseudocount",
+          "type": "number"
+        },
+        "search_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Search Iterations",
+          "type": "integer"
+        },
+        "integration_batch_size": {
+          "exclusiveMinimum": 0,
+          "title": "Integration Batch Size",
+          "type": "integer"
+        },
+        "feasibility_tolerance": {
+          "minimum": 0,
+          "title": "Feasibility Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "prior_weights": {
+          "items": {
+            "$ref": "#/$defs/PriorWeight"
+          },
+          "title": "Prior Weights",
+          "type": "array"
+        }
+      },
+      "required": [
+        "stat_ids",
+        "rounding_groups",
+        "nested_counts",
+        "scoring_stat",
+        "scoring_terms",
+        "threshold_stat",
+        "count_pseudocount",
+        "attempt_pseudocount",
+        "search_iterations",
+        "integration_batch_size",
+        "feasibility_tolerance",
+        "evidence",
+        "prior_weights"
+      ],
+      "title": "ProjectionParameters",
+      "type": "object"
+    },
+    "Ratio": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "ratio",
+          "title": "Kind",
+          "type": "string"
+        },
+        "numerator": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Numerator",
+          "type": "array"
+        },
+        "denominator": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "minItems": 1,
+          "title": "Denominator",
+          "type": "array"
+        },
+        "zero_denominator": {
+          "enum": [
+            "error",
+            "zero",
+            "numerator"
+          ],
+          "title": "Zero Denominator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "numerator",
+        "denominator",
+        "zero_denominator"
+      ],
+      "title": "Ratio",
+      "type": "object"
+    },
+    "ResourceModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 2,
+          "minimum": 2,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ResourceParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation"
+      ],
+      "title": "ResourceModel",
+      "type": "object"
+    },
+    "ResourceParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Stat Ids",
+          "type": "array"
+        },
+        "rounding_groups": {
+          "items": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rounding Groups",
+          "type": "array"
+        },
+        "nested_counts": {
+          "items": {
+            "$ref": "#/$defs/NestedCount"
+          },
+          "title": "Nested Counts",
+          "type": "array"
+        },
+        "scoring_stat": {
+          "minLength": 1,
+          "title": "Scoring Stat",
+          "type": "string"
+        },
+        "scoring_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Scoring Terms",
+          "type": "array"
+        },
+        "threshold_stat": {
+          "minLength": 1,
+          "title": "Threshold Stat",
+          "type": "string"
+        },
+        "count_pseudocount": {
+          "minimum": 0,
+          "title": "Count Pseudocount",
+          "type": "number"
+        },
+        "attempt_pseudocount": {
+          "minimum": 0,
+          "title": "Attempt Pseudocount",
+          "type": "number"
+        },
+        "search_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Search Iterations",
+          "type": "integer"
+        },
+        "integration_batch_size": {
+          "exclusiveMinimum": 0,
+          "title": "Integration Batch Size",
+          "type": "integer"
+        },
+        "feasibility_tolerance": {
+          "minimum": 0,
+          "title": "Feasibility Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "offense_stats": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Offense Stats",
+          "type": "array"
+        },
+        "possession_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Possession Terms",
+          "type": "array"
+        },
+        "second_chance_stat": {
+          "minLength": 1,
+          "title": "Second Chance Stat",
+          "type": "string"
+        },
+        "assist_stat": {
+          "minLength": 1,
+          "title": "Assist Stat",
+          "type": "string"
+        },
+        "made_stat": {
+          "minLength": 1,
+          "title": "Made Stat",
+          "type": "string"
+        },
+        "regulation_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Regulation Minutes",
+          "type": "integer"
+        },
+        "players_on_court": {
+          "exclusiveMinimum": 0,
+          "title": "Players On Court",
+          "type": "integer"
+        },
+        "minimum_cost_scale": {
+          "minimum": 0,
+          "title": "Minimum Cost Scale",
+          "type": "number"
+        },
+        "minimum_usage_scale": {
+          "minimum": 0,
+          "title": "Minimum Usage Scale",
+          "type": "number"
+        }
+      },
+      "required": [
+        "stat_ids",
+        "rounding_groups",
+        "nested_counts",
+        "scoring_stat",
+        "scoring_terms",
+        "threshold_stat",
+        "count_pseudocount",
+        "attempt_pseudocount",
+        "search_iterations",
+        "integration_batch_size",
+        "feasibility_tolerance",
+        "evidence",
+        "offense_stats",
+        "possession_terms",
+        "second_chance_stat",
+        "assist_stat",
+        "made_stat",
+        "regulation_minutes",
+        "players_on_court",
+        "minimum_cost_scale",
+        "minimum_usage_scale"
+      ],
+      "title": "ResourceParameters",
+      "type": "object"
+    },
+    "RosterImport": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "format": {
+          "enum": [
+            "csv",
+            "yahoo_export"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "encoding": {
+          "minLength": 1,
+          "title": "Encoding",
+          "type": "string"
+        },
+        "delimiter": {
+          "maxLength": 1,
+          "minLength": 1,
+          "title": "Delimiter",
+          "type": "string"
+        },
+        "columns": {
+          "$ref": "#/$defs/Columns"
+        }
+      },
+      "required": [
+        "path",
+        "format",
+        "encoding",
+        "delimiter",
+        "columns"
+      ],
+      "title": "RosterImport",
+      "type": "object"
+    },
+    "SampledMarketParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "volatility": {
+          "minimum": 0,
+          "title": "Volatility",
+          "type": "number"
+        },
+        "wealth_lower": {
+          "minimum": 0,
+          "title": "Wealth Lower",
+          "type": "number"
+        },
+        "wealth_upper": {
+          "minimum": 0,
+          "title": "Wealth Upper",
+          "type": "number"
+        },
+        "wealth_exponent": {
+          "minimum": 0,
+          "title": "Wealth Exponent",
+          "type": "number"
+        },
+        "competition_bid": {
+          "exclusiveMinimum": 0,
+          "title": "Competition Bid",
+          "type": "integer"
+        },
+        "focus_difference": {
+          "default": 5.0,
+          "minimum": 0,
+          "title": "Focus Difference",
+          "type": "number"
+        },
+        "focus_discount": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Focus Discount",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "samples": {
+          "exclusiveMinimum": 0,
+          "title": "Samples",
+          "type": "integer"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "normalization_samples": {
+          "exclusiveMinimum": 0,
+          "title": "Normalization Samples",
+          "type": "integer"
+        },
+        "normalization_seed": {
+          "minimum": 0,
+          "title": "Normalization Seed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "volatility",
+        "wealth_lower",
+        "wealth_upper",
+        "wealth_exponent",
+        "competition_bid",
+        "evidence",
+        "samples",
+        "seed",
+        "normalization_samples",
+        "normalization_seed"
+      ],
+      "title": "SampledMarketParameters",
+      "type": "object"
+    },
+    "Scoring": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "h2h_one_win",
+          "title": "Mode",
+          "type": "string"
+        },
+        "week_tie": {
+          "enum": [
+            "tie",
+            "half_win",
+            "loss"
+          ],
+          "title": "Week Tie",
+          "type": "string"
+        },
+        "category_ties": {
+          "enum": [
+            "exclude",
+            "use_tie_value"
+          ],
+          "title": "Category Ties",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "week_tie",
+        "category_ties"
+      ],
+      "title": "Scoring",
+      "type": "object"
+    },
+    "SeasonConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "season_id": {
+          "minLength": 1,
+          "title": "Season Id",
+          "type": "string"
+        },
+        "starts_on": {
+          "format": "date",
+          "title": "Starts On",
+          "type": "string"
+        },
+        "ends_on": {
+          "format": "date",
+          "title": "Ends On",
+          "type": "string"
+        },
+        "snapshot_as_of": {
+          "format": "date-time",
+          "title": "Snapshot As Of",
+          "type": "string"
+        },
+        "previous_season_id": {
+          "minLength": 1,
+          "title": "Previous Season Id",
+          "type": "string"
+        },
+        "roster_import": {
+          "$ref": "#/$defs/RosterImport"
+        },
+        "identity_map_path": {
+          "minLength": 1,
+          "title": "Identity Map Path",
+          "type": "string"
+        },
+        "manual_adjustments_path": {
+          "minLength": 1,
+          "title": "Manual Adjustments Path",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/Source"
+          },
+          "minItems": 1,
+          "title": "Sources",
+          "type": "array"
+        },
+        "stat_definitions": {
+          "items": {
+            "$ref": "#/$defs/StatDefinition"
+          },
+          "minItems": 1,
+          "title": "Stat Definitions",
+          "type": "array"
+        },
+        "assumptions": {
+          "items": {
+            "$ref": "#/$defs/Assumption"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "format_version",
+        "season_id",
+        "starts_on",
+        "ends_on",
+        "snapshot_as_of",
+        "previous_season_id",
+        "roster_import",
+        "identity_map_path",
+        "manual_adjustments_path",
+        "sources",
+        "stat_definitions",
+        "assumptions"
+      ],
+      "title": "SeasonConfig",
+      "type": "object"
+    },
+    "SeasonModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 6,
+          "minimum": 6,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management"
+      ],
+      "title": "SeasonModel",
+      "type": "object"
+    },
+    "SolverParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "time_limit_seconds": {
+          "exclusiveMinimum": 0,
+          "title": "Time Limit Seconds",
+          "type": "number"
+        },
+        "value_tolerance": {
+          "exclusiveMinimum": 0,
+          "title": "Value Tolerance",
+          "type": "number"
+        },
+        "bound_multipliers": {
+          "items": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "minItems": 1,
+          "title": "Bound Multipliers",
+          "type": "array"
+        },
+        "nomination_count": {
+          "exclusiveMinimum": 0,
+          "title": "Nomination Count",
+          "type": "integer"
+        },
+        "result_decimals": {
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Result Decimals",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "time_limit_seconds",
+        "value_tolerance",
+        "bound_multipliers",
+        "nomination_count",
+        "result_decimals",
+        "evidence"
+      ],
+      "title": "SolverParameters",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "projections",
+            "game_logs",
+            "schedule",
+            "rosters",
+            "official_schedule_counts",
+            "historical_projections",
+            "forecast_archive"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "adapter": {
+          "minLength": 1,
+          "title": "Adapter",
+          "type": "string"
+        },
+        "url": {
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "season_code": {
+          "minLength": 1,
+          "title": "Season Code",
+          "type": "string"
+        },
+        "season_id": {
+          "minLength": 1,
+          "title": "Season Id",
+          "type": "string"
+        },
+        "available_as_of": {
+          "format": "date-time",
+          "title": "Available As Of",
+          "type": "string"
+        },
+        "delivery": {
+          "enum": [
+            "fetch",
+            "manual"
+          ],
+          "title": "Delivery",
+          "type": "string"
+        },
+        "manual_file": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Manual File"
+        },
+        "manual_capture": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ManualCapture"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "adapter",
+        "url",
+        "season_code",
+        "season_id",
+        "available_as_of",
+        "delivery",
+        "manual_file",
+        "manual_capture"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "StarterSlot": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "eligible_positions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Eligible Positions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "eligible_positions"
+      ],
+      "title": "StarterSlot",
+      "type": "object"
+    },
+    "StatDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "count",
+            "minutes",
+            "games"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "definition": {
+          "discriminator": {
+            "mapping": {
+              "linear": "#/$defs/Linear",
+              "observed": "#/$defs/Observed",
+              "threshold_count": "#/$defs/ThresholdCount"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Observed"
+            },
+            {
+              "$ref": "#/$defs/Linear"
+            },
+            {
+              "$ref": "#/$defs/ThresholdCount"
+            }
+          ],
+          "title": "Definition"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "unit",
+        "definition"
+      ],
+      "title": "StatDefinition",
+      "type": "object"
+    },
+    "StreamingComparisonModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 13,
+          "minimum": 13,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        },
+        "availability_tail": {
+          "$ref": "#/$defs/AvailabilityTail"
+        },
+        "team_constraints": {
+          "$ref": "#/$defs/TeamConstraints"
+        },
+        "streaming_comparison": {
+          "$ref": "#/$defs/StreamingComparisonParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense",
+        "availability_tail",
+        "team_constraints",
+        "streaming_comparison"
+      ],
+      "title": "StreamingComparisonModel",
+      "type": "object"
+    },
+    "StreamingComparisonParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "slots": {
+          "items": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Slots",
+          "type": "array"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "slots",
+        "evidence"
+      ],
+      "title": "StreamingComparisonParameters",
+      "type": "object"
+    },
+    "TeamBudgetModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 7,
+          "minimum": 7,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes"
+      ],
+      "title": "TeamBudgetModel",
+      "type": "object"
+    },
+    "TeamConstraintModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 12,
+          "minimum": 12,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        },
+        "availability_tail": {
+          "$ref": "#/$defs/AvailabilityTail"
+        },
+        "team_constraints": {
+          "$ref": "#/$defs/TeamConstraints"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense",
+        "availability_tail",
+        "team_constraints"
+      ],
+      "title": "TeamConstraintModel",
+      "type": "object"
+    },
+    "TeamConstraints": {
+      "additionalProperties": false,
+      "properties": {
+        "minutes": {
+          "enum": [
+            "audit",
+            "enforce"
+          ],
+          "title": "Minutes",
+          "type": "string"
+        },
+        "offense": {
+          "enum": [
+            "audit",
+            "enforce"
+          ],
+          "title": "Offense",
+          "type": "string"
+        }
+      },
+      "required": [
+        "minutes",
+        "offense"
+      ],
+      "title": "TeamConstraints",
+      "type": "object"
+    },
+    "TeamMinuteParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "regulation_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Regulation Minutes",
+          "type": "integer"
+        },
+        "players_on_court": {
+          "exclusiveMinimum": 0,
+          "title": "Players On Court",
+          "type": "integer"
+        },
+        "overtime_minutes_per_game": {
+          "minimum": 0,
+          "title": "Overtime Minutes Per Game",
+          "type": "number"
+        },
+        "unmodeled_reserve_minutes": {
+          "minimum": 0,
+          "title": "Unmodeled Reserve Minutes",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "regulation_minutes",
+        "players_on_court",
+        "overtime_minutes_per_game",
+        "unmodeled_reserve_minutes",
+        "evidence"
+      ],
+      "title": "TeamMinuteParameters",
+      "type": "object"
+    },
+    "TeamOffenseModel": {
+      "additionalProperties": false,
+      "properties": {
+        "format_version": {
+          "maximum": 10,
+          "minimum": 10,
+          "title": "Format Version",
+          "type": "integer"
+        },
+        "calibration": {
+          "$ref": "#/$defs/CalibrationMethod"
+        },
+        "projection": {
+          "$ref": "#/$defs/ProjectionParameters"
+        },
+        "valuation": {
+          "$ref": "#/$defs/ValuationParameters"
+        },
+        "preparation": {
+          "$ref": "#/$defs/PreparationParameters"
+        },
+        "market": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarketParameters"
+            },
+            {
+              "$ref": "#/$defs/SampledMarketParameters"
+            }
+          ],
+          "title": "Market"
+        },
+        "solver": {
+          "$ref": "#/$defs/SolverParameters"
+        },
+        "fit": {
+          "$ref": "#/$defs/FitParameters"
+        },
+        "management": {
+          "$ref": "#/$defs/ManagementParameters"
+        },
+        "team_minutes": {
+          "$ref": "#/$defs/TeamMinuteParameters"
+        },
+        "health": {
+          "$ref": "#/$defs/HealthParameters"
+        },
+        "pricing": {
+          "$ref": "#/$defs/PricingParameters"
+        },
+        "team_offense": {
+          "$ref": "#/$defs/TeamOffenseParameters"
+        }
+      },
+      "required": [
+        "format_version",
+        "calibration",
+        "projection",
+        "valuation",
+        "preparation",
+        "market",
+        "solver",
+        "fit",
+        "management",
+        "team_minutes",
+        "health",
+        "pricing",
+        "team_offense"
+      ],
+      "title": "TeamOffenseModel",
+      "type": "object"
+    },
+    "TeamOffenseParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "used_terms": {
+          "items": {
+            "$ref": "#/$defs/Term"
+          },
+          "title": "Used Terms",
+          "type": "array"
+        },
+        "second_chance_stat": {
+          "minLength": 1,
+          "title": "Second Chance Stat",
+          "type": "string"
+        },
+        "scaled_stats": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Scaled Stats",
+          "type": "array"
+        },
+        "assist_stat": {
+          "minLength": 1,
+          "title": "Assist Stat",
+          "type": "string"
+        },
+        "made_stat": {
+          "minLength": 1,
+          "title": "Made Stat",
+          "type": "string"
+        },
+        "historical_minimum_games": {
+          "exclusiveMinimum": 0,
+          "title": "Historical Minimum Games",
+          "type": "integer"
+        },
+        "historical_overtime_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Historical Overtime Minutes",
+          "type": "integer"
+        },
+        "historical_minute_tolerance": {
+          "minimum": 0,
+          "title": "Historical Minute Tolerance",
+          "type": "number"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "used_terms",
+        "second_chance_stat",
+        "scaled_stats",
+        "assist_stat",
+        "made_stat",
+        "historical_minimum_games",
+        "historical_overtime_minutes",
+        "historical_minute_tolerance",
+        "evidence"
+      ],
+      "title": "TeamOffenseParameters",
+      "type": "object"
+    },
+    "Term": {
+      "additionalProperties": false,
+      "properties": {
+        "stat_id": {
+          "minLength": 1,
+          "title": "Stat Id",
+          "type": "string"
+        },
+        "coefficient": {
+          "title": "Coefficient",
+          "type": "number"
+        }
+      },
+      "required": [
+        "stat_id",
+        "coefficient"
+      ],
+      "title": "Term",
+      "type": "object"
+    },
+    "ThresholdCount": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "threshold_count",
+          "title": "Kind",
+          "type": "string"
+        },
+        "stat_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Stat Ids",
+          "type": "array"
+        },
+        "threshold": {
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "minimum_hits": {
+          "exclusiveMinimum": 0,
+          "title": "Minimum Hits",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "stat_ids",
+        "threshold",
+        "minimum_hits"
+      ],
+      "title": "ThresholdCount",
+      "type": "object"
+    },
+    "Transactions": {
+      "additionalProperties": false,
+      "properties": {
+        "adds_per_period": {
+          "minimum": 0,
+          "title": "Adds Per Period",
+          "type": "integer"
+        },
+        "add_periods": {
+          "items": {
+            "$ref": "#/$defs/Period"
+          },
+          "minItems": 1,
+          "title": "Add Periods",
+          "type": "array"
+        },
+        "effective": {
+          "enum": [
+            "same_day",
+            "next_day"
+          ],
+          "title": "Effective",
+          "type": "string"
+        },
+        "cutoff_local_time": {
+          "format": "time",
+          "title": "Cutoff Local Time",
+          "type": "string"
+        },
+        "waiver_days": {
+          "minimum": 0,
+          "title": "Waiver Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "adds_per_period",
+        "add_periods",
+        "effective",
+        "cutoff_local_time",
+        "waiver_days"
+      ],
+      "title": "Transactions",
+      "type": "object"
+    },
+    "ValidatedConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "league": {
+          "$ref": "#/$defs/LeagueRules"
+        },
+        "season": {
+          "$ref": "#/$defs/SeasonConfig"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelConfig"
+            },
+            {
+              "$ref": "#/$defs/ResourceModel"
+            },
+            {
+              "$ref": "#/$defs/CalculationModel"
+            },
+            {
+              "$ref": "#/$defs/PreparationModel"
+            },
+            {
+              "$ref": "#/$defs/AuctionModel"
+            },
+            {
+              "$ref": "#/$defs/SeasonModel"
+            },
+            {
+              "$ref": "#/$defs/TeamBudgetModel"
+            },
+            {
+              "$ref": "#/$defs/HealthModel"
+            },
+            {
+              "$ref": "#/$defs/ManagedPricingModel"
+            },
+            {
+              "$ref": "#/$defs/TeamOffenseModel"
+            },
+            {
+              "$ref": "#/$defs/AvailabilityModel"
+            },
+            {
+              "$ref": "#/$defs/TeamConstraintModel"
+            },
+            {
+              "$ref": "#/$defs/StreamingComparisonModel"
+            }
+          ],
+          "title": "Model"
+        },
+        "refs": {
+          "$ref": "#/$defs/ConfigBundle"
+        }
+      },
+      "required": [
+        "league",
+        "season",
+        "model",
+        "refs"
+      ],
+      "title": "ValidatedConfig",
+      "type": "object"
+    },
+    "ValuationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "pool_iterations": {
+          "exclusiveMinimum": 0,
+          "title": "Pool Iterations",
+          "type": "integer"
+        },
+        "healthy_games": {
+          "minimum": 0,
+          "title": "Healthy Games",
+          "type": "number"
+        },
+        "replacement_count": {
+          "exclusiveMinimum": 0,
+          "title": "Replacement Count",
+          "type": "integer"
+        },
+        "result_decimals": {
+          "maximum": 12,
+          "minimum": 0,
+          "title": "Result Decimals",
+          "type": "integer"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "pool_iterations",
+        "healthy_games",
+        "replacement_count",
+        "result_decimals",
+        "evidence"
+      ],
+      "title": "ValuationParameters",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Direct preseason priors, independent of auction valuation or team allocation.",
+  "properties": {
+    "format_version": {
+      "const": 1,
+      "title": "Format Version",
+      "type": "integer"
+    },
+    "config": {
+      "$ref": "#/$defs/ValidatedConfig"
+    },
+    "priors": {
+      "$ref": "#/$defs/FrozenPriors"
+    }
+  },
+  "required": [
+    "format_version",
+    "config",
+    "priors"
+  ],
+  "title": "InseasonForecast",
+  "type": "object"
+}
