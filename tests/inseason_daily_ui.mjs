@@ -67,10 +67,18 @@ test('daily empty state retains an explicit calculation and the selected plan',(
 
 test('my roster includes injury slots and search filters only its rendered rows',()=>{
   const ui=environment(),ctx=fixture();
-  ctx.data.projection.players=[{player:{id:'one',name:'Taylor Player',team_id:'BOS',positions:['PG']},flags:[],adjustments:[],probability:1,minutes:30},{player:{id:'injured',name:'Alex Return',team_id:'NYK',positions:['C']},flags:[],adjustments:[],probability:0,minutes:0},{player:{id:'free',name:'Free Player',team_id:'CHI',positions:['C']},flags:[],adjustments:[],probability:1,minutes:20}];
+  ctx.data.projection.players=[{player:{id:'one',name:'Taylor Player',team_id:'BOS',positions:['PG']},flags:[],adjustments:[],probability:.5,minutes:30},{player:{id:'injured',name:'Alex Return',team_id:'NYK',positions:['C']},flags:[],adjustments:[],probability:0,minutes:30},{player:{id:'free',name:'Free Player',team_id:'CHI',positions:['C']},flags:[],adjustments:[],probability:1,minutes:20}];
   ctx.data.snapshot={mine:'mine',teams:[{id:'mine',name:'My team',players:['one'],injury_players:{injured:'IL'}}]};
+  ctx.data.projection_rules={categories:[{id:'PTS',label:'PTS'},{id:'FG%',label:'FG%'},{id:'DD',label:'DD'}]};
+  ctx.data.player_categories={one:{PTS:18.2,'FG%':.53,DD:.25},injured:{PTS:18.2,'FG%':.53,DD:.25}};
   const view=ui.teamsView(ctx);
   assert.match(view.textContent,/Taylor Player/);assert.match(view.textContent,/Alex Return/);assert(!view.textContent.includes('Free Player'));
+  assert.deepEqual(view.all('th').map(cell=>cell.textContent),['球員','出賽狀態','出賽／輪替機率','出賽時分鐘','PTS','FG%','DD','預測提醒','操作']);
+  const rows=view.all('tr'),active=rows.find(row=>row.textContent.includes('Taylor Player')),injured=rows.find(row=>row.textContent.includes('Alex Return'));
+  assert.equal(active.all('td')[4].textContent,'18.2');assert.equal(active.all('td')[5].textContent,'53%');assert.equal(active.all('td')[6].textContent,'0.25');
+  assert.equal(injured.all('td')[4].textContent,'18.2');assert.equal(injured.all('td')[5].textContent,'53%');
+  assert.match(view.textContent,/出賽時的預估場均，不乘出賽率/);
+  assert.match(view.textContent,/週總量與排陣另計出賽率/);
   const input=view.all('input').find(n=>n.attributes.name==='player_search');
   input.events.input({target:{value:'Alex'}});
   assert.match(view.textContent,/Alex Return/);assert(!view.textContent.includes('Taylor Player'));

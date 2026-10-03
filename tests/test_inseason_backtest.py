@@ -11,12 +11,68 @@ from fba.contracts.inseason_backtest import (
     ProjectionStudySeason,
 )
 from fba.data.codec import canonical, digest
-from fba.inseason.backtest import run_study
+from fba.inseason.backtest import component_rows, run_study
+from fba.inseason.checkpoint_history import checkpoint_history
 
 
 def study_season(year):
     league, _, players, priors, ledger, *_ = fixture(year=year)
     return ProjectionStudySeason(league=league, players=players, priors=priors, ledger=ledger)
+
+
+@pytest.mark.parametrize("resumes_shooting", (False, True))
+def test_shooting_backtest_skips_explicit_zero_roles_without_inventing_probability(
+    resumes_shooting,
+):
+    season = study_season(2026)
+    prior = season.priors.players[0]
+    decision_at = next(
+        trial.as_of for trial in checkpoint_history(season, 5) if trial.player_id == prior.player_id
+    )
+    zero = prior.model_copy(
+        update={
+            "minutes": 0.0,
+            "appearance_probability": 0.0,
+            "rates": dict.fromkeys(prior.rates, 0.0),
+            "probabilities": {},
+        }
+    )
+    season = season.model_copy(
+        update={
+            "priors": season.priors.model_copy(
+                update={"players": (zero, *season.priors.players[1:])}
+            ),
+            "players": season.players.model_copy(
+                update={
+                    "boxes": tuple(
+                        b.model_copy(update={"minutes": 0.0, "stats": dict.fromkeys(b.stats, 0.0)})
+                        if b.player_id == prior.player_id
+                        and (not resumes_shooting or b.played_at <= decision_at)
+                        else b
+                        for b in season.players.boxes
+                    )
+                }
+            ),
+        }
+    )
+    trial = next(
+        trial for trial in checkpoint_history(season, 5) if trial.player_id == prior.player_id
+    )
+    assert zero.rates["FGA"] == 0.0 and "FG%" not in zero.probabilities
+    assert sum(b.stats["FGA"] for b in trial.past) == 0.0
+    assert (sum(b.stats["FGA"] for b in trial.future) > 0.0) == resumes_shooting
+    rows = component_rows(season, (5,), "FG%", 3.0, 10.0)
+    assert rows[0]["players"] == len(season.priors.players) - 1
+    broken = season.priors.players[1].model_copy(update={"probabilities": {}})
+    invalid = season.model_copy(
+        update={
+            "priors": season.priors.model_copy(
+                update={"players": (zero, broken, *season.priors.players[2:])}
+            )
+        }
+    )
+    with pytest.raises(DataError, match="missing prior probability"):
+        component_rows(invalid, (5,), "FG%", 3.0, 10.0)
 
 
 def availability(year):

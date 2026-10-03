@@ -1287,6 +1287,20 @@
     "PlayerPrior": {
       "additionalProperties": false,
       "properties": {
+        "appearance_probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Appearance Probability"
+        },
         "player_id": {
           "minLength": 1,
           "title": "Player Id",

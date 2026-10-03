@@ -211,6 +211,8 @@ class BoxScore(Record):
 
 
 class PlayerPrior(Record):
+    # None identifies old imports that discarded playing opportunities.
+    appearance_probability: Probability | None = None
     player_id: Text
     minutes: Nonnegative
     rates: dict[str, Nonnegative]
@@ -320,9 +322,9 @@ class ProjectionFlag(Record):
     id: Text
     player_id: Text
     field: Text
-    kind: Literal["role", "production", "override", "team_changed"]
+    kind: Literal["role", "production", "override", "team_changed", "missing_role"]
     model: Finite
-    observed: Finite
+    observed: Finite | None
     reason: Text
 
 

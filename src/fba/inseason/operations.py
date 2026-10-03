@@ -35,7 +35,7 @@ from fba.inseason.projection import visible_games
 from fba.inseason.recommendations import admissible_plan, search_adds
 from fba.inseason.review import calibration_bins, cumulative_review, latest_reviews, weekly_review
 from fba.inseason.session import InseasonSession, json_value, snapshot_record
-from fba.inseason.team_view import team_views
+from fba.inseason.team_view import player_categories, team_views
 from fba.inseason.trades import evaluate_trade
 
 
@@ -107,6 +107,16 @@ def bootstrap(session: InseasonSession) -> JsonValue:
         else []
     )
     result.update(player_bootstrap(session, now))
+    if "projection_error" in result:
+        result["availability"] = json_value(
+            status.model_copy(
+                update={
+                    "enabled": False,
+                    "reason": result["projection_error"],
+                    "repair": "到資料與同步頁重新載入已鎖定的賽季前預測與球員來源",
+                }
+            ).model_dump(mode="json")
+        )
     result["snapshot"] = (
         store.load_snapshot(state.normalized_sha256).payload
         if state.normalized_sha256 and status.enabled
@@ -150,7 +160,7 @@ def player_bootstrap(session: InseasonSession, now: datetime) -> dict[str, JsonV
     workspace = session.workspace()
     result["workspace"] = json_value(workspace.model_dump(mode="json")) if workspace else None
     try:
-        rules, players, _ = session.player_inputs()
+        rules, players, priors = session.player_inputs()
         projection = session.player_projection(now)
         on = projection.on
         result["projection"] = json_value(projection.model_dump(mode="json"))
@@ -166,6 +176,11 @@ def player_bootstrap(session: InseasonSession, now: datetime) -> dict[str, JsonV
                 projection, rules, session.params, visible_games(players, now), league, ledger
             )
         ]
+        result["player_categories"] = json_value(
+            player_categories(
+                projection, rules, session.params, priors, players, visible_games(players, now)
+            )
+        )
     except DataError as exc:
         result["projection_error"] = str(exc)
     result["ledger"] = json_value(

@@ -95,23 +95,29 @@ function rosterView(ctx,scope) {
   const details=new Map((ctx.data.team_views ?? []).flatMap(team=>team.players.map(player=>[player.player_id,player])));
   const owner=id=>snapshot?.teams.find(team=>team.players.includes(id)||Object.hasOwn(team.injury_players ?? {},id))?.name ?? (snapshot ? "自由球員" : "尚無聯盟名單");
   const search=field("搜尋球員","player_search",ctx.playerQuery ?? "","search",{placeholder:"姓名、球隊或位置",autocomplete:"off"});
-  const filter=select("顯示","player_filter",[["all","全部球員"],["flags","需要確認"],["adjusted","已手動調整"]],ctx.playerFilter ?? "all");
+  const filter=select("顯示","player_filter",[["all","全部球員"],["flags","有預測提醒"],["adjusted","已手動調整"]],ctx.playerFilter ?? "all");
+  const categories=ctx.data.projection_rules.categories;
+  const categoryValue=(player,category)=>{
+    const value=ctx.data.player_categories?.[player.player.id]?.[category.id];
+    return el("span",{title:value==null ? "沒有可用的預估值，或比率分母為零" : "出賽時的預估場均，不乘出賽率"},category.label.includes("%") ? percent(value) : number(value,category.id==="DD" ? 3 : 1));
+  };
   const body=el("div"),count=el("p",{class:"muted",role:"status"});
   function update() {
     const query=(ctx.playerQuery ?? "").trim().toLocaleLowerCase();
     const players=ctx.data.projection.players.filter(p=>(scope!=="mine"||owned.has(p.player.id))&&`${p.player.name} ${p.player.team_abbreviation ?? p.player.team_id} ${p.player.positions.join(" ")}`.toLocaleLowerCase().includes(query)&&(ctx.playerFilter!=="flags"||p.flags.length)&&(ctx.playerFilter!=="adjusted"||p.adjustments.length));
     count.textContent=`${players.length} 位球員 · 預測日期 ${ctx.data.projection.on}`;
-    body.replaceChildren(players.length ? table(["球員", "歸屬", "出賽狀態", "出賽機率", "預測分鐘", "需要確認", "操作"],players.map(p=>[
-      el("button",{class:"name",onClick:()=>ctx.player(p)},playerLabel(ctx,p.player.id)),owner(p.player.id),
+    body.replaceChildren(players.length ? table(["球員", ...(scope==="mine" ? [] : ["歸屬"]), "出賽狀態", "出賽／輪替機率", "出賽時分鐘", ...categories.map(c=>c.label), "預測提醒", "操作"],players.map(p=>[
+      el("button",{class:"name",onClick:()=>ctx.player(p)},playerLabel(ctx,p.player.id)),...(scope==="mine" ? [] : [owner(p.player.id)]),
       el("span",{class:details.get(p.player.id)?.manual_status ? "badge" : ""},details.get(p.player.id)?.manual_status ? `手調 ${details.get(p.player.id).manual_status}` : p.player.status),percent(p.probability),number(p.minutes,1),
-      p.flags.length ? el("span",{class:"warning wrap-cell"},p.flags.map(flag=>flag.reason).join("；")) : "—",
+      ...categories.map(c=>categoryValue(p,c)),
+      p.flags.length ? el("button",{class:"small warning",title:p.flags.map(flag=>flag.reason).join("；"),onClick:()=>ctx.player(p)},`${p.flags.length} 項提醒`) : "—",
       el("button",{class:"small",onClick:()=>ctx.edit(p)},"調整預測")
     ])) : empty(scope==="mine" && !owned.size ? "這個聯盟尚未讀取到你的名單，請同步後再查看。" : "沒有符合條件的球員，試著縮短關鍵字或切換篩選。"));
   }
   search.querySelector("input").addEventListener("input",event=>{ctx.playerQuery=event.target.value;update();});
   filter.querySelector("select").addEventListener("change",event=>{ctx.playerFilter=event.target.value;update();});
   update();
-  return el("div",{},section(scope==="mine" ? mine?.name ?? "我的球隊" : "搜尋球員",el("div",{class:"filter-bar"},search,filter),count,body),disclosure("手動調整紀錄",ledgerSection(ctx)));
+  return el("div",{},section(scope==="mine" ? mine?.name ?? "我的球隊" : "搜尋球員",el("div",{class:"filter-bar"},search,filter),count,el("p",{class:"muted"},"數據為出賽時的預估場均，不乘出賽率；週總量與排陣另計出賽率。命中率與 A/T 由出賽時的預估總量計算，DD 為出賽時的單場雙十機率（逐場模擬）。「—」表示無可用值或沒有提醒。"),body),disclosure("手動調整紀錄",ledgerSection(ctx)));
 }
 function nbaTeamsView(ctx) {
 
@@ -135,6 +141,8 @@ function nbaTeamsView(ctx) {
     const detail = summary.players.find(d => d.player_id === p.player.id);
     const adjustments = p.adjustments.map(e => `${e.reason} · 到 ${e.ends_on}`).join("\n");
     return [el("button", { class: "name", onClick: () => ctx.player(p) }, playerLabel(ctx,p.player.id)), el("span", {class: detail.manual_status ? "adjusted" : "", title:adjustments}, detail.manual_status ? `${p.player.status} → 手調 ${detail.manual_status}` : p.player.status), detail.manual_return_on ? `手調 ${detail.manual_return_on} · 來源 ${detail.return_on ?? "未提供"}` : detail.return_on ?? "—", number(p.traces.minutes.result, 1), el("button", { class: p.adjustments.some(e => ctx.data.parameters.fields.find(f => f.id === e.field)?.targets.includes("minutes")) ? "small adjusted" : "small", onClick: () => ctx.edit(p), title: adjustments }, number(p.minutes, 1)),
+      el("div", {}, percent(p.probability), formula(p.traces["appearance"], ctx.data.formulas), formula(p.traces["rotation:probability"], ctx.data.formulas)),
+      el("div", {}, number(p.traces["expected:minutes"].result, 1), formula(p.traces["expected:minutes"], ctx.data.formulas)),
       ...counts.map(n => detail.recent_minutes[n] ? el("div", {}, number(detail.recent_minutes[n].result, 1), formula(detail.recent_minutes[n], ctx.data.formulas)) : "—"),
       ...multiplierFields.map(f => detail.multipliers[f.id] ? el("span", {class:"adjusted", title:adjustments}, number(detail.multipliers[f.id].result), formula(detail.multipliers[f.id], ctx.data.formulas)) : "1"),
       owner(p.player.id), el("span", { class: "warning" }, p.flags.length ? p.flags.map(f => f.reason).join("；") : "—")];
@@ -145,12 +153,12 @@ function nbaTeamsView(ctx) {
       el("button",{class:"small",onClick:()=>ctx.edit(p,f)},"建立手調"),
       el("button",{class:"small",onClick:()=>ctx.ignore(f)},"暫時忽略"))
   ]));
-  const content = el("div", {}, section("需要你確認", flags.length ? table(["球員","球隊","理由","模型／觀察","處理"],flags) : empty("目前沒有未忽略的模型旗標。來源與 Yahoo 設定問題請看資料與同步頁。")), section(selected,
-    el("div", { class: "row" }, el("strong", {}, `全隊預期分鐘 ${number(summary.minutes.result, 1)} / ${number(summary.budget.result, 1)}`), el("span", { class: summary.difference.result ? "warning" : "muted" }, `差距 ${number(summary.difference.result, 1)}；只提醒，不自動調整`)),
+  const content = el("div", {}, section("預測提醒", flags.length ? disclosure(`查看全聯盟 ${flags.length} 項提醒`, table(["球員","球隊","理由","模型／觀察","處理"],flags)) : empty("目前沒有未忽略的模型旗標。來源與 Yahoo 設定問題請看資料與同步頁。")), section(selected,
+    el("div", { class: "row" }, el("strong", {}, `全隊預期分鐘 ${number(summary.minutes.result, 1)} / ${number(summary.budget.result, 1)}`), el("span", { class: summary.difference.result > ctx.data.parameters.tolerance.value ? "warning" : "muted" }, `差距 ${number(summary.difference.result, 1)}；已按出賽與輪替機率分配`)),
     [summary.minutes, summary.budget, summary.difference].map(t => formula(t, ctx.data.formulas)),
     el("p", {}, `本週 ${summary.week_games ?? "—"} 場 · 下週 ${summary.next_week_games ?? "—"} 場`),
     el("p", { class: "muted" }, `背靠背第二天：${summary.back_to_back.join("、") || "沒有已公布場次"}`),
-    table(["球員", "狀態", "回歸日（來源／手調）", "模型分鐘", "有效分鐘／調整", ...counts.map(n => `近 ${n} 場`), ...multiplierFields.map(f => f.label), "聯盟歸屬", "需要確認"], tableRows)), ledgerSection(ctx));
+    table(["球員", "狀態", "回歸日（來源／手調）", "模型出賽分鐘", "有效出賽分鐘／調整", "出賽／輪替機率", "預期分鐘", ...counts.map(n => `近 ${n} 場`), ...multiplierFields.map(f => f.label), "聯盟歸屬", "需要確認"], tableRows)), ledgerSection(ctx));
   return el("div", { class: "split" }, nav, content);
 }
 function flagCount(projection, team) { return projection.players.filter(p => p.player.team_id === team).reduce((v, p) => v + p.flags.length, 0); }
@@ -175,7 +183,7 @@ export function playerCard(ctx, player) {
     manual(`shot:${stat}`), percent(value), traces([stat, `current:${stat}`, `weight:${stat}`])]);
   return section(player.player.name,
     el("div",{class:"player-overview"},avatar(player.player.name,true),el("p",{},`${player.player.team_abbreviation ?? player.player.team_id} · ${player.player.positions.join(" / ")}`),el("button",{class:"primary",onClick:()=>ctx.edit(player)},"調整預測")),
-    el("p", {}, `${player.player.team_id} · ${player.player.positions.join(" / ")} · 出賽 ${percent(player.probability)} · 有效分鐘 ${number(player.minutes, 1)}`),
+    el("p", {}, `${player.player.team_id} · ${player.player.positions.join(" / ")} · 出賽／輪替 ${percent(player.probability)} · 出賽時分鐘 ${number(player.minutes, 1)} · 預期分鐘 ${number(player.traces["expected:minutes"].result, 1)}`),
     el("p", {}, `分鐘手調：${manual("minutes")} · 出賽手調：${manual("q")}`),
     minutesChart(player, ctx.data.parameters.fields), formula(player.traces.minutes, ctx.data.formulas),
     player.adjustments.map(entry => {

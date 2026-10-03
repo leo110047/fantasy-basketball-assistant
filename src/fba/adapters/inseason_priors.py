@@ -26,6 +26,8 @@ def read_priors(
     required = required_statistics(league)
     rows: list[PlayerPrior] = []
     for projected in archive.calculation.projections:
+        if projected.expected_games > archive.season_games:
+            raise DataError(f"{path}.{projected.id}: expected games exceed season length")
         stats = dict(zip(axes, projected.stats, strict=True))
         missing = set(required) - stats.keys()
         if missing:
@@ -35,7 +37,16 @@ def read_priors(
                 raise DataError(
                     f"{path}.{projected.id}: nonzero prior production with zero minutes"
                 )
-            continue  # Explicitly unknown rate; use the configured position/minutes peer prior.
+            rows.append(
+                PlayerPrior(
+                    player_id=projected.id,
+                    appearance_probability=0.0,
+                    minutes=0.0,
+                    rates=dict.fromkeys(required, 0.0),
+                    probabilities={},
+                )
+            )
+            continue  # An explicit zero role must not acquire a peer's rotation minutes.
         probabilities: dict[str, float] = {}
         for shot in league.shots:
             if shot.made not in required or stats[shot.attempted] == 0:
@@ -49,6 +60,12 @@ def read_priors(
         rows.append(
             PlayerPrior(
                 player_id=projected.id,
+                appearance_probability=evaluate(
+                    "ratio",
+                    numerator=projected.expected_games,
+                    denominator=float(archive.season_games),
+                    zero_value=0.0,
+                ).result,
                 minutes=projected.minutes,
                 rates={
                     s: evaluate(

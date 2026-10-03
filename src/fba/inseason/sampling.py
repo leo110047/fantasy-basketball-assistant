@@ -10,8 +10,8 @@ from fba.contracts.inseason import (
     BoxScore,
     EffectivePlayer,
     FrozenPriors,
-    InseasonLeague,
     InseasonParameters,
+    ProjectionRules,
     SeasonGame,
 )
 from fba.formulas.arrays import evaluate_array
@@ -39,13 +39,15 @@ def sampling_profile(player: EffectivePlayer) -> SamplingProfile:
 def sample_game(
     player: EffectivePlayer,
     history: tuple[BoxScore, ...],
-    league: InseasonLeague,
+    league: ProjectionRules,
     params: InseasonParameters,
     priors: FrozenPriors,
     samples: int,
     game: SeasonGame,
 ) -> NDArray[np.float64]:
     player_id = player.player.id
+    # Production is conditional on playing; probability owns every DNP draw.
+    history = tuple(b for b in history if b.minutes > 0)
 
     def random(stream: str) -> np.random.Generator:
         seed = int.from_bytes(

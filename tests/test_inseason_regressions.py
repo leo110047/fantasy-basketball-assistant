@@ -34,7 +34,11 @@ def test_zero_minute_games_affect_minutes_and_role_flags():
     args[2] = args[2].model_copy(update={"boxes": boxes})
     result = project(args).players[0]
     assert result.observed_minutes and set(result.observed_minutes) == {0}
-    assert result.minutes < baseline.minutes
+    # Explicit DNPs reduce appearances, rather than cutting conditional minutes
+    # and then counting the same nonappearance a second time.
+    assert result.minutes == pytest.approx(baseline.minutes)
+    assert result.probability == pytest.approx(3 / 13)
+    assert result.traces["expected:minutes"].result < baseline.traces["expected:minutes"].result
     assert any(f.kind == "role" for f in result.flags)
 
 

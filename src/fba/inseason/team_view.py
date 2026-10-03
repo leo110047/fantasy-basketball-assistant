@@ -1,17 +1,106 @@
 from datetime import timedelta
 from zoneinfo import ZoneInfo
 
+from fba.contracts.config import Category, Linear
 from fba.contracts.inseason import (
     AdjustmentLedger,
     EffectiveProjection,
+    FrozenPriors,
     InseasonLeague,
     InseasonParameters,
+    PlayerSnapshot,
     ProjectionRules,
     SeasonGame,
 )
 from fba.contracts.inseason_results import TeamPlayerView, TeamProjectionView
 from fba.formulas.registry import evaluate
+from fba.formulas.simulation import mean_array
 from fba.inseason.adjustments import active_entries
+from fba.inseason.projection import observed_boxes, with_expectations
+from fba.inseason.sampling import sample_game
+
+
+def player_categories(
+    projection: EffectiveProjection,
+    rules: ProjectionRules,
+    params: InseasonParameters,
+    priors: FrozenPriors,
+    snapshot: PlayerSnapshot,
+    games: tuple[SeasonGame, ...],
+) -> dict[str, dict[str, float | None]]:
+    """Current means conditional on playing; ratios use conditional mean totals.
+
+    Nonlinear derived counts reuse the game's sampler, never threshold mean stats.
+    The next captured game supplies the RNG identity, not a future role assumption.
+    """
+    next_games: dict[str, SeasonGame] = {}
+    for game in sorted(games, key=lambda g: (g.tipoff, g.id)):
+        if game.tipoff >= projection.as_of:
+            for team in (game.home, game.away):
+                next_games.setdefault(team, game)
+    axes = (*rules.base_stats, *(d.id for d in rules.derived))
+    history = observed_boxes(snapshot, projection.as_of)
+    needed = {
+        t.stat_id
+        for c in rules.categories
+        for t in (
+            c.formula.terms
+            if isinstance(c.formula, Linear)
+            else (*c.formula.numerator, *c.formula.denominator)
+        )
+    }
+    result: dict[str, dict[str, float | None]] = {}
+    for player in projection.players:
+        conditional = with_expectations(player.model_copy(update={"probability": 1.0}), rules)
+        expected = dict(conditional.expected)
+        missing = tuple(d.id for d in rules.derived if d.id in needed and d.id not in expected)
+        game = next_games.get(player.player.team_id)
+        boxes = history.get(player.player.id, ())
+        if (
+            missing
+            and game
+            and (any(b.minutes > 0 for b in boxes) or priors.distribution is not None)
+        ):
+            sampled = sample_game(
+                conditional,
+                boxes,
+                rules,
+                params,
+                priors,
+                params.simulations.value,
+                game,
+            )
+            for stat in missing:
+                expected[stat] = float(mean_array(sampled[:, axes.index(stat)], axis=0))
+        result[player.player.id] = {c.id: category_estimate(expected, c) for c in rules.categories}
+    return result
+
+
+def category_estimate(expected: dict[str, float], category: Category) -> float | None:
+    formula = category.formula
+    terms = (
+        formula.terms if isinstance(formula, Linear) else (*formula.numerator, *formula.denominator)
+    )
+    if any(t.stat_id not in expected for t in terms):
+        return None
+    numerator_terms = formula.terms if isinstance(formula, Linear) else formula.numerator
+    numerator = evaluate(
+        "linear",
+        values=tuple(expected[t.stat_id] for t in numerator_terms),
+        weights=tuple(t.coefficient for t in numerator_terms),
+    ).result
+    if isinstance(formula, Linear):
+        return numerator
+    denominator = evaluate(
+        "linear",
+        values=tuple(expected[t.stat_id] for t in formula.denominator),
+        weights=tuple(t.coefficient for t in formula.denominator),
+    ).result
+    return (
+        evaluate("ratio", numerator=numerator, denominator=denominator, zero_value=0.0).result
+        if denominator > 0
+        else None
+    )
 
 
 def team_views(

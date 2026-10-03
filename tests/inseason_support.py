@@ -126,6 +126,7 @@ def fixture(mode="h2h_one_win", year=2026, teams=2):
         priors.append(
             PlayerPrior(
                 player_id=pid,
+                appearance_probability=1.0,
                 minutes=30.0,
                 rates={s: v / 30 for s, v in stats.items()},
                 probabilities={"FG%": 0.5, "FT%": 0.75},

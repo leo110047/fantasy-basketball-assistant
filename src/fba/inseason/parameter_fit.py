@@ -109,7 +109,7 @@ def production_trial(
                     zero_value=0.0,
                 ).result
                 flag = flags.get(stat)
-                suggested = flag.observed if flag else model
+                suggested = flag.observed if flag and flag.observed is not None else model
                 baseline.append(evaluate("absolute_error", predicted=model, observed=actual).result)
                 errors.append(
                     evaluate("absolute_error", predicted=suggested, observed=actual).result

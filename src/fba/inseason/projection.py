@@ -25,6 +25,7 @@ from fba.core.config import require_members
 from fba.core.inseason import required_statistics
 from fba.formulas.registry import evaluate
 from fba.inseason.adjustments import active_entries
+from fba.inseason.rotation import allocate_rotation, estimate_role
 
 
 class ProjectionIndex:
@@ -142,6 +143,7 @@ def fallback_prior(
         raise DataError(f"prior.{player.id}: no observed peers in matching groups")
     return PlayerPrior(
         player_id=player.id,
+        appearance_probability=1.0,
         minutes=evaluate("mean", values=tuple(p.minutes for p in peers)).result,
         rates={
             s: evaluate("mean", values=tuple(p.rates[s] for p in peers)).result
@@ -214,6 +216,8 @@ def blend_player(
         if shot.made not in rates:
             continue
         if shot.id not in prior.probabilities:
+            if prior.rates[shot.attempted] == 0 and totals[shot.attempted] == 0:
+                continue
             raise DataError(f"prior.{player.id}.probabilities.{shot.id}: missing prior probability")
         traces[shot.id] = evaluate(
             "blend",
@@ -237,12 +241,11 @@ def blend_player(
                 denominator=totals[shot.attempted],
                 zero_value=0.0,
             )
-    traces["minutes"] = evaluate(
-        "minutes",
-        k=params.minute_k.value,
-        prior=prior.minutes,
-        minutes=tuple(b.minutes for b in boxes),
-        half_life=params.minute_half_life.value,
+    traces["minutes"], traces["appearance"] = estimate_role(
+        prior,
+        tuple(b.minutes for b in boxes),
+        params.minute_k.value,
+        params.minute_half_life.value,
     )
     return traces["minutes"].result, rates, shots, traces, weights, totals
 
@@ -294,10 +297,37 @@ def player_flags(
     rates: dict[str, float],
     entries: tuple[AdjustmentEntry, ...],
     params: InseasonParameters,
+    *,
+    unknown_role: bool = False,
 ) -> tuple[ProjectionFlag, ...]:
     flags: list[ProjectionFlag] = []
+    if unknown_role:
+        flags.append(
+            ProjectionFlag(
+                id=f"{player.id}:missing_role",
+                player_id=player.id,
+                field="minutes",
+                kind="missing_role",
+                model=minutes,
+                observed=None,
+                reason="缺少個別分鐘與輪替資料；暫按隊伍剩餘容量估計，請確認角色",
+            )
+        )
     recent = boxes[-params.role_window.value :]
-    recent_trace = evaluate("mean", values=tuple(b.minutes for b in recent)) if recent else None
+    played = tuple(b.minutes for b in recent if b.minutes > 0)
+    recent_trace = evaluate("mean", values=played) if played else None
+    if len(recent) >= params.role_window.value and not played:
+        flags.append(
+            ProjectionFlag(
+                id=f"{player.id}:role",
+                player_id=player.id,
+                field="minutes",
+                kind="role",
+                model=minutes,
+                observed=None,
+                reason="近期紀錄皆未出賽，請確認輪替角色",
+            )
+        )
     mean = recent_trace.result if recent_trace else minutes
     role_error = evaluate("absolute_error", predicted=minutes, observed=mean)
     if len(recent) >= params.role_window.value and role_error.result > params.role_threshold.value:
@@ -353,9 +383,12 @@ def player_flags(
                 )
             )
         if "minutes" in fields[entry.field].targets and len(boxes) >= params.override_window.value:
-            recent_mean = evaluate(
-                "mean", values=tuple(b.minutes for b in boxes[-params.override_window.value :])
+            played_override = tuple(
+                b.minutes for b in boxes[-params.override_window.value :] if b.minutes > 0
             )
+            if not played_override:
+                continue
+            recent_mean = evaluate("mean", values=played_override)
             override_error = evaluate(
                 "absolute_error", predicted=float(entry.value), observed=recent_mean.result
             )
@@ -400,7 +433,7 @@ def flag_suggestions(flag: ProjectionFlag, params: InseasonParameters) -> dict[s
     target = "minutes" if flag.field == "minutes" else "rate:" + flag.field
     result: dict[str, FormulaTrace] = {}
     for field in params.fields:
-        if target not in field.targets or not flag.traces:
+        if target not in field.targets or not flag.traces or flag.observed is None:
             continue
         if field.kind == "override":
             result[field.id] = flag.traces[0]
@@ -442,10 +475,18 @@ def effective_projection(
     games = visible_games(snapshot, as_of)
     b2b_teams = back_to_back_teams(games, zone, on)
     result: list[EffectivePlayer] = []
+    known_roles: set[str] = set()
     for player in players:
         boxes = history.get(player.id, ())
         prior = by_id.get(player.id) or fallback_prior(player, boxes, players, priors, params)
-        needed_shots = {s.id for s in league.shots if s.made in required_statistics(league)}
+        if player.id in by_id or boxes:
+            known_roles.add(player.id)
+        needed_shots = {
+            s.id
+            for s in league.shots
+            if s.made in required_statistics(league)
+            and (prior.rates[s.attempted] > 0 or any(b.stats[s.attempted] > 0 for b in boxes))
+        }
         if needed_shots - prior.probabilities.keys():
             peer = fallback_prior(player, boxes, players, priors, params)
             prior = prior.model_copy(
@@ -458,12 +499,22 @@ def effective_projection(
             player, prior, boxes, league, params
         )
         own = tuple(e for e in entries if e.player_id == player.id)
-        flags = player_flags(player, boxes, m, rates, own, params)
+        flags = player_flags(
+            player, boxes, m, rates, own, params, unknown_role=player.id not in known_roles
+        )
         b2b = player.team_id in b2b_teams
         m, q, rates, shots, adjustment_traces = adjusted_values(
             m, params.availability[status].value, rates, shots, own, params, b2b
         )
         traces.update(adjustment_traces)
+        appearance = traces["appearance"]
+        health = evaluate("budget_fraction", budget=q, demand=appearance.result)
+        traces["appearance"] = appearance
+        traces["appearance:health"] = health
+        traces["appearance:probability"] = evaluate(
+            "product", gain=appearance.result, probability=health.result
+        )
+        q = traces["appearance:probability"].result
         for shot in league.shots:
             if shot.id in shots:
                 final_shot = evaluate(
@@ -480,19 +531,6 @@ def effective_projection(
             )
             rates[distribution.scoring_stat] = trace.result
             traces["final:" + distribution.scoring_stat] = trace
-        expected: dict[str, float] = {}
-        for stat, rate in rates.items():
-            trace = evaluate("expectation", q=q, rate=rate, minutes=m)
-            traces["expected:" + stat] = trace
-            expected[stat] = trace.result
-        for derived in league.derived:
-            if derived.kind == "linear" and all(t.stat_id in expected for t in derived.terms):
-                trace = evaluate(
-                    "linear",
-                    values=tuple(expected[t.stat_id] for t in derived.terms),
-                    weights=tuple(t.coefficient for t in derived.terms),
-                )
-                expected[derived.id], traces[derived.id] = trace.result, trace
         result.append(
             EffectivePlayer(
                 player=player,
@@ -500,7 +538,7 @@ def effective_projection(
                 probability=q,
                 rates=rates,
                 probabilities=shots,
-                expected=expected,
+                expected={},
                 prior=prior,
                 observed_minutes=tuple(b.minutes for b in boxes),
                 observed_dates=tuple(b.played_at.astimezone(zone).date() for b in boxes),
@@ -512,6 +550,31 @@ def effective_projection(
                 flags=flags,
             )
         )
+    allocated = allocate_rotation(tuple(result), league, params, known_roles, b2b_teams)
     return EffectiveProjection(
-        as_of=as_of, on=on, parameter_version=params.version, players=tuple(result)
+        as_of=as_of,
+        on=on,
+        parameter_version=params.version,
+        players=tuple(with_expectations(p, league) for p in allocated),
     )
+
+
+def with_expectations(player: EffectivePlayer, rules: ProjectionRules) -> EffectivePlayer:
+    expected: dict[str, float] = {}
+    traces = dict(player.traces)
+    traces["expected:minutes"] = evaluate(
+        "product", gain=player.minutes, probability=player.probability
+    )
+    for stat, rate in player.rates.items():
+        trace = evaluate("expectation", q=player.probability, rate=rate, minutes=player.minutes)
+        traces["expected:" + stat] = trace
+        expected[stat] = trace.result
+    for derived in rules.derived:
+        if derived.kind == "linear" and all(t.stat_id in expected for t in derived.terms):
+            trace = evaluate(
+                "linear",
+                values=tuple(expected[t.stat_id] for t in derived.terms),
+                weights=tuple(t.coefficient for t in derived.terms),
+            )
+            expected[derived.id], traces[derived.id] = trace.result, trace
+    return player.model_copy(update={"expected": expected, "traces": traces})

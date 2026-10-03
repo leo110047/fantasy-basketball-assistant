@@ -14,6 +14,7 @@ from fba.formulas.registry import evaluate
 from fba.inseason.checkpoint_history import checkpoint_history
 from fba.inseason.parameter_fit import availability_fit, availability_samples, production_trial
 from fba.inseason.review import calibration_bins
+from fba.inseason.rotation import estimate_role
 
 
 def metric(row: dict[str, JsonValue], key: str) -> float:
@@ -274,22 +275,29 @@ def component_rows(
                 continue
             pid, past, future = trial.player_id, trial.past, trial.future
             if shot is None:
-                prior = priors[pid].minutes
+                conditional, appearance = estimate_role(
+                    priors[pid], tuple(b.minutes for b in past), k, half_life
+                )
+                prior = evaluate(
+                    "product", gain=priors[pid].minutes, probability=appearance.inputs["prior"]
+                ).result
                 observed = evaluate("mean", values=tuple(b.minutes for b in future)).result
                 raw = evaluate("mean", values=tuple(b.minutes for b in past)).result
                 mixed = evaluate(
-                    "minutes",
-                    k=k,
-                    prior=prior,
-                    minutes=tuple(b.minutes for b in past),
-                    half_life=half_life,
+                    "product", gain=conditional.result, probability=appearance.result
                 ).result
             else:
-                prior = priors[pid].probabilities[shot.id]
                 attempts = fsum(b.stats[shot.attempted] for b in past)
                 remaining = fsum(b.stats[shot.attempted] for b in future)
                 if remaining == 0:
                     continue
+                if shot.id not in priors[pid].probabilities:
+                    if priors[pid].rates[shot.attempted] == 0 and attempts == 0:
+                        continue  # No shooting prediction existed at the decision time.
+                    raise DataError(
+                        f"prior.{pid}.probabilities.{shot.id}: missing prior probability"
+                    )
+                prior = priors[pid].probabilities[shot.id]
                 made = fsum(b.stats[shot.made] for b in past)
                 observed = evaluate(
                     "ratio",
@@ -358,10 +366,12 @@ def flag_report(
             if not future or not fsum(b.minutes for b in future):
                 continue
             for flag in player.flags:
-                if flag.kind not in results:
+                if flag.kind not in results or flag.observed is None:
                     continue
                 observed = (
-                    evaluate("mean", values=tuple(b.minutes for b in future)).result
+                    evaluate(
+                        "mean", values=tuple(b.minutes for b in future if b.minutes > 0)
+                    ).result
                     if flag.field == "minutes"
                     else evaluate(
                         "ratio",
